@@ -16,7 +16,7 @@ import scene_gallery_data as D
 # Fully diacritized narration (owner-approved <date>) — one entry per segment.
 NARRATION = [
     # 1 intro
-    "هٰذَا كَتَالُوجُ مَكْتَبَةِ المَشَاهِدِ. نَعْرِضُ فِيهِ سَبْعَ عَشْرَةَ دَالَّةً، كُلَّ دَالَّةٍ فِي مَقْطَعٍ مُسْتَقِلٍّ، وَاسْمُهَا مَكْتُوبٌ عَلَى الشَّاشَةِ.",
+    "هٰذَا كَتَالُوجُ مَكْتَبَةِ المَشَاهِدِ. نَعْرِضُ فِيهِ ثَمَانِيَ عَشْرَةَ دَالَّةً، كُلَّ دَالَّةٍ فِي مَقْطَعٍ مُسْتَقِلٍّ، وَاسْمُهَا مَكْتُوبٌ عَلَى الشَّاشَةِ.",
     # 2 title_card
     "المَشْهَدُ الأَوَّلُ: بِطَاقَةُ العُنْوَانِ. تَفْتَتِحُ الفِيدْيُو بِسَطْرٍ لِلسِّلْسِلَةِ، وَعُنْوَانٍ رَئِيسِيٍّ، وَعُنْوَانٍ فَرْعِيٍّ.",
     # 3 section_title
@@ -51,7 +51,9 @@ NARRATION = [
     "السَّادِسَ عَشَرَ: الخَطُّ الزَّمَنِيُّ. أَحْدَاثٌ مُرَتَّبَةٌ عَلَى سَهْمِ الزَّمَنِ، كُلُّ حَدَثٍ فِي مَوْضِعِهِ.",
     # 18 image_panel
     "السَّابِعَ عَشَرَ: لَوْحَةُ الصُّورَةِ. تَعْرِضُ رَسْمًا أَوْ صُورَةً فِي إِطَارٍ، مَعَ تَعْلِيقٍ وَمَصْدَرٍ.",
-    # 19 outro
+    # 19 document_panel
+    "الثَّامِنَ عَشَرَ: لَوْحَةُ المُسْتَنَدِ. وَرَقَةُ تَقْرِيرٍ أَوْ نَمُوذَجٍ، ثُمَّ نُمَيِّزُ السَّطْرَ الَّذِي نُدَقِّقُهُ.",
+    # 20 outro
     "هٰذِهِ هِيَ المَكْتَبَةُ كَامِلَةً. نَخْتَارُ مِنْهَا مَشَاهِدَ كُلِّ مَشْرُوعٍ جَدِيدٍ، وَلَا نَرْسُمُ مِنَ الصِّفْرِ إِلَّا مَا لَا تُغَطِّيهِ.",
 ]
 
@@ -72,8 +74,9 @@ DESCRIPTIONS = {
     "checklist": "Each item ticked or crossed",
     "summary_box": "Framed key takeaways",
     "concept_map": "A central idea and linked ideas (no numbers needed)",
-    "timeline": "Dated events along an arrow (no numbers needed)",
+    "timeline": "Events in order along an arrow (no numbers needed)",
     "image_panel": "Framed picture with caption and credit",
+    "document_panel": "Report or form sheet; frame the line under review",
 }
 assert list(DESCRIPTIONS) == LIBRARY and len(NARRATION) == len(LIBRARY) + 2
 
@@ -108,7 +111,7 @@ class SceneGallery(SyncedScene):
             self.sync(self.end(seg) - 0.6)
             self.clear(head)
 
-        # ---------------- Segment 19: outro (index of all functions) ----------------
+        # ---------------- Last segment: outro (index of all functions) ----------------
         seg = len(NARRATION)
         self.play(FadeOut(head), run_time=0.4)
         cols = 3
@@ -117,9 +120,9 @@ class SceneGallery(SyncedScene):
                         for c in range(cols)]).arrange(RIGHT, buff=0.8, aligned_edge=UP)
         top = label("from explainer import *", FS_BODY, weight=BOLD, font=MONO)
         fit(VGroup(top, grid).arrange(DOWN, buff=0.5)).move_to(UP * 0.3)
-        self.play(Write(top), run_time=0.8)
+        self.play(Write(top), run_time=0.6)
         self.play(LaggedStart(*[FadeIn(m, shift=RIGHT * 0.1) for m in names], lag_ratio=0.08),
-                  run_time=2.5)
+                  run_time=1.6)
         self.sync(self.cue(seg, "نَخْتَارُ"))
         self.say("Pick scenes here; draw custom Manim only where the library stops",
                  GREY_INK)
@@ -148,12 +151,12 @@ class SceneGallery(SyncedScene):
                           self.cue(seg, "الثَّالِثَةُ")])
 
     def demo_equation(self, seg):
-        eq = equation(self, ["MF", "=", "V", "prover", "÷", "V", "meter"],
-                      colors={2: ACCENT_1, 3: ACCENT_1, 5: ACCENT_2, 6: ACCENT_2})
+        eq = equation(self, ["MF", "=", "V(prover)", "÷", "V(meter)"],
+                      colors={2: ACCENT_1, 4: ACCENT_2})
         self.sync(self.cue(seg, "فَنُلَوِّنُ"))
-        self.play(Indicate(VGroup(eq[2], eq[3]), color=ACCENT_1), run_time=0.8)
+        self.play(Indicate(eq[2], color=ACCENT_1), run_time=0.8)
         self.sync(self.cue(seg, "نُحِيطُهُ"))
-        emphasize(self, VGroup(eq[5], eq[6]), ACCENT_2)
+        emphasize(self, eq[4], ACCENT_2)
 
     def demo_worked_calculation(self, seg):
         worked_calculation(self, ["A", "=", "B", "×", "C"],
@@ -220,8 +223,8 @@ class SceneGallery(SyncedScene):
     def demo_concept_map(self, seg):
         concept_map(self, "Energy", ["Heat", "Work", "Light", "Sound", "Motion"],
                     links=["is", "does", None, None, None],
-                    cues=[self.cue(seg, "تَتَفَرَّعُ")] + [None] * 4, radius=(4.0, 2.1),
-                    pos=UP * 0.2)
+                    cues=[self.cue(seg, "فِكْرَةٌ")] + [None] * 4, radius=(4.0, 2.1),
+                    pos=UP * 0.2, run_time=0.45)
 
     def demo_timeline(self, seg):
         timeline(self, [("Step 1", "Idea"), ("Step 2", "Prototype"), ("Step 3", "Test"),
@@ -231,6 +234,12 @@ class SceneGallery(SyncedScene):
     def demo_image_panel(self, seg):
         image_panel(self, SKETCH, caption="Tank, pump and gauge", credit="Drawing: own sketch",
                     height=3.4, max_width=8.0, pos=UP * 0.4)
+
+    def demo_document_panel(self, seg):
+        doc = document_panel(self, D.DOC_LINES, height=4.6, pos=UP * 0.3,
+                             note="illustrative values")
+        self.sync(self.cue(seg, "نُمَيِّزُ"))
+        highlight(self, doc, D.DOC_CHECK_LINE)
 
 
 if __name__ == "__main__":

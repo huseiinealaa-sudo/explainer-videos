@@ -23,3 +23,4 @@ draws; nothing is taken from outside the repository, so no research notes are ne
 | 15 | concept_map | central idea with five linked ideas |
 | 16 | timeline | four steps along an arrow |
 | 17 | image_panel | own SVG sketch with caption and credit |
+| 18 | document_panel | monospaced report sheet, out-of-tolerance line framed with highlight() |

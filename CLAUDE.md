@@ -50,7 +50,7 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 - Every new video script goes in `projects/<name>/<name>_<video>.py`. The script name is also the output name (`output/<name>_<video>.mp4`) and the build folder name (`tmp/<name>_<video>/`).
 - New projects start from `templates/new_project/` (project `CLAUDE.md`, `project.toml`, `sources/<name>_source.md`, optional `<name>_data.py`, sample episode script); the copy steps are at the top of its `CLAUDE.md`.
 - New scripts use the installed `explainer` package: `from explainer import *` (Manim, style, `SyncedScene` with `timeline/sync/at/cue/say/clear`, the pipeline, and the scene library in `explainer/scenes.py`); they end with `main(__file__, "SceneName", NARRATION)`.
-- Build blocks from the scene library first (catalogue: `output/template_scene_gallery.mp4`, one clip per function, with its name on screen); draw custom Manim only for what the library does not cover.
+- Build scenes from the library first (see Scene library).
 - Palette: `ACCENT_1`…`ACCENT_4` (blue, orange, green, red), `OK_C`, `ALERT_C`, `GREY_INK`, `LIGHT_INK`, `PANEL_FILL`; each project assigns the accents a meaning in its `CLAUDE.md`.
 - Series: join finished episodes with `explainer.series.concat_series(...)` (title cards, stream copy, no re-encode of episodes).
 - Older scripts (prover series, ut_intro) keep their header `sys.path.insert(0, .../"scripts")` + `from style import *`; `scripts/style.py` is a bridge to the package. Do not port them to the library.
@@ -59,6 +59,34 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 - Render a low-quality preview first to check layout, then render the final 1080p:
   `python projects/<name>/<name>_<video>.py --preview` → `tmp/<name>_<video>/preview.mp4`, then
   `python projects/<name>/<name>_<video>.py` → `output/<name>_<video>.mp4`.
+
+## Scene library
+`explainer/scenes.py`, imported by `from explainer import *`. Every function takes the scene first, animates its block and returns the group; staged blocks take `cues=[...]` (times from `self.cue(seg, phrase)`). Catalogue: `output/template_scene_gallery.mp4` (clip number = row number; each clip shows `NN / 18  name()` in the corner).
+
+| # | Function | Use it when | Main inputs |
+|---|---|---|---|
+| 1 | `title_card` | opening a video or episode | `title, subtitle, series` |
+| 2 | `section_title` | naming the current part in the corner | `text, prev` (transforms the previous heading) |
+| 3 | `bullet_list` | a few points, each shown as it is spoken | `items, heading, cues, numbered` |
+| 4 | `equation` | a formula whose parts are coloured or framed | `parts` (Text pieces), `colors={index: colour}` |
+| 5 | `worked_calculation` | formula → substituted values → result | `formula, values, result, cues` |
+| 6 | `labeled_diagram` | naming the parts of any drawing | `diagram, callouts=[(text, target, direction)], cues` |
+| 7 | `process_flow` (+ `highlight_step`) | a sequence of steps, lighting the current one | `steps, cues, vertical` |
+| 8 | `stage_bar` (+ `set_stage`) | showing which stage of a cycle we are in | `stages, active, y` |
+| 9 | `data_table` (+ `highlight_row`) | tabular values, marking one row | `header, rows, cues` |
+| 10 | `comparison` | two options or cases side by side | `left, right` (title, lines…), `verdict` |
+| 11 | `line_chart` | a trend against an acceptance band | `xs, ys, x_label, y_label, band` |
+| 12 | `bar_chart` | magnitudes against a limit | `labels, values, unit, limit` |
+| 13 | `checklist` | pass/fail items or procedure checks | `items, cues, failed` |
+| 14 | `summary_box` | key takeaways at the end | `heading, lines, cues` |
+| 15 | `concept_map` | how ideas relate (topics without numbers) | `center, nodes, links, cues` |
+| 16 | `timeline` | events or steps in order (topics without numbers) | `events=[(when, text)], cues` |
+| 17 | `image_panel` | a picture or SVG sketch the project may publish | `path, caption, credit, height` |
+| 18 | `document_panel` (+ `highlight`) | a report, form or log, framing the line under review | `lines` (text or (text, BOLD)), `height`; `highlight(scene, doc, idx)` |
+
+Helpers: `emphasize(scene, mob)` frames any part; `badge(n)` is a numbered circle. In `SyncedScene`: `self.say(text)` is the bottom caption line and `self.clear(*keep)` fades the screen.
+
+**Rule:** in every new project, build each scene from the library first. Draw a scene from scratch only when the library does not cover it, and give the reason for each such scene in the narration approval message. A block that proves reusable goes into the library (with a clip in the catalogue) rather than staying in one project.
 
 ## Accuracy and privacy (the repository is PUBLIC)
 - Never put real site, personal or confidential data in the repository or the videos (serial numbers, IDs, real measured values, names, dates, locations). Use illustrative values.

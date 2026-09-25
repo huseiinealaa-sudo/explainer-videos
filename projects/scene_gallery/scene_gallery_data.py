@@ -29,12 +29,21 @@ BAR_VALUES = [3.2, 4.1, 5.6, 2.0]
 BAR_LIMIT = 5.0
 BAR_OVER = [n for n, v in zip(BAR_LABELS, BAR_VALUES) if v > BAR_LIMIT]
 
+# document_panel: a short illustrative report built from the table rows above
+DOC_LINES = [("TEST REPORT                 DEMO-001", "BOLD")] + [
+    f"TARGET {TABLE_TARGET:.2f}   TOLERANCE {TABLE_TOLERANCE:.2f}",
+    f"{'RUN':<5}{'VALUE':>8}{'DEV':>8}{'RESULT':>9}"] + [
+    f"{r[0]:<5}{r[1]:>8}{r[2]:>8}{r[3]:>9}" for r in TABLE_ROWS] + [
+    (f"MEAN {sum(TABLE_VALUES) / len(TABLE_VALUES):.2f}", "BOLD")]
+DOC_CHECK_LINE = 3 + TABLE_BAD_ROW        # the out-of-tolerance run
+
 
 def self_test():
     assert abs(CALC_A - 10.0) < 1e-9, CALC_A
     assert TABLE_BAD_ROW == 2 and TABLE_ROWS[2][3] == "HIGH", TABLE_ROWS
     assert CHART_OUTLIERS == [4], CHART_OUTLIERS
     assert BAR_OVER == ["C"], BAR_OVER
+    assert "HIGH" in DOC_LINES[DOC_CHECK_LINE], DOC_LINES
 
 
 self_test()

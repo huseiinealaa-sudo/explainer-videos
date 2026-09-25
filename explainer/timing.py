@@ -14,7 +14,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from manim import DOWN, UP, FadeIn, FadeOut, Scene, VMobject
+from manim import DOWN, UP, FadeIn, FadeOut, Scene, VMobject, logger
 
 from .style import CAPTION_Y, FS_LABEL, INK, fit, label
 
@@ -116,6 +116,8 @@ class SyncedScene(Scene):
         rem = t - self.renderer.time
         if rem > 1e-3:
             self.wait(rem)
+        elif rem < -0.05:       # the animations ran past the narration: tighten them
+            logger.warning(f"SyncedScene.sync: {-rem:.2f} s late for t = {t:.2f} s")
 
     def start(self, seg):
         return self.START[seg - 1]
@@ -151,6 +153,8 @@ class SyncedScene(Scene):
     def say(self, text, color=INK, y=CAPTION_Y, size=FS_LABEL):
         """Replace the bottom caption line."""
         new = fit(label(text, size, color)).move_to([0, y, 0])
+        if not hasattr(self, "caption"):            # say() works without timeline()
+            self.caption = VMobject()
         if self.caption.has_points() or len(self.caption.submobjects):
             self.play(FadeOut(self.caption), run_time=0.25)
         self.play(FadeIn(new, shift=UP * 0.08), run_time=0.4)

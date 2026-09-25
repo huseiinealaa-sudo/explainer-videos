@@ -22,6 +22,7 @@ appears when its time comes. Without cues the items follow each other directly.
     concept_map       central idea linked to surrounding ideas (topics without numbers)
     timeline          dated events along an arrow (topics without numbers)
     image_panel       framed picture (PNG/JPG/SVG) with caption (topics without numbers)
+    document_panel    monospaced sheet (report, form, log); highlight() frames lines
 Helpers: emphasize() draws a box around any part; badge() is a numbered circle.
 """
 from pathlib import Path
@@ -38,7 +39,7 @@ __all__ = ["title_card", "section_title", "bullet_list", "equation", "worked_cal
            "labeled_diagram", "process_flow", "highlight_step", "stage_bar", "set_stage",
            "data_table", "highlight_row", "comparison", "line_chart", "bar_chart",
            "checklist", "summary_box", "concept_map", "timeline", "image_panel",
-           "emphasize", "badge", "LIBRARY"]
+           "document_panel", "highlight", "emphasize", "badge", "LIBRARY"]
 
 
 # ---------------- internals ----------------
@@ -173,12 +174,19 @@ def labeled_diagram(scene, diagram, callouts, cues=None, numbered=True, color=IN
     scene.play(Create(diagram), run_time=draw_time)
     notes = VGroup()
     for k, (text, target, direction) in enumerate(callouts):
-        point = target.get_center() if isinstance(target, Mobject) else np.array(target)
-        tip = point + normalize(direction) * 0.15
+        d = normalize(direction)
+        if isinstance(target, Mobject):          # tip on the edge facing the label
+            point = target.get_critical_point(np.sign(np.round(d, 6)))
+            tip = point + d * 0.08
+        else:
+            point = np.array(target, dtype=float)
+            tip = point + d * 0.15
         txt = label(text, FS_LABEL, color)
         item = VGroup(badge(k + 1, color), txt).arrange(RIGHT, buff=0.15) if numbered \
             else VGroup(txt)
-        item.move_to(point + normalize(direction) * 1.6)
+        # centre the label 0.8 beyond the tip, measured from its edge facing the target
+        reach = abs(d[0]) * item.width / 2 + abs(d[1]) * item.height / 2
+        item.move_to(point + d * (0.8 + reach))
         arrow = Arrow(_exit_point(item, tip), tip, buff=0.08, stroke_width=3, color=color,
                       max_tip_length_to_length_ratio=0.2)
         notes.add(VGroup(item, arrow))
@@ -309,7 +317,7 @@ def comparison(scene, left, right, colors=(GREY_INK, ACCENT_1), verdict=None, cu
                           color=color)
         txt.move_to(frame)
         cards.add(VGroup(frame, txt))
-    cards.arrange(RIGHT, buff=0.6)
+    cards.arrange(RIGHT, buff=1.0)
     fit(cards).move_to(pos)
     vs = label("vs", FS_BODY, GREY_INK).move_to(cards)
     steps = [FadeIn(cards[0], shift=RIGHT * 0.2),
@@ -456,7 +464,7 @@ def summary_box(scene, heading, lines, cues=None, color=INK, pos=ORIGIN):
 
 # ---------------- 15 concept_map ----------------
 def concept_map(scene, center, nodes, cues=None, links=None, radius=(4.2, 2.4),
-                colors=None, pos=ORIGIN):
+                colors=None, pos=ORIGIN, run_time=0.6):
     """Central idea with surrounding ideas on an ellipse; optional link words."""
     colors = colors or [INK] * len(nodes)
     hub = _box(label(center, FS_BODY, weight=BOLD), INK, pad=0.3, fill=PANEL_FILL,
@@ -477,12 +485,12 @@ def concept_map(scene, center, nodes, cues=None, links=None, radius=(4.2, 2.4),
         items.append(VGroup(line, node, extra))
     _reveal(scene, items, cues,
             lambda m: AnimationGroup(Create(m[0]), FadeIn(m[1], scale=0.8), FadeIn(m[2]),
-                                     lag_ratio=0.3))
+                                     lag_ratio=0.3), run_time=run_time)
     return VGroup(hub, *items)
 
 
 # ---------------- 16 timeline ----------------
-def timeline(scene, events, cues=None, y=0.0, color=ACCENT_1, width=12.0):
+def timeline(scene, events, cues=None, y=0.0, color=ACCENT_1, width=12.0, run_time=0.6):
     """Arrow with dated events [(when, text), ...], labels alternating above/below."""
     axis = Arrow(LEFT * width / 2, RIGHT * width / 2, buff=0, stroke_width=4,
                  max_tip_length_to_length_ratio=0.03).shift(UP * y)
@@ -504,7 +512,8 @@ def timeline(scene, events, cues=None, y=0.0, color=ACCENT_1, width=12.0):
     _reveal(scene, items, cues,
             lambda m: AnimationGroup(FadeIn(m[0], scale=1.8), Create(m[1]),
                                      FadeIn(m[2], shift=(UP if m[1].get_end()[1] > y
-                                                         else DOWN) * 0.1)))
+                                                         else DOWN) * 0.1)),
+            run_time=run_time)
     return VGroup(axis, *items)
 
 
@@ -541,8 +550,46 @@ def image_panel(scene, path, caption=None, credit=None, height=4.6, max_width=10
     return group
 
 
+# ---------------- 18 document_panel ----------------
+def document_panel(scene, lines, height=5.4, max_width=7.0, pos=ORIGIN, note=None,
+                   size=FS_TAG - 4, run_time=2.0):
+    """A sheet of monospaced lines (report, form, log), as the proving report of the
+    prover series. lines: strings, or (text, BOLD) pairs. Returns
+    VGroup(paper, rows[, note]); rows[k] is line k (for highlight()).
+    """
+    rows = VGroup(*[Text(t, font=MONO, font_size=size, weight=w)
+                    for t, w in ((x, NORMAL) if isinstance(x, str) else x for x in lines)])
+    rows.arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+    paper = Rectangle(width=rows.width + 0.5, height=rows.height + 0.4, stroke_width=3,
+                      color=INK).set_fill(BG, 1)
+    doc = VGroup(paper, rows.move_to(paper))
+    doc.scale_to_fit_height(height)
+    if doc.width > max_width:
+        doc.scale_to_fit_width(max_width)
+    doc.move_to(pos)
+    scene.play(Create(paper), run_time=0.6)
+    scene.play(Write(rows), run_time=run_time)
+    if note:
+        n = label(note, FS_TAG - 4, GREY_INK).next_to(paper, DOWN, 0.08)
+        scene.play(FadeIn(n), run_time=0.4)
+        doc.add(n)
+    return doc
+
+
+def highlight(scene, doc, idx, color=ACCENT_3, run_time=0.5):
+    """Frame line idx (or a list of lines) of a document_panel; the previous frame goes."""
+    idx = [idx] if isinstance(idx, int) else list(idx)
+    box = SurroundingRectangle(VGroup(*[doc[1][i] for i in idx]), buff=0.06, color=color,
+                               stroke_width=4, corner_radius=0.05)
+    old = getattr(doc, "_highlight", None)
+    anims = [FadeOut(old)] if old is not None else []
+    scene.play(*anims, Create(box), run_time=run_time)
+    doc._highlight = box
+    return box
+
+
 # Catalogue order (used by projects/scene_gallery).
 LIBRARY = ["title_card", "section_title", "bullet_list", "equation", "worked_calculation",
            "labeled_diagram", "process_flow", "stage_bar", "data_table", "comparison",
            "line_chart", "bar_chart", "checklist", "summary_box", "concept_map", "timeline",
-           "image_panel"]
+           "image_panel", "document_panel"]
