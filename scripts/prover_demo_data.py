@@ -148,6 +148,12 @@ DATA = {
 
 def self_test():
     """Stop the script if CTL drifts from the reference Table 54B values."""
+    assert TABLE_54B_GROUPS == [
+        ("Gasolines", 653.0, 770.5, "K", 346.4228, 0.4388),
+        ("Transition zone", 770.5, 787.5, "AB", -0.00336312, 2680.3206),
+        ("Jet fuels", 787.5, 838.5, "K", 594.5418, 0.0),
+        ("Fuel oils", 838.5, 1075.0, "K", 186.9696, 0.4862),
+    ], "Table 54B (1980, SI) constants changed"
     assert abs(CTLP - 0.987296) < 0.000001, f"CTLp = {CTLP:.7f}, expected 0.987296"
     assert abs(CTLM - 0.987381) < 0.000001, f"CTLm = {CTLM:.7f}, expected 0.987381"
     assert GROUP[0] == "Fuel oils", GROUP
