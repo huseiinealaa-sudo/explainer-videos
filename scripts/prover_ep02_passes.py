@@ -26,7 +26,7 @@ NARRATION = [
     # 6 API MPMS 4.8 table
     "وَهٰذَا الحَدُّ مِنْ جَدْوَلٍ فِي إِي بِي آي، الفَصْلِ الرَّابِعِ، القِسْمِ الثَّامِنِ، يَرْبِطُ عَدَدَ الجَوْلَاتِ بِأَقْصَى تَكْرَارِيَّةٍ، لِيَبْقَى عَدَمُ اليَقِينِ فِي مُعَامِلِ العَدَّادِ ضِمْنَ صِفْرٍ فَاصِلَةِ صِفْرٍ اثْنَيْنِ سَبْعَةٍ بِالمِئَةِ: ثَلَاثُ جَوْلَاتٍ حَدُّهَا صِفْرٌ فَاصِلَةُ صِفْرٍ اثْنَيْنِ، وَأَرْبَعٌ صِفْرٌ فَاصِلَةُ صِفْرٍ ثَلَاثَةٍ، وَخَمْسٌ صِفْرٌ فَاصِلَةُ صِفْرٍ خَمْسَةٍ. فَكُلَّمَا زَادَتِ الجَوْلَاتُ اتَّسَعَ الحَدُّ، لِأَنَّ المُتَوَسِّطَ يُصْبِحُ أَوْثَقَ. وَإِذَا فَشِلَتِ التَّكْرَارِيَّةُ، فَالمُمَارَسَةُ الشَّائِعَةُ اسْتِبْعَادُ البَيَانَاتِ وَإِعَادَةُ الإِثْبَاتِ.",
     # 7 Coriolis: manufactured pulses, damping, pass time
-    "وَالآنَ إِلَى خُصُوصِيَّةِ كُورْيُولِيس. نَبَضَاتُ هٰذَا العَدَّادِ لَا تَأْتِي مِنْ جُزْءٍ دَوَّارٍ، بَلْ تُوَلِّدُهَا إِلِكْتْرُونِيَّاتُ المُرْسِلِ بَعْدَ مُعَالَجَةِ الإِشَارَةِ، فَتَتَأَخَّرُ قَلِيلًا. لِذٰلِكَ يُضْبَطُ التَّخْمِيدُ عَلَى أَسْرَعِ اسْتِجَابَةٍ أَثْنَاءَ الإِثْبَاتِ، فَتَصِيرُ القِرَاءَةُ أَكْثَرَ تَذَبْذُبًا، وَيُعَوَّضُ ذٰلِكَ بِزَمَنِ شَوْطٍ كَافٍ وَبِمُتَوَسِّطِ عِدَّةِ أَشْوَاطٍ. وَشَوْطُنَا أَطْوَلُ بِكَثِيرٍ مِنْ ثَمَانِيَةِ أَعْشَارِ الثَّانِيَةِ، وَهُوَ الحَدُّ الأَدْنَى النَّمَطِيُّ لِكُورْيُولِيس.",
+    "وَالآنَ إِلَى خُصُوصِيَّةِ كُورْيُولِيس. نَبَضَاتُ هٰذَا العَدَّادِ لَا تَأْتِي مِنْ جُزْءٍ دَوَّارٍ، بَلْ تُوَلِّدُهَا إِلِكْتْرُونِيَّاتُ المُرْسِلِ بَعْدَ مُعَالَجَةِ الإِشَارَةِ، فَتَتَأَخَّرُ قَلِيلًا. لِذٰلِكَ يُضْبَطُ التَّخْمِيدُ عَلَى أَسْرَعِ اسْتِجَابَةٍ أَثْنَاءَ الإِثْبَاتِ، فَتَصِيرُ القِرَاءَةُ أَكْثَرَ تَذَبْذُبًا، وَيُعَوَّضُ ذٰلِكَ بِزَمَنِ شَوْطٍ كَافٍ وَبِمُتَوَسِّطِ عِدَّةِ أَشْوَاطٍ. وَشَوْطُنَا أَطْوَلُ بِكَثِيرٍ مِنْ ثَمَانِيَةِ أَعْشَارِ الثَّانِيَةِ، وَهُوَ حَدٌّ أَدْنَى تَذْكُرُهُ بَعْضُ المَرَاجِعِ لِعَدَّادَاتِ كُورْيُولِيس.",
     # 8 Coriolis: mass or volumetric proving (owner decision)
     "وَيُمْكِنُ ضَبْطُ عَدَّادِ كُورْيُولِيس لِيُعْطِيَ كُتْلَةً أَوْ حَجْمًا، فَيُثْبَتُ كُتْلِيًّا أَوْ حَجْمِيًّا. وَهٰذِهِ السِّلْسِلَةُ تَتْبَعُ الطَّرِيقَةَ الحَجْمِيَّةَ كَمَا فِي الدَّلِيلِ، وَلِهٰذَا يَحْمِلُ التَّقْرِيرُ تَصْحِيحَاتِ السَّائِلِ، سِي تِي إِلْ وَسِي بِي إِلْ. أَمَّا إِثْبَاتُ الكُتْلَةِ بِمُعَايِرٍ حَجْمِيٍّ، فَيَحْسُبُ الكُتْلَةَ مِنَ الحَجْمِ وَالكَثَافَةِ، فَيَشْتَرِطُ كَثَافَةً مُسْتَقِرَّةً. وَيُعَادُ الإِثْبَاتُ كُلَّمَا ضُبِطَ صِفْرُ العَدَّادِ.",
     # 9 summary + next
@@ -134,8 +134,7 @@ class ProverEp02(SyncedScene):
             tick = DashedLine([x, top_y, 0], [x, PIPE_Y - PRV_H / 2, 0], stroke_width=2,
                               color=GREY_INK)
             dets.add(VGroup(tri, tick, label(name, FS_LABEL, weight=BOLD).next_to(tri, UP, 0.1)))
-        prv_lbl = label("Compact prover", FS_LABEL, PROVER_C).next_to(prover, DOWN, 0.25)
-        prv_lbl.align_to(prover, LEFT)
+        prv_lbl = label("Compact prover", FS_LABEL, PROVER_C).move_to([4.95, PIPE_Y + 0.4, 0])
 
         piston_x = ValueTracker(STANDBY_X)
         piston = always_redraw(lambda: Rectangle(
@@ -153,11 +152,11 @@ class ProverEp02(SyncedScene):
         counter = always_redraw(lambda: label(f"meter pulses: {pulses.get_value():,.0f}",
                                               FS_LABEL, METER_C).move_to([0, 2.0, 0]))
         one_pass = label("1 pass  =  piston D1 → D2  =  one BPV", FS_BODY, weight=BOLD)
-        one_pass.move_to(DOWN * 2.2)
+        one_pass.move_to(DOWN * 2.55)
         ret = CurvedArrow([D2_X + 0.6, PIPE_Y - 0.9, 0], [STANDBY_X, PIPE_Y - 0.9, 0],
                           angle=-TAU / 8, stroke_width=3, color=GREY_INK)
         ret_lbl = label("hydraulic return to standby  →  ready for the next pass",
-                        FS_LABEL, GREY_INK).move_to(DOWN * 3.1)
+                        FS_LABEL, GREY_INK).move_to(DOWN * 3.3)
 
         self.play(Create(pipe_in), Create(prover), Create(pipe_out), run_time=1.3)
         self.play(GrowArrow(flow), FadeIn(flow_lbl), FadeIn(prv_lbl), FadeIn(dets), run_time=1.0)
@@ -194,7 +193,7 @@ class ProverEp02(SyncedScene):
             res = label("MF, K", FS_LABEL, METER_C, weight=BOLD)
             rows.add(VGroup(name, cells, arrow, res).arrange(RIGHT, buff=0.3))
         rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).move_to(LEFT * 1.2 + DOWN * 0.1)
-        avg_note = label("average", FS_TAG, GREY_INK).next_to(rows[0][2], UP, 0.05)
+        avg_note = label("average", FS_TAG, GREY_INK).next_to(rows[0][3], UP, 0.1)
         total = label(f"{D.PASSES_PER_RUN} passes × {D.RUN_COUNT} runs = {D.TOTAL_PASSES} passes",
                       FS_BODY, weight=BOLD).move_to(DOWN * 2.35)
         cap = VGroup(label("Some procedures cap", FS_TAG, GREY_INK),
@@ -203,8 +202,7 @@ class ProverEp02(SyncedScene):
                      label("poor repeatability", FS_TAG, GREY_INK)).arrange(DOWN, buff=0.06)
         cap_box = boxed(cap, GREY_INK, 0.18)
         VGroup(cap, cap_box).next_to(rows, RIGHT, 0.5)
-        demo = label("Illustrative data", FS_TAG, GREY_INK).next_to(title, DOWN, 0.2)
-        demo.align_to(title, LEFT)
+        demo = label("Illustrative data", FS_TAG, GREY_INK).to_corner(DR, buff=0.4)
 
         self.play(Write(heading), run_time=1.2)
         self.play(FadeIn(rows[0][0]), LaggedStart(*[Create(c) for c in rows[0][1]],
@@ -322,18 +320,18 @@ class ProverEp02(SyncedScene):
         api_rows.add(VGroup(label("…", FS_BODY, GREY_INK), label("…", FS_BODY, GREY_INK)))
         api_rows.arrange(DOWN, buff=0.18).move_to([-2.8, -0.6, 0])
         for row in api_rows:
-            row[0].set_x(-4.3)
-            row[1].set_x(-1.9)
+            row[0].set_x(-5.0)
+            row[1].set_x(-2.7)
         hl = SurroundingRectangle(api_rows[shown.index(D.RUN_COUNT) + 1], color=OK_C, buff=0.1,
                                   stroke_width=4)
-        hl_tag = label("this series", FS_TAG, OK_C).next_to(hl, LEFT, 0.15)
+        hl_tag = label("this series", FS_TAG, OK_C).next_to(hl, RIGHT, 0.15)
         wider = VGroup(label("More runs  →  wider limit", FS_BODY, weight=BOLD),
                        label("(the average becomes more reliable)", FS_LABEL, GREY_INK)
-                       ).arrange(DOWN, buff=0.15).move_to([3.2, 0.2, 0])
+                       ).arrange(DOWN, buff=0.15).move_to([3.4, 0.2, 0])
         fail = VGroup(label("Repeatability fails?", FS_LABEL, METER_C, weight=BOLD),
                       label("common practice: discard", FS_LABEL, METER_C),
                       label("the data and re-prove", FS_LABEL, METER_C)
-                      ).arrange(DOWN, buff=0.1).move_to([3.2, -2.0, 0])
+                      ).arrange(DOWN, buff=0.1).move_to([3.4, -2.0, 0])
         fail_box = boxed(fail, METER_C, 0.2)
 
         self.play(Write(h6), run_time=1.0)
@@ -377,20 +375,20 @@ class ProverEp02(SyncedScene):
         r1 = VGroup(mech_lbl, mech).arrange(RIGHT, buff=0.4)
         r2 = VGroup(cor_lbl, cor).arrange(RIGHT, buff=0.4)
         fit(VGroup(r1, r2).arrange(DOWN, buff=0.4, aligned_edge=LEFT)).move_to(UP * 1.15)
-        delay = label("small delay", FS_TAG, METER_C).next_to(cor[1][1], DOWN, 0.1)
+        delay = label("small delay", FS_TAG, METER_C).next_to(cor[0][2], DOWN, 0.1)
         damp = label("Damping set to fastest response  →  noisier reading", FS_BODY)
         damp.move_to(DOWN * 0.5)
         fix = label("Remedy: adequate pass time  +  average several passes per run",
                     FS_LABEL, OK_C, weight=BOLD).move_to(DOWN * 1.3)
         fit(fix)
         # pass time comparison bars
-        scale = 2.0                       # units per second
+        scale = 1.5                       # units per second
         b_min = Rectangle(width=D.CORIOLIS_MIN_PASS_TIME * scale, height=0.32, stroke_width=0,
                           fill_color=GREY_INK, fill_opacity=0.6)
         b_our = Rectangle(width=D.PASS_TIME * scale, height=0.32, stroke_width=0,
                           fill_color=PROVER_C, fill_opacity=0.6)
         bars = VGroup(b_min, b_our).arrange(DOWN, buff=0.25, aligned_edge=LEFT)
-        bars.move_to([-1.2, -2.6, 0], aligned_edge=LEFT)
+        bars.move_to([-2.5, -2.6, 0], aligned_edge=LEFT)
         l_min = label(f"{D.CORIOLIS_MIN_PASS_TIME} s  typical minimum", FS_TAG, GREY_INK)
         l_min.next_to(b_min, RIGHT, 0.2)
         l_our = label(f"{PASS_TXT} s  our pass", FS_TAG, PROVER_C, weight=BOLD)
