@@ -16,17 +16,20 @@ Format: claim → source → note. Priority per CLAUDE.md (1 manufacturer, 2 API
 | 8 | MF = (BPV·CTSp·CPSp·CTLp·CPLp) / (IV·CTLm·CPLm), IV = pulses / K-factor. CTSp/CPSp: temperature/pressure effect on the prover steel; CTLp/CPLp: temperature/pressure effect on the liquid in the prover; CTLm/CPLm: on the liquid at the meter. | [Emerson ROC800L Flow Calculations User Manual D301688X012 (2017), ch. 6 pp.27–31](https://www.emerson.com/documents/automation/roc800l-flow-calculations-user-manual-en-132294.pdf) | Implements API MPMS Ch. 12.2: GSVp = BV·CCFp, CCFp = CTSp·CPSp·CTLp·CPLp; ISVm = (pulses/K-factor)·CCFm, CCFm = CTLm·CPLm; MF = GSVp/ISVm. "Pulse count … (whole or interpolated)". |
 | 9 | MF < 1 → meter reads high (registers more than the true volume); MF > 1 → reads low. | [Coastal Flow training paper, p.3](https://coastalflow.com/wp-content/uploads/2021/07/Understanding-Liquid-Meter-Provings.pdf) | "a meter factor greater than 1 would mean that the flow meter is reading low. Conversely, if the meter factor is less than 1, the meter would be measuring high." Also follows directly from NIST's ratio. |
 | 10 | Proven K-factor = nominal K / MF (the same correction expressed as pulses per unit volume). | [NIST Series 1, "K-factor"](https://www.nist.gov/system/files/documents/2017/05/09/H-003.pdf) · `scripts/prover_demo_data.py` | NIST: K-factor = meter pulses / corrected prover volume. Dividing by MF gives the same number. |
-| 11 | Apply either the proven K or the MF, not both (otherwise the correction is applied twice). | [Blue Chip MRC, "Meter factors"](https://bluechipmrc.com/measurement/meter-factors/) + the identity in #10 | Blue Chip: the k-factor "can then be adjusted in lieu of the meter factor" (MF then left at 1.000). Only a priority-4 source was found. See open questions. |
+| 11 | Apply either the proven K or the MF, not both: applying both corrects the reading twice. | Derived from the identity in #10 (owner decision 2) | Background only: [Blue Chip MRC, "Meter factors"](https://bluechipmrc.com/measurement/meter-factors/) says the k-factor "can then be adjusted in lieu of the meter factor". Not cited in the narration. |
 
 ## Demo numbers used (from scripts/prover_demo_data.py only)
 - Average MF = 0.99900 → spoken "0.999"; deviation ≈ 0.1 % over-registration.
 - Final K = 60060.060 pls/m³ → spoken "about 60,060".
 - Nominal K = 60000 pls/m³.
 
-## Conflicts / open questions for the owner
-1. **Inverted MF wording.** [Flow Management Devices, J. Lantzy, "Proving for Measurement Verification" (2025)](https://flowmd.com/wp-content/uploads/2025/06/Proving-for-Measurement-Verification-06-25-c.pdf) says MF "is the metered volume divided by the prover volume". NIST, the Emerson ROC800L manual (API 12.2) and Coastal Flow all say prover ÷ meter. The narration follows prover ÷ meter.
-2. **"K or MF, not both."** No manufacturer or API text was accessible from this session. The only direct source is priority 4 (Blue Chip MRC), plus the identity K_proven = K_nominal / MF.
-3. **Pulse count vs. the 10,000 rule.** Demo data gives ≈14,796 pulses per pass (above 10,000). The narration says the manufacturer *requires* interpolation (true regardless of count), not that the demo prover has too few pulses.
+## Conflicts / open questions — owner decisions (2026-09-25)
+1. **Inverted MF wording.** [Flow Management Devices, J. Lantzy, "Proving for Measurement Verification" (2025)](https://flowmd.com/wp-content/uploads/2025/06/Proving-for-Measurement-Verification-06-25-c.pdf) says MF "is the metered volume divided by the prover volume"; NIST, the Emerson ROC800L manual (API 12.2) and Coastal Flow say prover ÷ meter.
+   **Decision:** follow the majority and API MPMS 12.2: MF = corrected prover volume ÷ corrected meter volume.
+2. **"K or MF, not both."** Only a priority-4 source (Blue Chip MRC) was found.
+   **Decision:** keep it as a derived statement ("applying both corrects the reading twice"), not attributed to any source.
+3. **Pulse count vs. the 10,000 rule.** Demo data gives ≈14,796 pulses per pass (above 10,000).
+   **Decision:** keep the wording "the manufacturer requires pulse interpolation"; do not show the pulse count as "too few".
 
 ## Note for episode 2
-- Coastal Flow says Coriolis meters are proved with the mass method. The demo data proves volumetrically (K in pls/m³). Check before episode 2.
+- Coriolis mass vs. volumetric proving: resolved by the owner, see `sources/prover_ep02.md`.
