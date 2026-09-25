@@ -33,8 +33,26 @@ CPLM = 1.000160
 PASSES_PER_RUN = 3
 RUN_COUNT = 5
 
-GC_STEEL = 0.0000216        # 1/degC, area thermal expansion of the flow tube
+# CTSp for a small volume prover with external detector switches (API MPMS 12.2;
+# Emerson ROC800L Flow Calculations manual §6.1.1; Daniel manual 3-9008-701 Rev J
+# §4.3.2 pp.50-51, where the same two terms appear in the water-draw factor Css):
+#
+#     CTSp = [1 + (Tp - Tb) x Gc] x [1 + (Td - Tb) x Gl]
+#             flow-tube term          Invar-rod term
+#
+# Gc = 0.0000216 /degC is the AREA (squared) coefficient of the flow tube, i.e.
+#      twice the linear coefficient 0.0000108 /degC (manual table p.51).
+# Gl = 0.00000144 /degC is the linear coefficient of the Invar rods that space the
+#      optical switches (manual p.51).
+# Td is the temperature of the Invar rods; the manual allows the ambient
+#      temperature to be used instead (§4.3.1 item 5, p.49).
+# In our example the rods are at 15 degC, so the Invar term equals exactly 1 and
+# CTSp equals the flow-tube term alone. This is a choice for the example: in the
+# field the rods are rarely at the reference temperature, and the term is not 1.
+GC_STEEL = 0.0000216        # 1/degC, area thermal expansion of the flow tube (2 x 0.0000108)
+GL_INVAR = 0.00000144       # 1/degC, linear thermal expansion of the Invar rods
 T_BASE = 15.0               # degC
+T_DETECTOR = 15.0           # degC, Invar rod (detector) temperature Td in our example
 REPEATABILITY_LIMIT = 0.05  # %
 
 # Public reference values (not site data), used by episode 2.
@@ -73,7 +91,18 @@ RUN_PULSES = [14796.164, 14798.386, 14795.423, 14793.943, 14796.905]
 # Plenum example
 PLENUM_LINE_PRESSURE = 40.0  # psig
 PLENUM_RATIO = 5.0           # R
-PLENUM_OFFSET = 60.0         # psig, fixed term in (line / R) + 60
+PLENUM_OFFSET = 60.0         # psig, fixed term in (line / R) + 60 (horizontal prover)
+# Manual §3.2 step 3 and Table 3-1 (pp.30-32): Plenum = line gauge (psig) / R + 60;
+# R = 5 for the 24-inch prover (5.88 if shipped before 1 Jan 2006); 40 psig replaces
+# 60 for a vertical installation; charge within 0 to +5 % of the calculated value.
+PLENUM_TOLERANCE = 5.0       # %, upper guideline above the calculated pressure
+
+# Upstream / downstream base volumes. A prover with a shaft on one side of the
+# piston has two different volumes (NIST HB 105-7 §7.3.1). The manual gives the
+# ratio upstream / downstream for the 24-inch prover (Table 1-2 p.8, post-2006,
+# the same era as R = 5). Our meter is downstream of the prover, so BPV is the
+# downstream volume; the upstream volume is derived from the ratio.
+VOLUME_RATIO = 0.992369      # upstream / downstream, 24-inch (0.993464 before 2006)
 
 # ---------------- API Table 54B (1980, SI) ----------------
 # rho = standard density at 15 degC in kg/m3, dT = T - 15 in degC.
@@ -110,13 +139,16 @@ def ctl_54b(rho, temp):
     return math.exp(-alpha * dt * (1 + 0.8 * alpha * dt))
 
 
-def ctsp(temp):
-    return 1 + GC_STEEL * (temp - T_BASE)
+def ctsp(temp, temp_detector=T_DETECTOR):
+    """CTSp = [1 + (Tp - Tb) Gc] x [1 + (Td - Tb) Gl] (see the note above GC_STEEL)."""
+    return (1 + GC_STEEL * (temp - T_BASE)) * (1 + GL_INVAR * (temp_detector - T_BASE))
 
 
 # ---------------- Derived values ----------------
 GROUP = table_54b_group(RHO_15)
 ALPHA = alpha_54b(RHO_15)
+CTSP_TUBE = 1 + GC_STEEL * (T_PROVER - T_BASE)
+CTSP_INVAR = 1 + GL_INVAR * (T_DETECTOR - T_BASE)
 CTSP = ctsp(T_PROVER)
 CTLP = ctl_54b(RHO_15, T_PROVER)
 CTLM = ctl_54b(RHO_15, T_METER)
@@ -147,6 +179,19 @@ PASS_TIME = BPV / FLOW_RATE * 3600          # s
 FREQUENCY = FLOW_RATE * K_NOMINAL / 3600    # Hz
 
 PLENUM_PRESSURE = PLENUM_LINE_PRESSURE / PLENUM_RATIO + PLENUM_OFFSET  # psig
+PLENUM_MAX = PLENUM_PRESSURE * (1 + PLENUM_TOLERANCE / 100)            # psig
+
+BPV_DOWNSTREAM = BPV                        # m3, meter downstream of the prover
+BPV_UPSTREAM = BPV * VOLUME_RATIO           # m3
+
+# Double chronometry (manual §2.2.2 pp.16-17, Fig. 2-2), one illustrative pass of
+# run 1: Time A = flag D1 -> D2; Time B = first meter pulse edge after A starts ->
+# first pulse edge after A stops; C = whole pulses counted in B.
+# Interpolated pulses = C x A / B.
+CHRONO_TIME_A = PASS_TIME                   # s
+CHRONO_PULSES = RUN_PULSES[0]               # interpolated pulses
+CHRONO_WHOLE = math.floor(CHRONO_PULSES)    # C
+CHRONO_TIME_B = CHRONO_TIME_A * CHRONO_WHOLE / CHRONO_PULSES   # s
 
 SUMMARY = {
     "mf_avg": MF_AVG,
@@ -170,7 +215,12 @@ DATA = {
     "ctsp": CTSP, "ctlp": CTLP, "ctlm": CTLM, "prv_vol": PRV_VOL,
     "total_passes": TOTAL_PASSES, "pass_time": PASS_TIME, "frequency": FREQUENCY,
     "plenum_line_pressure": PLENUM_LINE_PRESSURE, "plenum_ratio": PLENUM_RATIO,
-    "plenum_pressure": PLENUM_PRESSURE,
+    "plenum_pressure": PLENUM_PRESSURE, "plenum_max": PLENUM_MAX,
+    "t_detector": T_DETECTOR, "ctsp_tube": CTSP_TUBE, "ctsp_invar": CTSP_INVAR,
+    "volume_ratio": VOLUME_RATIO, "bpv_downstream": BPV_DOWNSTREAM,
+    "bpv_upstream": BPV_UPSTREAM,
+    "chrono_time_a": CHRONO_TIME_A, "chrono_time_b": CHRONO_TIME_B,
+    "chrono_whole": CHRONO_WHOLE, "chrono_pulses": CHRONO_PULSES,
     **SUMMARY,
 }
 
@@ -196,6 +246,21 @@ def self_test():
     assert len(PROVER_COMPONENTS) == 10, PROVER_COMPONENTS
     assert len(CYCLE_STAGES) == 5, CYCLE_STAGES
     assert OPTICAL_SWITCH_COUNT == 1 + VOLUME_SWITCH_COUNT
+    # CTSp: full small-volume-prover form; Invar term is exactly 1 at Td = 15 C
+    assert GC_STEEL == 2 * 0.0000108 and GL_INVAR == 0.00000144
+    assert T_DETECTOR == 15.0 and CTSP_INVAR == 1.0, CTSP_INVAR
+    assert abs(CTSP - 1.000324) < 1e-9 and CTSP == CTSP_TUBE * CTSP_INVAR, CTSP
+    # Plenum: 40 / 5 + 60 = 68 psig (manual §3.2), guideline up to +5 %
+    assert PLENUM_PRESSURE == 68.0 and abs(PLENUM_MAX - 71.4) < 1e-9, PLENUM_PRESSURE
+    # Upstream / downstream base volumes (manual Table 1-2, 24-inch)
+    assert BPV_DOWNSTREAM == 0.2463
+    assert abs(BPV_UPSTREAM / BPV_DOWNSTREAM - 0.992369) < 1e-9
+    assert abs(BPV_UPSTREAM - 0.244420) < 0.0000005 and BPV_UPSTREAM < BPV_DOWNSTREAM
+    # Double chronometry example
+    assert f"{CHRONO_TIME_A:.6f}" == "3.546720", CHRONO_TIME_A
+    assert CHRONO_WHOLE == 14796
+    assert f"{CHRONO_TIME_B:.6f}" == "3.546681", CHRONO_TIME_B
+    assert abs(CHRONO_WHOLE * CHRONO_TIME_A / CHRONO_TIME_B - CHRONO_PULSES) < 1e-6
 
 
 self_test()
@@ -225,7 +290,9 @@ def print_table():
     row("Table 54B group", f"{GROUP[0]} ({lo} <= rho < {hi})")
     row("Group constants", consts)
     row("alpha15 = K0/rho^2 + K1/rho", f"{ALPHA:.9f} 1/C")
-    row("CTSp = 1 + 0.0000216 (Tp - 15)", f"{CTSP:.6f}")
+    row("Tube term 1 + 0.0000216 (Tp - 15)", f"{CTSP_TUBE:.6f}")
+    row("Invar term 1 + 0.00000144 (Td - 15)", f"{CTSP_INVAR:.6f}  (Td = {T_DETECTOR:.1f} C)")
+    row("CTSp = tube term x Invar term", f"{CTSP:.6f}")
     row("CTLp (Tp = 30.0 C)", f"{CTLP:.6f}")
     row("CTLm (Tm = 29.9 C)", f"{CTLM:.6f}")
     row("PRV VOL = BPV CTSp CPSp CTLp CPLp", f"{PRV_VOL:.6f} m3")
@@ -253,6 +320,18 @@ def print_table():
     row("Plenum = line / R + 60",
         f"{PLENUM_LINE_PRESSURE:.0f} / {PLENUM_RATIO:.0f} + {PLENUM_OFFSET:.0f}"
         f" = {PLENUM_PRESSURE:.0f} psig")
+    row("Plenum guideline (0 to +5 %)", f"{PLENUM_PRESSURE:.1f} to {PLENUM_MAX:.1f} psig")
+
+    print("\nBASE VOLUMES (meter downstream of the prover)")
+    row("Downstream volume = BPV", f"{BPV_DOWNSTREAM:.6f} m3")
+    row("Volume ratio up / down (24-inch)", f"{VOLUME_RATIO}")
+    row("Upstream volume = BPV x ratio", f"{BPV_UPSTREAM:.6f} m3")
+
+    print("\nDOUBLE CHRONOMETRY (run 1, one illustrative pass)")
+    row("Time A (D1 -> D2)", f"{CHRONO_TIME_A:.6f} s")
+    row("Time B (whole pulses)", f"{CHRONO_TIME_B:.6f} s")
+    row("C = whole pulses", f"{CHRONO_WHOLE}")
+    row("Interpolated = C x A / B", f"{CHRONO_WHOLE * CHRONO_TIME_A / CHRONO_TIME_B:.3f}")
 
     print("\nAPI MPMS 4.8 REPEATABILITY LIMITS (MF uncertainty "
           f"+/-{MF_UNCERTAINTY_TARGET} %)")
