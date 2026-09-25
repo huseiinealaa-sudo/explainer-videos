@@ -64,14 +64,16 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 - Never put real site, personal or confidential data in the repository or the videos (serial numbers, IDs, real measured values, names, dates, locations). Use illustrative values.
 - If a project shows numbers, all of them come from one data module in the project (e.g. `projects/<name>/<name>_data.py`); never type derived values by hand. Projects without numbers need no data module.
 - On a technical or regulated topic, the first video (episode 1 of a series) opens with one sentence: this is educational material; the binding reference is the official documentation and approved procedures.
+- If sources conflict with each other or with the owner's outline or source file, DO NOT decide silently: list the conflict in the narration approval message and ask the owner.
+- If a fact cannot be verified, leave it out of the narration; never guess.
+- Never try to complete site-specific data (nameplate values, certificates, open notes, or any real identifiers). It stays out of the repository and the videos.
+- In the narration approval message, mark every sentence that was added or corrected from research with [+] and its source.
 
 ## Research and verification
 - Verify every technical claim before it goes into the narration (within the limits of the Fast workflow).
 - Source priority: 1) manufacturer, author or official documents, 2) standards and their official summaries, 3) technical papers, 4) reputable training material. Never use forums or unsourced blogs as the only source.
 - Save sources for each video or episode in `projects/<name>/sources/<name>_<video>.md`: claim → source URL → short note.
-- If sources conflict with each other or with the project's source file, DO NOT decide silently: list the conflict in the approval message and ask the owner.
-- If a fact cannot be verified, leave it out of the narration rather than guess.
-- Never try to complete confidential or site-specific data. It stays out of the videos.
+- Conflicts, unverifiable facts, site-specific data and [+] marking: see Accuracy and privacy.
 
 ## Repository rules
 - Commit ONLY final videos to `output/` (never commit `media/` or temp audio). `output/` stays flat.
