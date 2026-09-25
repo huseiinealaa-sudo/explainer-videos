@@ -1,0 +1,5 @@
+# Narration settings for this project (read by explainer.pipeline.project_settings).
+[narration]
+language = "ar"
+voice = "ar-SA-HamedNeural"
+rate = "+0%"
