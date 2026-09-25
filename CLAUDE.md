@@ -43,3 +43,54 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 - Commit each video's script to `scripts/` alongside its video; build files stay in the git-ignored `tmp/`.
 - Keep each video under 100 MB (GitHub limit).
 - File names: lowercase_with_underscores.mp4
+
+## Series: Daniel Compact Prover (7 episodes)
+
+### Privacy (the repository is PUBLIC)
+- NEVER use real site data: serial numbers, meter tags/IDs, real MF values, configuration name, CSUM, real dates or locations.
+- Public manufacturer values are allowed: nominal BPV 0.2463 m³ (24-inch model), nominal K-factor 60000 pls/m³, all standard equations and API tables.
+- All numbers shown in any episode MUST come from scripts/prover_demo_data.py. Never type derived values by hand.
+
+### Illustrative base data (inputs only)
+| Item | Value |
+|---|---|
+| Prover serial | PRV-DEMO-001 |
+| Meter tag | FT-DEMO-01 |
+| Meter serial | MM-DEMO-0001 |
+| Meter type | Coriolis (Micro Motion, generic) |
+| Configuration name / CSUM | DEMO_PRV_CFG / a1b2 |
+| Proving date | 15/03/2026 |
+| BPV | 0.2463 m³ |
+| Nominal K-factor | 60000 pls/m³ |
+| Flow rate | 250.0 m³/h |
+| Standard density (15 °C) | 840.0 kg/m³ |
+| Prover temperature | 30.0 °C |
+| Meter temperature | 29.9 °C |
+| CPSp / CPLp / CPLm | 1.000000 / 1.000150 / 1.000160 |
+| Passes per run | 3 |
+| Runs | 5 |
+
+### scripts/prover_demo_data.py must compute
+- CTSp = 1 + 0.0000216 × (Tp − 15)
+- CTLp and CTLm from API Table 54B (1980) using the density group constants; show which group applies.
+- Choose 5 run pulse counts so the average MF ≈ 0.9990 and repeatability on K ≈ 0.03% (within the 0.05% limit).
+- For each run: PRV VOL, MTR VOL, M-FACTOR, K-FACTOR; then average MF, final K, repeatability.
+- Pass time = BPV ÷ Q × 3600 and expected frequency = Q × K ÷ 3600.
+- Plenum example: line pressure 40 psig, R = 5 → 68 psig.
+- Print everything as a table; other scripts import values from this module.
+
+### Episodes
+1. Proving principle and the MF equation
+2. Pass, run, repeatability, Coriolis specifics
+3. Compact prover construction (10 components)
+4. Operating cycle (5 stages) and why flow never stops
+5. Double chronometry, plenum pressure, upstream/downstream volumes, CTSP
+6. FloBoss S600+, field case, web interface, typical proving session
+7. Auditing the report: recompute one run step by step
+Excluded from videos: maintenance tables, specifications, B54 constant tables, site data, open notes, references.
+
+### Series rules
+- Episode 1 opens with one sentence: this is educational material; the binding reference is the manufacturer's manual and approved site procedures.
+- Each episode 3–4 minutes. Files: scripts/prover_epNN_<topic>.py and output/prover_epNN_<topic>.mp4.
+- English terms in narration are written in Arabic letters for correct pronunciation: بْلِينَم (Plenum)، بُوبِت (Poppet)، كْرُونُومِتْرِي (Chronometry)، كُورْيُولِيس (Coriolis)، وُوتَر دْرُو (Waterdraw)، فْلُو بُوس (FloBoss)، إِنْفَار (Invar)، رُولُون (Rulon).
+- After all 7 episodes are approved: concatenate them with ffmpeg into output/prover_full_series.mp4 with a short title card between episodes (no re-render of episodes).
