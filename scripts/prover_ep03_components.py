@@ -57,6 +57,7 @@ TUBE_L, TUBE_R, TUBE_Y, TUBE_H = -1.8, 3.4, 0.45, 1.3
 PIPE_Y = -1.15                  # inlet pipe under the flow tube
 ENTRY_X = -1.35                 # inlet elbow into the upstream end of the tube
 PISTON_X = -0.8                 # standby position
+POPPET_LIFT = 0.55              # poppet opens upstream (manual §3.1 step 4)
 FLANGE_X = 4.3                  # inlet/outlet line flanges
 CYL_L, CYL_R, CYL_H = -4.9, -2.8, 0.62
 ACT_X = -3.6                    # actuator piston
@@ -188,7 +189,7 @@ class ProverEp03(SyncedScene):
                          [PISTON_X + 0.34, TUBE_Y + 0.1, 0], [PISTON_X + 0.34, TUBE_Y - 0.1, 0],
                          [PISTON_X + 0.05, TUBE_Y - gap_h / 2, 0], stroke_width=3,
                          color=INK, fill_color=FLUID_C, fill_opacity=0.6)
-        poppet.shift(RIGHT * 0.32)                 # open: pulled downstream of the piston
+        poppet.shift(LEFT * POPPET_LIFT)           # open: pulled upstream, off its seat
         c3 = VGroup(piston, seals)
 
         # 5 Pneumatic spring plenum (tank on top)
@@ -334,17 +335,18 @@ class ProverEp03(SyncedScene):
         through = Arrow([PISTON_X - 0.9, TUBE_Y, 0], [PISTON_X + 1.1, TUBE_Y, 0], buff=0,
                         stroke_width=4, color=FLUID_C, max_tip_length_to_length_ratio=0.15)
         state = label("OPEN: liquid flows through the piston", FS_TAG, FLUID_C, weight=BOLD)
-        state.move_to([1.3, TUBE_Y + 0.25, 0])
+        state.move_to([1.3, TUBE_Y + 0.95, 0])
         self.play(GrowArrow(through), FadeIn(state), run_time=0.8)
         self.sync(cue(4, "وَحِينَ يُغْلَقُ"))
         closed_state = label("CLOSED: liquid pushes the piston", FS_TAG, FLUID_C, weight=BOLD)
         closed_state.move_to(state)
         push = Arrow([PISTON_X - 1.0, TUBE_Y + 0.35, 0], [PISTON_X - 0.3, TUBE_Y + 0.35, 0],
                      buff=0, stroke_width=4, color=FLUID_C, max_tip_length_to_length_ratio=0.3)
-        self.play(FadeOut(through), poppet.animate.shift(LEFT * 0.32), FadeOut(poppet_open),
+        self.play(FadeOut(through), poppet.animate.shift(RIGHT * POPPET_LIFT),
+                  FadeOut(poppet_open),
                   Transform(state, closed_state), GrowArrow(push), run_time=1.0)
         self.sync(START[4] - 1.2)
-        self.play(FadeOut(push), FadeOut(state), poppet.animate.shift(RIGHT * 0.32),
+        self.play(FadeOut(push), FadeOut(state), poppet.animate.shift(LEFT * POPPET_LIFT),
                   FadeIn(poppet_open), run_time=0.8)
         self.bring_to_front(poppet)
 

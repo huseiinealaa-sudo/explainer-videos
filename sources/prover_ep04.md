@@ -38,6 +38,11 @@ Manual §3.1 p.27 gives "The operational sequence of the compact prover" as five
 | 12 | [+] Fail-safe: the positive stop in the outlet flange prevents accidental blockage of the flow. | manual §1.2 p.1; §3.1 p.27 | "inherent fail-safe feature constructed to assure uninterrupted liquid flow"; "positive stop … prevents any accidental blockage of the process flow stream". |
 | 13 | So the meter is proved in service without shutting the line. | manual §1.2 p.1 | "proving of liquid flow meters in an operational line … with minimal disturbance to flow". |
 
+## Diagram notes
+- Liquid enters the flow tube at the back, so standby (upstream) is drawn at the back (left); the piston travels to the front during the pass and returns to the back (owner note).
+- The poppet opens by moving upstream off its seat: hydraulic pressure "push[es] the actuator piston upstream, opening the poppet valve" (manual §3.1 step 4 p.27), and plenum pressure on the upstream side of the actuator piston closes it (step 2). Episode 3 was re-rendered to draw the open poppet on the upstream side as well.
+- The actuator piston is drawn with a shorter travel than the measurement piston (schematic only).
+
 ## Left out
 - The Emerson data sheet summary says "without interrupting normal flow and without the use of manually operated bypass valves". The PDF could not be opened from this session, so the claim is not used.
 - The double-block-and-bleed diversion before proving (manual §2.1, §3.2 step 7) belongs to operating procedure, not to the cycle.
