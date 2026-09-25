@@ -11,8 +11,9 @@ Each topic is a project in `projects/<name>/`. Project-specific rules live in `p
 The cloud container is temporary. Before any work:
 ```bash
 SETUPTOOLS_USE_DISTUTILS=stdlib pip install manim
+SETUPTOOLS_USE_DISTUTILS=stdlib pip install -e .   # the explainer package (repo root)
 ```
-Then verify: `ffmpeg -version`, `manim --version`, `edge-tts --version`.
+Then verify: `ffmpeg -version`, `manim --version`, `edge-tts --version`, `python -c "import explainer"`.
 
 ## Known environment issues
 1. **manim install fails** on building `srt` (AttributeError: install_layout) → always install with `SETUPTOOLS_USE_DISTUTILS=stdlib`.
