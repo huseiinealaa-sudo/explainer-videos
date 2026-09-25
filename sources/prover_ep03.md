@@ -41,9 +41,14 @@ Order: flange end (front) → hydraulic/optical end (back), per Fig. 1-1 p.4 and
 | 9 | The hydraulic cylinder's actuator piston is a barrier between the plenum gas and the hydraulic oil; it provides the forces to open and close the poppet; the actuator shaft links it to the poppet. | manual §1.3 p.2 | Direct statement. |
 | 10 | The hydraulic control valve is a normally closed two-way valve, energized open during a pass and de-energized closed for the piston return. | manual §1.3 p.3 | Direct statement. |
 | 11 | The hydraulic pump (vane type, electric motor) overcomes the plenum pressure to return the piston upstream, then holds pressure at no flow for minimum power. | manual §1.3 p.3 | Direct statement; reservoir shown in Fig. 3-1 p.28. |
-| 12 | The optical assembly has 3 slotted optical switches: 1 for the standby position and 2 that define the displaced (base) volume. A flag on the detector shaft, attached to the piston, blocks the infrared light and generates the signal. | manual §1.3 pp.2–3 | Direct statement. The 2 volume switches are what episodes 1–2 labelled D1/D2 (see sources/prover_ep01.md #5). |
+| 12 | The optical assembly has 3 slotted optical switches: 1 for the standby position and 2 that define the displaced (base) volume. A flag on the detector shaft, attached to the piston, blocks the infrared light and generates the signal. | manual §1.3 pp.2–3 | Direct statement. |
 | 13 | [+] The optical switches are spaced by Invar rods, whose thermal expansion coefficient is very small. | manual §4.3.1 p.49; §4.3.2 p.51 | "Invar Rods used for spacing the optical switches"; Eir = 0.00000144 /°C. The coefficient is not spoken (it belongs to the waterdraw calculations). |
 | 14 | [+] The interface enclosure holds a circuit board that conditions the prover signals and sends them to the operating computer, which processes and summarises the proving data. | manual §1.1 p.1; §1.2 p.1 | "The Interface Enclosure contains a printed circuit board which conditions the signals…"; "The operating computer will process and summarize all proving data". |
+
+## Series consistency (not research)
+- The narration calls the 2 volume switches D1 and D2, the labels episodes 1–2 used for the detectors. This keeps the series consistent (owner decision 2026-09-25); it is not a research claim, so it has no [+] and no source.
+- "الحاسبة" is used for the operating computer, as in episode 2; the FloBoss name is kept for episode 6 (owner decision).
+- Rulon riders are named only; their function is not stated (owner decision).
 
 ## Numbers used (from scripts/prover_demo_data.py only)
 - `len(PROVER_COMPONENTS)` = 10, `OPTICAL_SWITCH_COUNT` = 3, `VOLUME_SWITCH_COUNT` = 2, `len(CYCLE_STAGES)` = 5 (teaser).
