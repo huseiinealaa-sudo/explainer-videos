@@ -1,12 +1,19 @@
 # Episode 6 — FloBoss S600+, web interface, typical proving session: sources (research draft)
 
 Format: claim → source → note. Priority per CLAUDE.md (1 manufacturer, 2 API, 3 papers, 4 industry training).
-Status: research notes collected before the narration; owner questions pending (see bottom).
+Status: research notes + owner decisions; narration drafted for approval.
 
 Main sources (priority 1, Emerson):
 - [FloBoss S600+ Product Data Sheet D301151X012 (Jan 2023)](https://www.emerson.com/documents/automation/s600-product-data-sheet-en-132238.pdf) — "data sheet".
 - [FloBoss S600+ Instruction Manual D301150X412 (May 2024)](https://www.emerson.com/documents/automation/s600-instruction-manual-en-132470.pdf) — "S600+ manual".
 - [Config600 Configuration Software User Manual (Oct 2024)](https://www.emerson.com/documents/automation/config600-configuration-software-user-manual-en-132292.pdf) — "Config600 manual"; §5.7.3 (compact prover), Appendix B.2 (compact prover, liquid only).
+
+## Owner decisions (2026-09-25)
+1. **«الحقيبة» = the field case (owner's description, not a published source; not marked [+]).** A black portable Emerson field case with a FloBoss S600+ inside; power and signal cables leave the case to the meter and the prover and link them all. Drawing (simplified, no photo): a white panel inside the case with the Emerson name and the S600+ front (display + keypad); at the top: round signal-cable connectors, the main power switch and two fuses; above the computer: a row of buttons and lamps, including RUN, PRINT REPORT and a detector-status lamp; on the side: communication ports (Modbus, printer, network) and two ventilation openings; two lines from the case to the meter and the prover. No serial numbers, connector names or other details.
+2. **Proof report:** say "at the end of the runs the computer issues the proving report", without claiming it is a default; show a simplified report with our demo values (conflict 1 below).
+3. **Maximum passes per run:** not mentioned (conflict 2 below).
+4. **STAB STATUS and CERTIFICATION DATE:** dropped; use only the documented stage names (conflict 3 below).
+5. **Typical session:** the nine steps proposed (log in → check CSUM → start → stability → 5 runs of 3 passes → repeatability 0.03 % → MF download → accept → report and Log Off), demo values only.
 
 ## Candidate claims (verified in the sources)
 
@@ -44,3 +51,8 @@ Main sources (priority 1, Emerson):
 1. **Proof report for compact provers.** Config600 manual §5.7.3 and B.2 say "The S600+ does not create a proof report, although you can add this option through a user stage"; but Table B-17 has stage 24 "REPORT STAGE — Generates the proof report", and B.2.10 shows proof report layouts.
 2. **Passes per run.** §5.7.3 Run Data: "Passes Reqd … to a maximum of 5. The default is 5"; B.2 text: "a default of 5, a maximum of 39". Our data (3 passes) is within both.
 3. **Screen fields in the owner's outline** (STAB STATUS, CERTIFICATION DATE) do not appear in these Emerson manuals; they may be site-specific display labels.
+
+## Numbers and names used (from scripts/prover_demo_data.py only)
+- PROVER_SERIAL PRV-DEMO-001, METER_TAG FT-DEMO-01, CONFIG_NAME DEMO_PRV_CFG, CONFIG_CSUM a1b2, PROVING_DATE 15/03/2026.
+- PASSES_PER_RUN 3, RUN_COUNT 5, REPEATABILITY 0.03 %, REPEATABILITY_LIMIT 0.05 %, MF_AVG 0.99900, K_FINAL 60060.060, RUNS table.
+- Web address on screen: 192.0.2.10 (IETF documentation range, RFC 5737), not a real device.
