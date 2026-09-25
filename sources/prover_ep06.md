@@ -14,6 +14,7 @@ Main sources (priority 1, Emerson):
 3. **Maximum passes per run:** not mentioned (conflict 2 below).
 4. **STAB STATUS and CERTIFICATION DATE:** dropped; use only the documented stage names (conflict 3 below).
 5. **Typical session:** the nine steps proposed (log in → check CSUM → start → stability → 5 runs of 3 passes → repeatability 0.03 % → MF download → accept → report and Log Off), demo values only.
+6. **What KF DOWNLOAD sends (owner check, 2026-09-25).** Config600 Table B-15 stage 19 "K-factor Download": "Copy proof K-factor, meter factor, flow rate, and frequency into proving stream data points … The stream metering calculations do not use these until commanded separately." §5.7.3 notes: "Applications typically use the original K-factor from the meter calibration report and update the meter factor … Alternatively, the meter factor can remain unchanged and the K-factor … updated." It depends on the configuration. **Choice:** the typical case, consistent with episode 1 (K stays 60000, MF = 0.999; "K or MF, not both"): the narration keeps "the meter factor 0.999", and the screen shows "KF DOWNLOAD (MF = 0.99900)".
 
 ## Candidate claims (verified in the sources)
 
