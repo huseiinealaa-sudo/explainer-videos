@@ -39,25 +39,27 @@ REPEATABILITY_LIMIT = 0.05  # %
 
 # Average interpolated pulses per pass for each run (double chronometry gives
 # fractional pulses). Chosen so average MF ~ 0.9990 and repeatability ~ 0.03 %.
-RUN_PULSES = [14796.740, 14798.960, 14795.990, 14794.520, 14797.480]
+RUN_PULSES = [14796.164, 14798.386, 14795.423, 14793.943, 14796.905]
 
 # Plenum example
 PLENUM_LINE_PRESSURE = 40.0  # psig
 PLENUM_RATIO = 5.0           # R
 PLENUM_OFFSET = 60.0         # psig, fixed term in (line / R) + 60
 
-# ---------------- API Table 54B (1980) ----------------
+# ---------------- API Table 54B (1980, SI) ----------------
+# rho = standard density at 15 degC in kg/m3, dT = T - 15 in degC.
 # alpha15 = K0 / rho^2 + K1 / rho          (regular groups)
 # alpha15 = A + B / rho^2                  (transition zone)
-# CTL = exp(-alpha15 * dT * (1 + 0.8 * alpha15 * dT)),  dT = T - 15
+# CTL = exp(-alpha15 * dT * (1 + 0.8 * alpha15 * dT))
+# These are the per-degC constants of the metric table. Do NOT use the
+# per-degF constants of Tables 6B / 2004 (e.g. fuel oils 103.8720 / 0.2701).
 TABLE_54B_GROUPS = [
     # (name, rho_min, rho_max, kind, c1, c2)
-    ("Gasolines", 653.0, 770.3520, "K", 346.4228, 0.4388),
-    ("Transition zone", 770.3520, 787.5195, "AB", -0.00336312, 2680.3206),
-    ("Jet fuels", 787.5195, 838.3127, "K", 330.3010, 0.0),
-    ("Fuel oils", 838.3127, 1163.5, "K", 103.8720, 0.2701),
+    ("Gasolines", 653.0, 770.5, "K", 346.4228, 0.4388),
+    ("Transition zone", 770.5, 787.5, "AB", -0.00336312, 2680.3206),
+    ("Jet fuels", 787.5, 838.5, "K", 594.5418, 0.0),
+    ("Fuel oils", 838.5, 1075.0, "K", 186.9696, 0.4862),
 ]
-
 
 def table_54b_group(rho):
     for group in TABLE_54B_GROUPS:
@@ -142,9 +144,20 @@ DATA = {
     **SUMMARY,
 }
 
-assert len(RUN_PULSES) == RUN_COUNT
-assert abs(MF_AVG - 0.9990) < 0.00005, MF_AVG
-assert SUMMARY["repeatability_ok"], REPEATABILITY
+
+
+def self_test():
+    """Stop the script if CTL drifts from the reference Table 54B values."""
+    assert abs(CTLP - 0.987296) < 0.000001, f"CTLp = {CTLP:.7f}, expected 0.987296"
+    assert abs(CTLM - 0.987381) < 0.000001, f"CTLm = {CTLM:.7f}, expected 0.987381"
+    assert GROUP[0] == "Fuel oils", GROUP
+    assert len(RUN_PULSES) == RUN_COUNT
+    assert abs(MF_AVG - 0.9990) < 0.00005, MF_AVG
+    assert abs(REPEATABILITY - 0.03) < 0.005, REPEATABILITY
+    assert SUMMARY["repeatability_ok"], REPEATABILITY
+
+
+self_test()
 
 
 def print_table():
