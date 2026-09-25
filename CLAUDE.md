@@ -48,14 +48,12 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 
 ## Templates
 - Every new video script goes in `projects/<name>/<name>_<video>.py`. The script name is also the output name (`output/<name>_<video>.mp4`) and the build folder name (`tmp/<name>_<video>/`).
-- Scripts import the shared settings from `scripts/style.py` with this header (until the shared package replaces it):
-  ```python
-  import sys
-  from pathlib import Path
-
-  sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
-  from style import *  # noqa: E402
-  ```
+- New projects start from `templates/new_project/` (project `CLAUDE.md`, `project.toml`, `sources/<name>_source.md`, optional `<name>_data.py`, sample episode script); the copy steps are at the top of its `CLAUDE.md`.
+- New scripts use the installed `explainer` package: `from explainer import *` (Manim, style, `SyncedScene` with `timeline/sync/at/cue/say/clear`, the pipeline, and the scene library in `explainer/scenes.py`); they end with `main(__file__, "SceneName", NARRATION)`.
+- Build blocks from the scene library first (catalogue: `output/template_scene_gallery.mp4`, one clip per function, with its name on screen); draw custom Manim only for what the library does not cover.
+- Palette: `ACCENT_1`…`ACCENT_4` (blue, orange, green, red), `OK_C`, `ALERT_C`, `GREY_INK`, `LIGHT_INK`, `PANEL_FILL`; each project assigns the accents a meaning in its `CLAUDE.md`.
+- Series: join finished episodes with `explainer.series.concat_series(...)` (title cards, stream copy, no re-encode of episodes).
+- Older scripts (prover series, ut_intro) keep their header `sys.path.insert(0, .../"scripts")` + `from style import *`; `scripts/style.py` is a bridge to the package. Do not port them to the library.
 - Use `projects/ut_intro/ut_intro.py` as the reference for visual style, pacing, and scene structure.
 - Before rendering, show the owner the narration text for approval (see Fast workflow).
 - Render a low-quality preview first to check layout, then render the final 1080p:
