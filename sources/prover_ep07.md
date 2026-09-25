@@ -1,7 +1,7 @@
 # Episode 7 — Auditing the proving report, recomputing one run: sources (research draft)
 
 Format: claim → source → note. Priority per CLAUDE.md (1 manufacturer, 2 API, 3 papers, 4 industry training).
-Status: research notes; narration drafted for owner approval. API MPMS 4.8, 12.2 and 13.2 are paywalled:
+Status: narration approved by the owner (2026-09-25); owner decisions below. API MPMS 4.8, 12.2 and 13.2 are paywalled:
 only their official tables of contents / publisher summaries were read, so no numeric limit is attributed to API
 unless a secondary source quotes it.
 
@@ -13,6 +13,11 @@ Main sources:
 - [Buttler (Emerson), FLOMEKO 2019](https://www.imeko.org/publications/tc9-2019/IMEKO-TC9-2019-042.pdf) (priority 3).
 - [H. James, "Liquid Meter Proving Techniques", NFOGM](https://nfogm.no/wp-content/uploads/2014/07/Liquid-Meter-Proving-Techniques.pdf) (priority 3/4).
 - [Coastal Flow, L. McCombs, "Understanding Liquid Meter Provings and Proving Reports"](https://coastalflow.com/wp-content/uploads/2021/07/Understanding-Liquid-Meter-Provings.pdf) — "Coastal" (priority 4).
+
+## Owner decisions (2026-09-25)
+1. **Rounding:** full precision (run 1 MF = 0.99900, as in the report); keep the rounding sentence in segment 10.
+2. **MF shift 0.25 %:** worded as a common practice whose limit the operator or contract sets, not an API requirement (`MF_SHIFT_COMMON` in prover_demo_data.py).
+3. **Conflicts 3 and 4:** handled as proposed (no side taken on pass/fail strictness; Table 54B named by group and edition only).
 
 ## Candidate claims
 
