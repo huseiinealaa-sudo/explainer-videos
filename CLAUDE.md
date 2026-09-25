@@ -84,7 +84,7 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 2. Pass, run, repeatability, Coriolis specifics
 3. Compact prover construction (10 components)
 4. Operating cycle (5 stages) and why flow never stops
-5. Double chronometry, plenum pressure, upstream/downstream volumes, CTSP
+5. Double chronometry, plenum pressure, upstream/downstream volumes (أَعْلَى المَجْرَى / أَسْفَلِ المَجْرَى), CTSP
 6. FloBoss S600+, field case, web interface, typical proving session
 7. Auditing the report: recompute one run step by step
 
@@ -113,6 +113,13 @@ Do not name the flow tube steel grade (manual and newer Emerson data sheet diffe
 | 4 | End of proving run | نِهَايَةُ الشَّوْطِ (the manual's "run" here means one pass) |
 | 5 | Piston returning to upstream position | عَوْدَةُ المِكْبَسِ |
 Episodes 3 and 4 never give the plenum pressure formula, R, double chronometry or CTSp (episode 5).
+
+### Episode 5 — owner decisions (2026-09-25; details in sources/prover_ep05.md)
+- Upstream/downstream base volumes: narration says حَجْمُ أَعْلَى المَجْرَى (upstream) / حَجْمُ أَسْفَلِ المَجْرَى (downstream); on screen "Upstream" / "Downstream". Never call them "front/back" (الأمامي/الخلفي): in episodes 3–4 FRONT is the outlet (downstream) end and BACK the inlet (upstream) end.
+- BPV 0.2463 m³ is the downstream volume (our meter is downstream of the prover); upstream = BPV × 0.992369 (manual Table 1-2, 24", post-2006) = 0.244420 m³.
+- CTSp = [1 + (Tp − 15)·0.0000216] × [1 + (Td − 15)·0.00000144]: flow-tube term (area coefficient = 2 × 0.0000108) × Invar-rod term. Our example uses Td = 15 °C, so the rod term is exactly 1 and CTSp stays 1.000324 (published values of episodes 1–4 unchanged); the narration says this does not always hold in the field.
+- Plenum = line gauge (psig) / R + 60; R = 5 for 24" (5.88 before 2006); 40 replaces 60 for vertical; guideline 0 to +5 % (68 to 71.4 psig).
+- Double chronometry example: A = 3.546720 s, C = 14796, B = 3.546681 s → 14796.164 pulses.
 
 Excluded from videos: maintenance tables, specifications, B54 constant tables, site data, open notes, references.
 
