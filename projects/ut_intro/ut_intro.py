@@ -1,14 +1,18 @@
 """Ultrasonic Testing (UT) intro — reference template for explainer videos.
 
 Build (from the repo root):
-    python scripts/ut_intro.py --preview   # 480p15 layout check -> tmp/ut_intro/preview.mp4
-    python scripts/ut_intro.py             # final 1080p30        -> output/ut_intro.mp4
+    python projects/ut_intro/ut_intro.py --preview   # 480p15 layout check -> tmp/ut_intro/preview.mp4
+    python projects/ut_intro/ut_intro.py             # final 1080p30        -> output/ut_intro.mp4
 """
 import argparse
+import sys
+from pathlib import Path
 
 import numpy as np
 
-from style import *
+# Shared style.py lives in scripts/ until the explainer package replaces it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from style import *  # noqa: E402
 
 # Approved, fully diacritized narration — one entry per scene.
 NARRATION = [

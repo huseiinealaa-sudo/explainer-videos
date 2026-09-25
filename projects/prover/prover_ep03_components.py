@@ -1,17 +1,21 @@
 """Daniel Compact Prover series, episode 3: compact prover construction (10 components).
 
 The component list and every number come from prover_demo_data (owner-approved
-list in CLAUDE.md, sources in sources/prover_ep03.md). The diagram is a simplified
+list in CLAUDE.md, sources in projects/prover/sources/prover_ep03.md). The diagram is a simplified
 side view after the Daniel manual 3-9008-701 Rev J, Figs 1-1 and 3-1: flanges at the
 front (right), hydraulic and optical parts at the back (left).
 
 Build (from the repo root):
-    python scripts/prover_ep03_components.py --preview   # 480p15 -> tmp/prover_ep03_components/preview.mp4
-    python scripts/prover_ep03_components.py             # 1080p30 -> output/prover_ep03_components.mp4
+    python projects/prover/prover_ep03_components.py --preview   # 480p15 -> tmp/prover_ep03_components/preview.mp4
+    python projects/prover/prover_ep03_components.py             # 1080p30 -> output/prover_ep03_components.mp4
 """
 import argparse
+import sys
+from pathlib import Path
 
-from style import *
+# Shared style.py lives in scripts/ until the explainer package replaces it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from style import *  # noqa: E402
 import prover_demo_data as D
 
 # Fully diacritized narration — one entry per scene.

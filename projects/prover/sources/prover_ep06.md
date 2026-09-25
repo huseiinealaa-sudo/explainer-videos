@@ -53,7 +53,7 @@ Main sources (priority 1, Emerson):
 2. **Passes per run.** §5.7.3 Run Data: "Passes Reqd … to a maximum of 5. The default is 5"; B.2 text: "a default of 5, a maximum of 39". Our data (3 passes) is within both.
 3. **Screen fields in the owner's outline** (STAB STATUS, CERTIFICATION DATE) do not appear in these Emerson manuals; they may be site-specific display labels.
 
-## Numbers and names used (from scripts/prover_demo_data.py only)
+## Numbers and names used (from projects/prover/prover_demo_data.py only)
 - PROVER_SERIAL PRV-DEMO-001, METER_TAG FT-DEMO-01, CONFIG_NAME DEMO_PRV_CFG, CONFIG_CSUM a1b2, PROVING_DATE 15/03/2026.
 - PASSES_PER_RUN 3, RUN_COUNT 5, REPEATABILITY 0.03 %, REPEATABILITY_LIMIT 0.05 %, MF_AVG 0.99900, K_FINAL 60060.060, RUNS table.
 - Web address on screen: 192.0.2.10 (IETF documentation range, RFC 5737), not a real device.

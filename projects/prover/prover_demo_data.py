@@ -8,7 +8,7 @@ Episode scripts import from this module; never type derived values by hand:
 
 Run directly to print every value as a table:
 
-    python scripts/prover_demo_data.py
+    python projects/prover/prover_demo_data.py
 """
 import math
 
@@ -59,7 +59,7 @@ REPEATABILITY_LIMIT = 0.05  # %
 # API MPMS Ch. 4.8 Annex A: largest allowed repeatability range (%) for a given
 # number of consecutive runs, so that the MF uncertainty stays within +/-0.027 %.
 # Sources: Flow Management Devices (Lantzy 2025) Table 1, Coastal Flow Figure A,
-# Buttler (Emerson, FLOMEKO 2019) for 5, 6 and 10 runs. See sources/prover_ep02.md.
+# Buttler (Emerson, FLOMEKO 2019) for 5, 6 and 10 runs. See projects/prover/sources/prover_ep02.md.
 MF_UNCERTAINTY_TARGET = 0.027   # %
 API_48_REPEATABILITY = {
     3: 0.02, 4: 0.03, 5: 0.05, 6: 0.06, 7: 0.08, 8: 0.09, 9: 0.10, 10: 0.12,
@@ -71,7 +71,7 @@ API_48_REPEATABILITY = {
 CORIOLIS_MIN_PASS_TIME = 0.8    # s
 
 # Public manufacturer facts used by episodes 3 and 4 (Daniel O&M manual
-# 3-9008-701 Rev J; see sources/prover_ep03.md and prover_ep04.md).
+# 3-9008-701 Rev J; see projects/prover/sources/prover_ep03.md and prover_ep04.md).
 PROVER_COMPONENTS = [           # owner-approved grouping, front -> back
     "End connections", "Flow tube", "Measurement piston", "Poppet valve",
     "Pneumatic spring plenum", "Hydraulic cylinder", "Hydraulic control valve",
@@ -91,7 +91,7 @@ RUN_PULSES = [14796.164, 14798.386, 14795.423, 14793.943, 14796.905]
 # Common practice for the change in MF between two successive provings (episode 7).
 # Not an API requirement we could read: Coastal Flow p.3 ("typical meter or contract
 # allowance ... +/- 0.0025 shift for volume"), NFOGM (H. James) p.3, 43 CFR 3174.11(e)(1).
-# Each operator or contract sets its own limit. See sources/prover_ep07.md.
+# Each operator or contract sets its own limit. See projects/prover/sources/prover_ep07.md.
 MF_SHIFT_COMMON = 0.25       # %
 
 # Plenum example

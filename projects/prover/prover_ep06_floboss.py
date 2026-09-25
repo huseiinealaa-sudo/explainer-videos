@@ -3,17 +3,21 @@ interface and a typical proving session.
 
 Facts follow the Emerson S600+ data sheet D301151X012, the S600+ instruction manual
 D301150X412 (ch. 6, webserver) and the Config600 user manual (§5.7.3, Appendix B.2);
-the field case follows the owner's description (sources in sources/prover_ep06.md).
+the field case follows the owner's description (sources in projects/prover/sources/prover_ep06.md).
 Every screen is a simplified drawing, not a copy of a real screen. Every number and
-name comes from scripts/prover_demo_data.py (illustrative values only).
+name comes from projects/prover/prover_demo_data.py (illustrative values only).
 
 Build (from the repo root):
-    python scripts/prover_ep06_floboss.py --preview   # 480p15 -> tmp/prover_ep06_floboss/preview.mp4
-    python scripts/prover_ep06_floboss.py             # 1080p30 -> output/prover_ep06_floboss.mp4
+    python projects/prover/prover_ep06_floboss.py --preview   # 480p15 -> tmp/prover_ep06_floboss/preview.mp4
+    python projects/prover/prover_ep06_floboss.py             # 1080p30 -> output/prover_ep06_floboss.mp4
 """
 import argparse
+import sys
+from pathlib import Path
 
-from style import *
+# Shared style.py lives in scripts/ until the explainer package replaces it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from style import *  # noqa: E402
 import prover_demo_data as D
 
 # Fully diacritized narration (owner-approved 2026-09-25) — one entry per scene.
