@@ -1,0 +1,14 @@
+# Manim render cache
+media/
+
+# Python
+__pycache__/
+*.pyc
+
+# Temporary audio (final videos live in output/)
+*.mp3
+*.wav
+*.m4a
+*.ogg
+audio/
+tmp/
