@@ -32,11 +32,12 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 5. Reply to the owner in Arabic.
 
 ## Narration
-- Default voice: `ar-SA-HamedNeural` (chosen by the owner), normal speed. A project may set another voice or language in its own `CLAUDE.md`.
-- Default language: Modern Standard Arabic.
+- Default voice: `ar-SA-HamedNeural` (chosen by the owner), normal speed. Default language: Modern Standard Arabic.
+- Each project sets its language, voice and speed in `projects/<name>/project.toml` (`language`, `voice`, `rate` under `[narration]`); a missing file or key falls back to the defaults above, and a language without a voice gets that language's default voice (`explainer.pipeline.DEFAULT_VOICES`).
 - Arabic narration MUST be fully diacritized (تشكيل كامل) before sending to edge-tts — this noticeably improves pronunciation.
 - Foreign terms in the narration are written in the letters of the narration language so the voice pronounces them correctly (each project keeps its own list).
 - Split narration into segments; each scene duration must match its audio segment.
+- Word timing: `synthesize()` saves the edge-tts WordBoundary timings of each segment next to its audio (`tmp/<script>/audio/seg{i}.json`). `SyncedScene.cue(seg, phrase)` uses them to show an item exactly when its word is spoken (Arabic and English); without them it falls back to the phrase's relative position in the text. Cue phrases are copied from the narration exactly as written (same diacritics).
 
 ## Video defaults
 - Resolution: 1080p, aspect 16:9.
