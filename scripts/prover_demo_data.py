@@ -88,6 +88,12 @@ CYCLE_STAGES = [                # manual §3.1, figure titles 3-1 ... 3-5
 # fractional pulses). Chosen so average MF ~ 0.9990 and repeatability ~ 0.03 %.
 RUN_PULSES = [14796.164, 14798.386, 14795.423, 14793.943, 14796.905]
 
+# Common practice for the change in MF between two successive provings (episode 7).
+# Not an API requirement we could read: Coastal Flow p.3 ("typical meter or contract
+# allowance ... +/- 0.0025 shift for volume"), NFOGM (H. James) p.3, 43 CFR 3174.11(e)(1).
+# Each operator or contract sets its own limit. See sources/prover_ep07.md.
+MF_SHIFT_COMMON = 0.25       # %
+
 # Plenum example
 PLENUM_LINE_PRESSURE = 40.0  # psig
 PLENUM_RATIO = 5.0           # R
@@ -193,6 +199,10 @@ CHRONO_PULSES = RUN_PULSES[0]               # interpolated pulses
 CHRONO_WHOLE = math.floor(CHRONO_PULSES)    # C
 CHRONO_TIME_B = CHRONO_TIME_A * CHRONO_WHOLE / CHRONO_PULSES   # s
 
+# Run 1 recalculated step by step (episode 7), full precision as in the report.
+RUN1 = RUNS[0]
+RUN1_IV = RUN1["pulses"] / K_NOMINAL        # m3, indicated volume
+
 SUMMARY = {
     "mf_avg": MF_AVG,
     "k_final": K_FINAL,
@@ -261,6 +271,13 @@ def self_test():
     assert CHRONO_WHOLE == 14796
     assert f"{CHRONO_TIME_B:.6f}" == "3.546681", CHRONO_TIME_B
     assert abs(CHRONO_WHOLE * CHRONO_TIME_A / CHRONO_TIME_B - CHRONO_PULSES) < 1e-6
+    # Episode 7: run 1 recalculation (corrected prover / meter volumes and MF)
+    assert RUN1["pulses"] == CHRONO_PULSES == 14796.164
+    assert f"{PRV_VOL:.6f}" == "0.243286", PRV_VOL
+    assert f"{RUN1_IV:.6f}" == "0.246603", RUN1_IV
+    assert f"{RUN1['mtr_vol']:.6f}" == "0.243530", RUN1["mtr_vol"]
+    assert f"{RUN1['mf']:.5f}" == "0.99900", RUN1["mf"]
+    assert MF_SHIFT_COMMON == 0.25
 
 
 self_test()
@@ -332,6 +349,13 @@ def print_table():
     row("Time B (whole pulses)", f"{CHRONO_TIME_B:.6f} s")
     row("C = whole pulses", f"{CHRONO_WHOLE}")
     row("Interpolated = C x A / B", f"{CHRONO_WHOLE * CHRONO_TIME_A / CHRONO_TIME_B:.3f}")
+
+    print("\nRUN 1 RECALCULATED (episode 7)")
+    row("PRV VOL = BPV CTSp CPSp CTLp CPLp", f"{PRV_VOL:.6f} m3")
+    row("IV = pulses / K_nom", f"{RUN1['pulses']:.3f} / {K_NOMINAL:.0f} = {RUN1_IV:.6f} m3")
+    row("MTR VOL = IV CTLm CPLm", f"{RUN1['mtr_vol']:.6f} m3")
+    row("MF = PRV VOL / MTR VOL", f"{RUN1['mf']:.5f}")
+    row("Common MF shift allowance", f"{MF_SHIFT_COMMON} % (operator / contract)")
 
     print("\nAPI MPMS 4.8 REPEATABILITY LIMITS (MF uncertainty "
           f"+/-{MF_UNCERTAINTY_TARGET} %)")
