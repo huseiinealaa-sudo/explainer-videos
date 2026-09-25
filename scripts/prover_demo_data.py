@@ -52,6 +52,20 @@ API_48_REPEATABILITY = {
 # prover (Flow Management Devices, Lantzy 2025, p.13).
 CORIOLIS_MIN_PASS_TIME = 0.8    # s
 
+# Public manufacturer facts used by episodes 3 and 4 (Daniel O&M manual
+# 3-9008-701 Rev J; see sources/prover_ep03.md and prover_ep04.md).
+PROVER_COMPONENTS = [           # owner-approved grouping, front -> back
+    "End connections", "Flow tube", "Measurement piston", "Poppet valve",
+    "Pneumatic spring plenum", "Hydraulic cylinder", "Hydraulic control valve",
+    "Hydraulic pump", "Optical assembly", "Interface enclosure",
+]
+OPTICAL_SWITCH_COUNT = 3        # 1 standby + 2 volume switches (manual §1.3)
+VOLUME_SWITCH_COUNT = 2
+CYCLE_STAGES = [                # manual §3.1, figure titles 3-1 ... 3-5
+    "Standby position", "Initial motion", "Proving", "End of proving run",
+    "Piston returning to upstream position",
+]
+
 # Average interpolated pulses per pass for each run (double chronometry gives
 # fractional pulses). Chosen so average MF ~ 0.9990 and repeatability ~ 0.03 %.
 RUN_PULSES = [14796.164, 14798.386, 14795.423, 14793.943, 14796.905]
@@ -179,6 +193,9 @@ def self_test():
     assert SUMMARY["repeatability_ok"], REPEATABILITY
     assert API_48_REPEATABILITY[RUN_COUNT] == REPEATABILITY_LIMIT, "limit must match API 4.8"
     assert PASS_TIME > CORIOLIS_MIN_PASS_TIME, PASS_TIME
+    assert len(PROVER_COMPONENTS) == 10, PROVER_COMPONENTS
+    assert len(CYCLE_STAGES) == 5, CYCLE_STAGES
+    assert OPTICAL_SWITCH_COUNT == 1 + VOLUME_SWITCH_COUNT
 
 
 self_test()

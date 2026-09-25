@@ -87,6 +87,33 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 5. Double chronometry, plenum pressure, upstream/downstream volumes, CTSP
 6. FloBoss S600+, field case, web interface, typical proving session
 7. Auditing the report: recompute one run step by step
+
+### Episode 3 — the 10 main components (owner-approved 2026-09-25)
+Source: Daniel Compact Prover O&M manual 3-9008-701 Rev J (2015). The manual heads 7 of these in §1.3; the 10-item grouping is ours, so narration presents them as "the main components" and never claims the manual lists ten. Order: flange end (front) → hydraulic/optical end (back), grouped as fluid path (1–4), drive system (5–8), measurement and signals (9–10).
+| # | Component | Narration term | Manual ref |
+|---|---|---|---|
+| 1 | End connections (inlet/outlet flanges, positive stop in outlet flange) | شَفَتَا الدُّخُولِ وَالخُرُوجِ | §1.3 p.2; §3.1 p.27 |
+| 2 | Flow tube | أُنْبُوبُ التَّدَفُّقِ | §1.3 p.2 |
+| 3 | Measurement piston + Rulon riders | مِكْبَسُ القِيَاسِ، حَلَقَاتُ رُولُون | §1.3 p.2; §4.4.1 pp.53, 55 |
+| 4 | Poppet valve | صِمَامُ بُوبِت | §1.2 p.1; §1.3 p.2 |
+| 5 | Pneumatic spring plenum (one component: tank + spring chamber) | بْلِينَم النَّابِضِ الهَوَائِيِّ | §1.3 p.3 |
+| 6 | Hydraulic cylinder (actuator piston + actuator shaft) | الأُسْطُوَانَةُ الهِيدْرُولِيكِيَّةُ | §1.3 p.2 |
+| 7 | Hydraulic control valve | صِمَامُ التَّحَكُّمِ الهِيدْرُولِيكِيِّ | §1.3 p.3 |
+| 8 | Hydraulic pump & motor (+ reservoir) | المِضَخَّةُ الهِيدْرُولِيكِيَّةُ | §1.3 p.3; Fig. 3-1 p.28 |
+| 9 | Optical assembly (3 switches, flag, detector shaft, Invar rods) | المَجْمُوعَةُ البَصَرِيَّةُ، قُضْبَانُ إِنْفَار | §1.3 pp.2–3; §4.3.1 p.49 |
+| 10 | Interface enclosure | صُنْدُوقُ الوَاجِهَةِ | §1.2 p.1; Fig. 1-1 p.4 |
+Do not name the flow tube steel grade (manual and newer Emerson data sheet differ).
+
+### Episode 4 — the 5 operating stages (official, manual §3.1 p.27, Figs 3-1…3-5 pp.28–30)
+| # | Stage (figure title) | Narration term |
+|---|---|---|
+| 1 | Standby position | وَضْعُ الانْتِظَارِ |
+| 2 | Initial motion | بَدْءُ الحَرَكَةِ |
+| 3 | Proving | الإِثْبَاتُ (الشَّوْطُ) |
+| 4 | End of proving run | نِهَايَةُ الشَّوْطِ (the manual's "run" here means one pass) |
+| 5 | Piston returning to upstream position | عَوْدَةُ المِكْبَسِ |
+Episodes 3 and 4 never give the plenum pressure formula, R, double chronometry or CTSp (episode 5).
+
 Excluded from videos: maintenance tables, specifications, B54 constant tables, site data, open notes, references.
 
 ### Series rules
