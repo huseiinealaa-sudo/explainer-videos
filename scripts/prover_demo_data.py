@@ -37,6 +37,21 @@ GC_STEEL = 0.0000216        # 1/degC, area thermal expansion of the flow tube
 T_BASE = 15.0               # degC
 REPEATABILITY_LIMIT = 0.05  # %
 
+# Public reference values (not site data), used by episode 2.
+# API MPMS Ch. 4.8 Annex A: largest allowed repeatability range (%) for a given
+# number of consecutive runs, so that the MF uncertainty stays within +/-0.027 %.
+# Sources: Flow Management Devices (Lantzy 2025) Table 1, Coastal Flow Figure A,
+# Buttler (Emerson, FLOMEKO 2019) for 5, 6 and 10 runs. See sources/prover_ep02.md.
+MF_UNCERTAINTY_TARGET = 0.027   # %
+API_48_REPEATABILITY = {
+    3: 0.02, 4: 0.03, 5: 0.05, 6: 0.06, 7: 0.08, 8: 0.09, 9: 0.10, 10: 0.12,
+    11: 0.13, 12: 0.14, 13: 0.15, 14: 0.16, 15: 0.17, 16: 0.18, 17: 0.19,
+    18: 0.20, 19: 0.21, 20: 0.22,
+}
+# Typical minimum pass (flight) time for Coriolis meters on a small volume
+# prover (Flow Management Devices, Lantzy 2025, p.13).
+CORIOLIS_MIN_PASS_TIME = 0.8    # s
+
 # Average interpolated pulses per pass for each run (double chronometry gives
 # fractional pulses). Chosen so average MF ~ 0.9990 and repeatability ~ 0.03 %.
 RUN_PULSES = [14796.164, 14798.386, 14795.423, 14793.943, 14796.905]
@@ -113,6 +128,7 @@ K_MAX = max(r["k"] for r in RUNS)
 K_MIN = min(r["k"] for r in RUNS)
 REPEATABILITY = (K_MAX - K_MIN) / K_MIN * 100
 
+TOTAL_PASSES = PASSES_PER_RUN * RUN_COUNT
 PASS_TIME = BPV / FLOW_RATE * 3600          # s
 FREQUENCY = FLOW_RATE * K_NOMINAL / 3600    # Hz
 
@@ -138,7 +154,7 @@ DATA = {
     "passes_per_run": PASSES_PER_RUN, "run_count": RUN_COUNT,
     "table_54b_group": GROUP[0], "alpha": ALPHA,
     "ctsp": CTSP, "ctlp": CTLP, "ctlm": CTLM, "prv_vol": PRV_VOL,
-    "pass_time": PASS_TIME, "frequency": FREQUENCY,
+    "total_passes": TOTAL_PASSES, "pass_time": PASS_TIME, "frequency": FREQUENCY,
     "plenum_line_pressure": PLENUM_LINE_PRESSURE, "plenum_ratio": PLENUM_RATIO,
     "plenum_pressure": PLENUM_PRESSURE,
     **SUMMARY,
@@ -161,6 +177,8 @@ def self_test():
     assert abs(MF_AVG - 0.9990) < 0.00005, MF_AVG
     assert abs(REPEATABILITY - 0.03) < 0.005, REPEATABILITY
     assert SUMMARY["repeatability_ok"], REPEATABILITY
+    assert API_48_REPEATABILITY[RUN_COUNT] == REPEATABILITY_LIMIT, "limit must match API 4.8"
+    assert PASS_TIME > CORIOLIS_MIN_PASS_TIME, PASS_TIME
 
 
 self_test()
@@ -212,10 +230,17 @@ def print_table():
 
     print("\nTIMING & PLENUM")
     row("Pass time = BPV / Q x 3600", f"{PASS_TIME:.3f} s")
-    row("Frequency = Q x K / 3600", f"{FREQUENCY:.1f} Hz")
+    row("Frequency = Q x K / 3600", f"{FREQUENCY:.1f} Hz (nominal K)")
+    row("Total passes = passes x runs", f"{PASSES_PER_RUN} x {RUN_COUNT} = {TOTAL_PASSES}")
+    row("Coriolis typical min pass time", f"{CORIOLIS_MIN_PASS_TIME} s")
     row("Plenum = line / R + 60",
         f"{PLENUM_LINE_PRESSURE:.0f} / {PLENUM_RATIO:.0f} + {PLENUM_OFFSET:.0f}"
         f" = {PLENUM_PRESSURE:.0f} psig")
+
+    print("\nAPI MPMS 4.8 REPEATABILITY LIMITS (MF uncertainty "
+          f"+/-{MF_UNCERTAINTY_TARGET} %)")
+    for n, lim in API_48_REPEATABILITY.items():
+        row(f"{n} runs", f"{lim:.2f} %" + ("   <- this series" if n == RUN_COUNT else ""))
 
 
 if __name__ == "__main__":

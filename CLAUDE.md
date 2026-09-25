@@ -92,6 +92,7 @@ Excluded from videos: maintenance tables, specifications, B54 constant tables, s
 ### Series rules
 - Episode 1 opens with one sentence: this is educational material; the binding reference is the manufacturer's manual and approved site procedures.
 - Each episode 3–4 minutes. Files: scripts/prover_epNN_<topic>.py and output/prover_epNN_<topic>.mp4.
+- Terminology (whole series): الشَّوْط = pass (one piston stroke D1 → D2), الجَوْلَة = run (the average of consecutive passes). Never use المرور for pass or الشوط for run.
 - English terms in narration are written in Arabic letters for correct pronunciation: بْلِينَم (Plenum)، بُوبِت (Poppet)، كْرُونُومِتْرِي (Chronometry)، كُورْيُولِيس (Coriolis)، وُوتَر دْرُو (Waterdraw)، فْلُو بُوس (FloBoss)، إِنْفَار (Invar)، رُولُون (Rulon).
 - After all 7 episodes are approved: concatenate them with ffmpeg into output/prover_full_series.mp4 with a short title card between episodes (no re-render of episodes).
 
