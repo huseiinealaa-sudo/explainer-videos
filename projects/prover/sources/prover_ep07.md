@@ -37,7 +37,7 @@ Main sources:
 | 12 | GSVp = BPV × CTSp × CPSp × CTLp × CPLp; ISVm = pulses ÷ K × CTLm × CPLm; MF = GSVp ÷ ISVm (pulses whole or interpolated). | ROC800L manual §6.1–6.3 pp.27–31 · episode 1 sources #8 | Links to episode 1. |
 | 13 | [+] Flow computers round each correction factor and volume to fixed decimals before combining them (e.g. ROC800L: CTL, CPL, CTS, CPS, CCF to 5 decimals; volumes in m³ to 6 decimals; run MF to 5 decimals; final MF to 4), so a hand recalculation must use the same rounding as the report. | ROC800L manual Tables 6-2 to 6-10 pp.28–33 ("The interim correction factors are rounded before the combined correction factors are calculated") | Conflict 1. |
 
-## Recalculation of run 1 (all values from scripts/prover_demo_data.py)
+## Recalculation of run 1 (all values from projects/prover/prover_demo_data.py)
 | Step | Value | Episode |
 |---|---|---|
 | BPV (downstream) | 0.2463 m³ | 5 |

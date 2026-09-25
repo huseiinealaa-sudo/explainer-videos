@@ -1,5 +1,14 @@
 # explainer-videos
-فيديوهات شرح بإنتاج Claude Code
+فيديوهات شرح بإنتاج Claude Code — قالب عام يحوّل أي ملف أو موضوع إلى فيديو شرح بأسلوب السبورة البيضاء.
+
+- كل موضوع مشروع في `projects/<name>/` يضم سكربتاته وبياناته ومصادره، وملف `CLAUDE.md` بقواعده الخاصة.
+- الإعدادات المشتركة في `scripts/style.py`، والقواعد العامة في `CLAUDE.md`.
+- الفيديوهات النهائية في `output/`.
+
+| المشروع | المجلد | الفيديو |
+|---|---|---|
+| مقدمة الفحص بالموجات فوق الصوتية (مثال مرجعي) | [projects/ut_intro/](projects/ut_intro/) | [output/ut_intro.mp4](output/ut_intro.mp4) |
+| سلسلة Daniel Compact Prover | [projects/prover/](projects/prover/) | انظر الجدول أدناه |
 
 ## سلسلة Daniel Compact Prover (7 حلقات)
 
@@ -16,5 +25,5 @@
 | 7 | تدقيق التقرير وإعادة حساب جولة خطوة بخطوة | [output/prover_ep07_audit.mp4](output/prover_ep07_audit.mp4) | 3:59 |
 | — | **السلسلة كاملة** (مع شاشة عنوان 3 ث بين الحلقات) | [output/prover_full_series.mp4](output/prover_full_series.mp4) | 25:02 |
 
-- السكربتات في `scripts/` (البيانات التوضيحية: `scripts/prover_demo_data.py`)، والمصادر في `sources/`.
-- الدمج: `python scripts/prover_full_series.py` (نسخ مباشر للتدفقات دون إعادة ترميز).
+- السكربتات في `projects/prover/` (البيانات التوضيحية: `projects/prover/prover_demo_data.py`)، والمصادر في `projects/prover/sources/`، وقواعد السلسلة في `projects/prover/CLAUDE.md`.
+- الدمج: `python projects/prover/prover_full_series.py` (نسخ مباشر للتدفقات دون إعادة ترميز).

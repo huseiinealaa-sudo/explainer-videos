@@ -59,7 +59,7 @@ Other sources:
 - Flow tube steel grade (series rule): the coefficient is shown only as a number.
 - Automatic plenum adjustment panel (manual §2.2.4) — equipment option, not needed for the formula.
 
-## Numbers used (from scripts/prover_demo_data.py only)
+## Numbers used (from projects/prover/prover_demo_data.py only)
 - CHRONO_TIME_A = 3.546720 s, CHRONO_TIME_B = 3.546681 s, CHRONO_WHOLE = 14796, CHRONO_PULSES = 14796.164.
 - PLENUM_LINE_PRESSURE = 40, PLENUM_RATIO = 5, PLENUM_PRESSURE = 68, PLENUM_MAX = 71.4 psig.
 - VOLUME_RATIO = 0.992369, BPV_DOWNSTREAM = 0.2463 m³, BPV_UPSTREAM = 0.244420 m³.

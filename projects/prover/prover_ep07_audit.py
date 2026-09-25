@@ -3,17 +3,21 @@ one run step by step.
 
 Audit practices follow Coastal Flow (report contents, MF shift), NFOGM (H. James), 43 CFR
 3174.11, the API MPMS 4.8 contents and the Emerson ROC800L flow calculations manual ch. 6
-(sources in sources/prover_ep07.md). The report is the simplified one of episode 6, with
+(sources in projects/prover/sources/prover_ep07.md). The report is the simplified one of episode 6, with
 the temperatures and correction factors added. Every number and name comes from
-scripts/prover_demo_data.py (illustrative values only).
+projects/prover/prover_demo_data.py (illustrative values only).
 
 Build (from the repo root):
-    python scripts/prover_ep07_audit.py --preview   # 480p15 -> tmp/prover_ep07_audit/preview.mp4
-    python scripts/prover_ep07_audit.py             # 1080p30 -> output/prover_ep07_audit.mp4
+    python projects/prover/prover_ep07_audit.py --preview   # 480p15 -> tmp/prover_ep07_audit/preview.mp4
+    python projects/prover/prover_ep07_audit.py             # 1080p30 -> output/prover_ep07_audit.mp4
 """
 import argparse
+import sys
+from pathlib import Path
 
-from style import *
+# Shared style.py lives in scripts/ until the explainer package replaces it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from style import *  # noqa: E402
 import prover_demo_data as D
 
 # Fully diacritized narration (owner-approved 2026-09-25) — one entry per scene.

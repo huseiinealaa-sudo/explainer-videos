@@ -1,17 +1,21 @@
 """Daniel Compact Prover series, episode 4: the operating cycle (5 stages) and why flow never stops.
 
 Stages follow the Daniel manual 3-9008-701 Rev J, §3.1 and Figs 3-1 … 3-5 (sources in
-sources/prover_ep04.md). The diagram is the episode 3 side view, simplified: liquid
+projects/prover/sources/prover_ep04.md). The diagram is the episode 3 side view, simplified: liquid
 enters the flow tube at the back (left), so standby (upstream) is at the back, the piston
 travels to the front during the pass and returns to the back.
 
 Build (from the repo root):
-    python scripts/prover_ep04_cycle.py --preview   # 480p15 -> tmp/prover_ep04_cycle/preview.mp4
-    python scripts/prover_ep04_cycle.py             # 1080p30 -> output/prover_ep04_cycle.mp4
+    python projects/prover/prover_ep04_cycle.py --preview   # 480p15 -> tmp/prover_ep04_cycle/preview.mp4
+    python projects/prover/prover_ep04_cycle.py             # 1080p30 -> output/prover_ep04_cycle.mp4
 """
 import argparse
+import sys
+from pathlib import Path
 
-from style import *
+# Shared style.py lives in scripts/ until the explainer package replaces it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from style import *  # noqa: E402
 import prover_demo_data as D
 
 # Fully diacritized narration — one entry per scene.

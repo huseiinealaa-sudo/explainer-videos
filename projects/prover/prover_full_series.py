@@ -8,12 +8,16 @@ ffmpeg concat demuxer in stream-copy mode. The script stops before joining if an
 parameter differs, so a re-encode never happens silently.
 
 Build (from the repo root):
-    python scripts/prover_full_series.py
+    python projects/prover/prover_full_series.py
 """
 import json
 import subprocess
+import sys
+from pathlib import Path
 
-from style import *
+# Shared style.py lives in scripts/ until the explainer package replaces it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from style import *  # noqa: E402
 
 EPISODES = [
     ("prover_ep01_principle", "Proving Principle & the Meter Factor"),

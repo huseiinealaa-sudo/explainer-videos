@@ -4,7 +4,7 @@ Import from every video script:
 
     from style import *
 
-Pipeline (see scripts/ut_intro.py for a complete example):
+Pipeline (see projects/ut_intro/ut_intro.py for a complete example):
     1. synthesize(NARRATION, audio_dir)        -> seg1.mp3 ... segN.mp3
     2. render(__file__, "SceneName", preview)  -> silent Manim video
     3. merge_audio_video(video, audio_dir, n, out_path)

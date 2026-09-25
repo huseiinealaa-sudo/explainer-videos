@@ -15,10 +15,10 @@ Format: claim → source → note. Priority per CLAUDE.md (1 manufacturer, 2 API
 | 7 | The flow computer counts meter pulses during the pass; the compact prover requires a computer capable of dual chronometry pulse interpolation (fraction of a pulse to 1 part in 10,000). | [Daniel manual §1.1 p.1, §2.2 pp.16–17](https://ia601908.us.archive.org/28/items/manualsonline-id-766b67ae-05b0-48b4-8423-66d6598b4e1f/766b67ae-05b0-48b4-8423-66d6598b4e1f.pdf) · [NIST Series 1](https://www.nist.gov/system/files/documents/2017/05/09/H-003.pdf) | NIST: small volume provers "can be used with less than 10,000 pulses; however, these provers use pulse interpolation". |
 | 8 | MF = (BPV·CTSp·CPSp·CTLp·CPLp) / (IV·CTLm·CPLm), IV = pulses / K-factor. CTSp/CPSp: temperature/pressure effect on the prover steel; CTLp/CPLp: temperature/pressure effect on the liquid in the prover; CTLm/CPLm: on the liquid at the meter. | [Emerson ROC800L Flow Calculations User Manual D301688X012 (2017), ch. 6 pp.27–31](https://www.emerson.com/documents/automation/roc800l-flow-calculations-user-manual-en-132294.pdf) | Implements API MPMS Ch. 12.2: GSVp = BV·CCFp, CCFp = CTSp·CPSp·CTLp·CPLp; ISVm = (pulses/K-factor)·CCFm, CCFm = CTLm·CPLm; MF = GSVp/ISVm. "Pulse count … (whole or interpolated)". |
 | 9 | MF < 1 → meter reads high (registers more than the true volume); MF > 1 → reads low. | [Coastal Flow training paper, p.3](https://coastalflow.com/wp-content/uploads/2021/07/Understanding-Liquid-Meter-Provings.pdf) | "a meter factor greater than 1 would mean that the flow meter is reading low. Conversely, if the meter factor is less than 1, the meter would be measuring high." Also follows directly from NIST's ratio. |
-| 10 | Proven K-factor = nominal K / MF (the same correction expressed as pulses per unit volume). | [NIST Series 1, "K-factor"](https://www.nist.gov/system/files/documents/2017/05/09/H-003.pdf) · `scripts/prover_demo_data.py` | NIST: K-factor = meter pulses / corrected prover volume. Dividing by MF gives the same number. |
+| 10 | Proven K-factor = nominal K / MF (the same correction expressed as pulses per unit volume). | [NIST Series 1, "K-factor"](https://www.nist.gov/system/files/documents/2017/05/09/H-003.pdf) · `projects/prover/prover_demo_data.py` | NIST: K-factor = meter pulses / corrected prover volume. Dividing by MF gives the same number. |
 | 11 | Apply either the proven K or the MF, not both: applying both corrects the reading twice. | Derived from the identity in #10 (owner decision 2) | Background only: [Blue Chip MRC, "Meter factors"](https://bluechipmrc.com/measurement/meter-factors/) says the k-factor "can then be adjusted in lieu of the meter factor". Not cited in the narration. |
 
-## Demo numbers used (from scripts/prover_demo_data.py only)
+## Demo numbers used (from projects/prover/prover_demo_data.py only)
 - Average MF = 0.99900 → spoken "0.999"; deviation ≈ 0.1 % over-registration.
 - Final K = 60060.060 pls/m³ → spoken "about 60,060".
 - Nominal K = 60000 pls/m³.
@@ -32,4 +32,4 @@ Format: claim → source → note. Priority per CLAUDE.md (1 manufacturer, 2 API
    **Decision:** keep the wording "the manufacturer requires pulse interpolation"; do not show the pulse count as "too few".
 
 ## Note for episode 2
-- Coriolis mass vs. volumetric proving: resolved by the owner, see `sources/prover_ep02.md`.
+- Coriolis mass vs. volumetric proving: resolved by the owner, see `projects/prover/sources/prover_ep02.md`.

@@ -50,5 +50,5 @@ Order: flange end (front) → hydraulic/optical end (back), per Fig. 1-1 p.4 and
 - "الحاسبة" is used for the operating computer, as in episode 2; the FloBoss name is kept for episode 6 (owner decision).
 - Rulon riders are named only; their function is not stated (owner decision).
 
-## Numbers used (from scripts/prover_demo_data.py only)
+## Numbers used (from projects/prover/prover_demo_data.py only)
 - `len(PROVER_COMPONENTS)` = 10, `OPTICAL_SWITCH_COUNT` = 3, `VOLUME_SWITCH_COUNT` = 2, `len(CYCLE_STAGES)` = 5 (teaser).
