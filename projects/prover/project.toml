@@ -1,0 +1,5 @@
+# Narration settings for this project (read by explainer.pipeline.project_settings).
+[narration]
+language = "ar"                 # ar | en | ... (Modern Standard Arabic by default)
+voice = "ar-SA-HamedNeural"     # any edge-tts voice
+rate = "+0%"                    # speed: "+0%" normal, "-10%" slower, "+10%" faster

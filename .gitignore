@@ -12,3 +12,6 @@ __pycache__/
 *.ogg
 audio/
 tmp/
+
+# Editable install metadata
+*.egg-info/

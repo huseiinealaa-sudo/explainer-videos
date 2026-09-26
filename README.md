@@ -2,13 +2,15 @@
 فيديوهات شرح بإنتاج Claude Code — قالب عام يحوّل أي ملف أو موضوع إلى فيديو شرح بأسلوب السبورة البيضاء.
 
 - كل موضوع مشروع في `projects/<name>/` يضم سكربتاته وبياناته ومصادره، وملف `CLAUDE.md` بقواعده الخاصة.
-- الإعدادات المشتركة في `scripts/style.py`، والقواعد العامة في `CLAUDE.md`.
+- الحزمة المشتركة `explainer/` (تُثبَّت بـ `pip install -e .`): الأسلوب، والتوقيت بالكلمات، وخط الإنتاج، ودمج السلاسل، ومكتبة المشاهد. والقواعد العامة في `CLAUDE.md`.
+- مشروع جديد يبدأ من `templates/new_project/`، وكتالوج المشاهد في `output/template_scene_gallery.mp4`.
 - الفيديوهات النهائية في `output/`.
 
 | المشروع | المجلد | الفيديو |
 |---|---|---|
 | مقدمة الفحص بالموجات فوق الصوتية (مثال مرجعي) | [projects/ut_intro/](projects/ut_intro/) | [output/ut_intro.mp4](output/ut_intro.mp4) |
 | سلسلة Daniel Compact Prover | [projects/prover/](projects/prover/) | انظر الجدول أدناه |
+| كتالوج مكتبة المشاهد (18 دالة، 3:05) | [projects/scene_gallery/](projects/scene_gallery/) | [output/template_scene_gallery.mp4](output/template_scene_gallery.mp4) |
 
 ## سلسلة Daniel Compact Prover (7 حلقات)
 
