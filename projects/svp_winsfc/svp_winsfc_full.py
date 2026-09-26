@@ -220,7 +220,7 @@ class SvpWinsfcFull(SyncedScene):
         stages = ["Standby", "Retract", "Release", "Run-up", "Measure", "Stop"]
         chart = line_chart(self, D.CYCLE_T, D.CYCLE_POS, x_label="time (s)",
                            y_label="piston position (%)", x_range=[0, 22, 2],
-                           y_range=[0, 100, 25], size=(8.8, 3.3), pos=UP * 0.95 + LEFT * 0.6,
+                           y_range=[0, 100, 25], size=(8.6, 3.3), pos=UP * 0.95 + LEFT * 1.1,
                            color=PROVER_C, run_time=1.5, decimals=0)
         ax = chart[0]
         dlines = VGroup()
@@ -282,7 +282,7 @@ class SvpWinsfcFull(SyncedScene):
                            cues=[self.c(s, "العَدَّادُ يُرْسِلُ"), self.c(s, "وَاللَّابْتُوبُ"),
                                  self.c(s, "وَالبُرُوفَرُ لَا يُكَلِّمُ")],
                            colors=[METER_C, ACCENT_3, PROVER_C], radius=(2.75, 2.0),
-                           pos=[-3.6, 0.3, 0])
+                           pos=[-3.25, 0.3, 0])
         self.say("The prover computes nothing: all calculation is in the flow computer", GREY_INK)
         self.sync(self.c(s, "رَن بِيرْمِيسِيف"))
         self.say("Run Permissive: flow computer → controller   ·   Volume Pulse: controller → "
@@ -413,7 +413,7 @@ class SvpWinsfcFull(SyncedScene):
                              ("Semi-annual", "borescope: piston + poppet seals, chrome")],
                       cues=[self.c(s, "قَبْلَ كُلِّ جَلْسَةٍ"), self.c(s, "شَهْرِيًّا"),
                             self.c(s, "وَكُلَّ نِصْفِ")],
-                      y=1.8, width=10.5)
+                      y=1.7, width=10.5)
         self.sync(self.c(s, "ثُمَّ اخْتِبَارُ") - 0.3)
         t1 = label("Static leak test", FS_LABEL, ALERT_C, weight=BOLD).move_to([-3.4, 0.1, 0])
         self.play(FadeIn(t1), run_time=0.4)
@@ -674,7 +674,7 @@ class SvpWinsfcFull(SyncedScene):
         self.part("Wrap-up", hold=0.8)
         self.heading("Troubleshooting and golden rules")
         rule = label("Find the last step that worked — the fault is in the next one",
-                     FS_LABEL + 2, ACCENT_2, weight=BOLD).move_to(UP * 2.95)
+                     FS_LABEL + 2, ACCENT_2, weight=BOLD).move_to(UP * 3.0)
         fit(rule)
         self.play(Write(rule), run_time=1.2)
         import explainer.scenes as _sc
@@ -689,7 +689,7 @@ class SvpWinsfcFull(SyncedScene):
                          "Keep the configuration file off the laptop",
                          "Good repeatability does not prove the volume",
                          "Safety: covers on · pressurise slowly · depressurise first"],
-                        pos=DOWN * 0.05,
+                        pos=DOWN * 0.15,
                         cues=[self.c(s, "أَبْلُود آمِنٌ"), self.c(s, "المُتَحَكِّمُ فِي مِيتَر"),
                               self.c(s, "افْحَصْ فِيل"), self.c(s, "تَكْرَارِيَّةٌ صِفْرِيَّةٌ"),
                               self.c(s, "احْفَظْ مِلَفَّ"), self.c(s, "التَّكْرَارِيَّةُ الجَيِّدَةُ"),
