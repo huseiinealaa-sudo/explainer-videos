@@ -100,7 +100,6 @@ AVG_PULSES = sum(RUN_PULSES) / len(RUN_PULSES)
 L_VOL = AVG_PULSES / K_FACTOR * CTPL_M                   # m3, corrected meter volume
 MF = F_VOL / L_VOL
 ACTUAL_K = K_FACTOR / MF
-COMPOSITE_MF = MF * CTPL_M                               # owner's formula (see sources)
 REPEATABILITY = (max(RUN_PULSES) - min(RUN_PULSES)) / min(RUN_PULSES) * 100
 
 FREQ_SHOWN = round(FREQ, 1)                              # the value read on the screen
@@ -137,10 +136,9 @@ def self_test():
     assert f"{L_VOL:.6f}" == "0.244590"
     assert f"{MF:.5f}" == "1.00120"
     assert f"{ACTUAL_K:.0f}" == "59928"
-    assert f"{COMPOSITE_MF:.5f}" == "0.98108"
     assert f"{FREQ_SHOWN:.1f}" == "3333.3" and f"{Q_FROM_FREQ:.1f}" == "200.0"
     assert f"{PT100_T_CVD:.1f}" == "40.0"
-    assert f"{PT100_T_LINEAR:.2f}" == "40.36"          # owner expected 40.37 (see sources)
+    assert f"{PT100_T_LINEAR:.2f}" == "40.36"          # shown as 40.36 (owner, 2026-09-26)
     assert RUNS_TO_AVERAGE <= TOTAL_RUNS == len(RUN_PULSES)
     assert DET_DN_POS < DET_UP_POS < 100
     assert NOMINAL_PULSES > LARGE_PROVER_PULSES           # our example is not "small" in pulses
@@ -170,7 +168,6 @@ def print_table():
         ("L (corrected meter volume)", f"{L_VOL:.6f}", "m3"),
         ("MF", f"{MF:.5f}", ""),
         ("Actual K", f"{ACTUAL_K:.0f}", "pulses/m3"),
-        ("Composite MF (MF x CTPLm)", f"{COMPOSITE_MF:.5f}", ""),
         ("Repeatability", f"{REPEATABILITY:.4f}", "%"),
         ("Q from Freq#1", f"{Q_FROM_FREQ:.1f}", "m3/h"),
         ("Pt100 115.54 ohm, CVD", f"{PT100_T_CVD:.3f}", "degC"),

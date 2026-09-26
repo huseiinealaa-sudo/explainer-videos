@@ -72,3 +72,4 @@ Project-specific rules. The general rules in the root `CLAUDE.md` also apply; wh
 
 ## Owner decisions
 - 2026-09-26: project created; single video `svp_winsfc_full`; outline and scene plan above.
+- 2026-09-26: narration approved with these decisions: Pt100 linear check shown as 40.36 °C; Composite MF removed from the video and the data module (official definition MF × CPLm recorded in the sources); water draw every year or per the authority (SVP §5.1); WinSFC screen details kept (direct observation); name WinSFC only (no Dynacom sentence); segment 2: detector outside the liquid → easy to check/replace, response ~5 µs as a separate fact; segment 14 checklist: the meter by its TAG and stream, not its serial number.

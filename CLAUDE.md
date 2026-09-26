@@ -70,7 +70,7 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 | 3 | `bullet_list` | a few points, each shown as it is spoken | `items, heading, cues, numbered` |
 | 4 | `equation` | a formula whose parts are coloured or framed | `parts` (Text pieces), `colors={index: colour}` |
 | 5 | `worked_calculation` | formula → substituted values → result | `formula, values, result, cues` |
-| 6 | `labeled_diagram` | naming the parts of any drawing | `diagram, callouts=[(text, target, direction)], cues` |
+| 6 | `labeled_diagram` | naming the parts of any drawing | `diagram, callouts=[(text, target, direction)], cues, start` (first badge number, for callouts revealed in batches) |
 | 7 | `process_flow` (+ `highlight_step`) | a sequence of steps, lighting the current one | `steps, cues, vertical` |
 | 8 | `stage_bar` (+ `set_stage`) | showing which stage of a cycle we are in | `stages, active, y` |
 | 9 | `data_table` (+ `highlight_row`) | tabular values, marking one row | `header, rows, cues` |

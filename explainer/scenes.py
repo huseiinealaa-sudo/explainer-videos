@@ -166,8 +166,11 @@ def worked_calculation(scene, formula, values, result, cues=None, pos=ORIGIN,
 
 # ---------------- 6 labeled_diagram ----------------
 def labeled_diagram(scene, diagram, callouts, cues=None, numbered=True, color=INK,
-                    draw_time=2.0):
+                    draw_time=2.0, start=1):
     """Draw `diagram`, then callouts [(text, target, direction), ...] one by one.
+
+    start is the first badge number: to reveal callouts in batches with other
+    animations between them, call it again with an invisible diagram and start=n.
 
     target is a point or a mobject; direction (UP, DR, ...) places the label.
     """
@@ -182,7 +185,7 @@ def labeled_diagram(scene, diagram, callouts, cues=None, numbered=True, color=IN
             point = np.array(target, dtype=float)
             tip = point + d * 0.15
         txt = label(text, FS_LABEL, color)
-        item = VGroup(badge(k + 1, color), txt).arrange(RIGHT, buff=0.15) if numbered \
+        item = VGroup(badge(start + k, color), txt).arrange(RIGHT, buff=0.15) if numbered \
             else VGroup(txt)
         # centre the label 0.8 beyond the tip, measured from its edge facing the target
         reach = abs(d[0]) * item.width / 2 + abs(d[1]) * item.height / 2
