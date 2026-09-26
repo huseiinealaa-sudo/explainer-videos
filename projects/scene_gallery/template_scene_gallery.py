@@ -13,7 +13,7 @@ from pathlib import Path
 from explainer import *
 import scene_gallery_data as D
 
-# Fully diacritized narration (owner-approved <date>) — one entry per segment.
+# Fully diacritized narration (owner-approved 2026-09-25) — one entry per segment.
 NARRATION = [
     # 1 intro
     "هٰذَا كَتَالُوجُ مَكْتَبَةِ المَشَاهِدِ. نَعْرِضُ فِيهِ ثَمَانِيَ عَشْرَةَ دَالَّةً، كُلَّ دَالَّةٍ فِي مَقْطَعٍ مُسْتَقِلٍّ، وَاسْمُهَا مَكْتُوبٌ عَلَى الشَّاشَةِ.",

@@ -10,6 +10,7 @@
 |---|---|---|
 | مقدمة الفحص بالموجات فوق الصوتية (مثال مرجعي) | [projects/ut_intro/](projects/ut_intro/) | [output/ut_intro.mp4](output/ut_intro.mp4) |
 | سلسلة Daniel Compact Prover | [projects/prover/](projects/prover/) | انظر الجدول أدناه |
+| كتالوج مكتبة المشاهد (18 دالة، 3:05) | [projects/scene_gallery/](projects/scene_gallery/) | [output/template_scene_gallery.mp4](output/template_scene_gallery.mp4) |
 
 ## سلسلة Daniel Compact Prover (7 حلقات)
 
