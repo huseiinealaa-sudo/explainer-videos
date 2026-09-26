@@ -29,7 +29,8 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 2. **Research only verifies.** Use web research only to check the claims in the source. Add nothing except to correct an error or to fill a gap the explanation cannot do without; mark every such addition or correction with [+] and its source.
 3. **One approval message.** Write the narration of ALL episodes (or all segments of a single video) in one go, and present it in ONE message together with any source conflicts and any new values.
 4. **Then produce without stopping.** Once the narration is approved, continue the whole production (preview, final render, commit, push) without pausing, up to ONE pull request. Stop early only for an error that blocks completion.
-5. Reply to the owner in Arabic.
+5. After the owner approves the narration, no confirmation to continue is requested; fixing layout and sync is part of production, and work stops only for an error that blocks completion.
+6. Reply to the owner in Arabic.
 
 ## Narration
 - Default voice: `ar-SA-HamedNeural` (chosen by the owner), normal speed. Default language: Modern Standard Arabic.

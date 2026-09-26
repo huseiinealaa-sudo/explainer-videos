@@ -171,7 +171,7 @@ class SvpWinsfcFull(SyncedScene):
                         for x in (-5.9, -4.2)])
         motor = box("M", 0.9, 0.6, size=FS_TAG).move_to([-6.0, -1.15, 0])
         chain = DashedLine([-5.55, -1.15, 0], [-3.6, -1.15, 0], stroke_width=3, color=GREY_INK)
-        flow = Arrow([4.2, 0.9, 0], [5.6, 0.9, 0], buff=0, stroke_width=4, color=PROVER_C,
+        flow = Arrow([-2.4, 0.95, 0], [-1.0, 0.95, 0], buff=0, stroke_width=4, color=PROVER_C,
                      max_tip_length_to_length_ratio=0.25)
         flow_t = label("flow", FS_TAG, PROVER_C).next_to(flow, UP, 0.05)
         g = VGroup(tube, fl_up, fl_dn, shaft_up, shaft_dn, piston, poppet, cover, bars, block,
@@ -183,24 +183,26 @@ class SvpWinsfcFull(SyncedScene):
     def seg2(self, s):
         self.heading("A2  Mechanical layout")
         g, p = self.prover_drawing()
-        g.move_to(UP * 0.35)
-        callouts = [("Flow tube, chrome-plated bore", p["tube"], UP),
-                    ("Piston + poppet valve", p["piston"], DOWN),
-                    ("A shaft on each side", p["shaft_dn"], DOWN),
-                    ("Guide block on bars", p["block"], DOWN),
-                    ("Flag + motor stop ramp", p["flag"], UP),
+        g.scale(0.86).shift(RIGHT * 1.0 + UP * 0.25)
+        tube_pt = p["tube"].get_top() + RIGHT * (p["tube"].width / 2 - 1.0)
+        callouts = [("Flow tube, chrome-plated bore", tube_pt, UP),
+                    ("Piston + poppet", p["piston"], DOWN),
+                    ("Shaft on each side", p["shaft_dn"].get_end() + LEFT * 0.3, DOWN),
+                    ("Guide block, flag, ramp", p["block"], DOWN),
                     ("Motor · gearbox · chain", p["motor"], DOWN),
-                    ("Optical detectors", p["dets"], UP),
-                    ("Detector bar: Td + Gl", p["det_bar"], UR)]
+                    ("Optical detectors on the detector bar", p["dets"][1], UP)]
         labeled_diagram(self, g, callouts[:3],
                         cues=[self.c(s, "أُنْبُوبُ التَّدَفُّقِ"), self.c(s, "وَفِيهِ المِكْبَسُ"),
                               self.c(s, "لِلْمِكْبَسِ عَمُودٌ")], draw_time=1.6)
         self.sync(self.c(s, "وَلِذٰلِكَ يَصِحُّ"))
         self.say("Same displaced volume both ways → upstream or downstream of the meter", GREY_INK)
-        labeled_diagram(self, self.anchor(), callouts[3:7],
-                        cues=[self.c(s, "بِكُتْلَةِ التَّوْجِيهِ"), self.c(s, "وَتَحْمِلُ العَلَمَ"),
-                              self.c(s, "وَيُعِيدُ المِكْبَسَ"), self.c(s, "أَمَّا الكَاشِفَانِ")],
+        labeled_diagram(self, self.anchor(), callouts[3:4], cues=[self.c(s, "بِكُتْلَةِ التَّوْجِيهِ")],
                         draw_time=0.05, start=4)
+        self.sync(self.c(s, "وَتَحْمِلُ العَلَمَ"))
+        self.play(Indicate(p["flag"], color=ACCENT_2, scale_factor=1.4), run_time=0.8)
+        labeled_diagram(self, self.anchor(), callouts[4:], cues=[self.c(s, "وَيُعِيدُ المِكْبَسَ"),
+                                                                 self.c(s, "أَمَّا الكَاشِفَانِ")],
+                        draw_time=0.05, start=5)
         self.sync(self.c(s, "بَلْ يَرَى العَلَمَ"))
         self.play(Indicate(p["flag"], color=ACCENT_2, scale_factor=1.4), run_time=1.0)
         self.sync(self.c(s, "فَهُوَ خَارِجَ"))
@@ -208,8 +210,8 @@ class SvpWinsfcFull(SyncedScene):
                  f"  ·  ±{D.DETECTOR_REPEAT_PCT}%", ACCENT_3)
         self.sync(self.c(s, "وَالدَّلِيلُ يُقَرِّرُ"))
         self.say("One detector replaced → no recalibration (manual)", ACCENT_3)
-        labeled_diagram(self, self.anchor(), callouts[7:], cues=[self.c(s, "وَالثَّمَنُ")],
-                        draw_time=0.05, start=8)
+        self.sync(self.c(s, "وَالثَّمَنُ"))
+        emphasize(self, p["det_bar"], ALERT_C, buff=0.08)
         self.say("Detector bar expands with heat → own temperature (Td) and coefficient (Gl)",
                  ALERT_C)
 
@@ -275,27 +277,25 @@ class SvpWinsfcFull(SyncedScene):
 
     def seg4(self, s):
         self.heading("A4  Three devices, two signals")
-        cmap = concept_map(self, "SFC332P\nflow computer",
-                           ["Meter", "Laptop · WinSFC", "Prover controller"],
-                           links=["pulses (Freq#1)", "Modbus", "Run Permissive / Volume Pulse"],
+        cmap = concept_map(self, "SFC332P",
+                           ["Meter", "Laptop\nWinSFC", "SVP\ncontroller"],
                            cues=[self.c(s, "العَدَّادُ يُرْسِلُ"), self.c(s, "وَاللَّابْتُوبُ"),
                                  self.c(s, "وَالبُرُوفَرُ لَا يُكَلِّمُ")],
-                           colors=[METER_C, ACCENT_3, PROVER_C], radius=(4.3, 2.3), pos=UP * 0.3)
+                           colors=[METER_C, ACCENT_3, PROVER_C], radius=(2.75, 2.0),
+                           pos=[-3.6, 0.3, 0])
         self.say("The prover computes nothing: all calculation is in the flow computer", GREY_INK)
         self.sync(self.c(s, "رَن بِيرْمِيسِيف"))
         self.say("Run Permissive: flow computer → controller   ·   Volume Pulse: controller → "
                  "flow computer", PROVER_C)
         self.sync(self.c(s, "تَدْخُلَانِ") - 0.3)
-        self.play(FadeOut(self.caption), cmap.animate.scale(0.55).move_to([-4.2, 0.6, 0]),
-                  run_time=0.8)
-        self.caption = VMobject()
         rows = [[str(t), n] for t, n in D.CCB_TERMINALS]
         c1, c2 = self.c(s, "الطَّرَفَانِ ثَلَاثَةَ"), self.c(s, "وَسِتَّةَ عَشَرَ")
         tab = data_table(self, ["CCB", "Customer Connection Box"], rows,
-                         cues=[c1, c1, c1, c2, c2, c2], pos=[2.6, 0.9, 0], size=FS_TAG,
-                         width=8.0)
+                         cues=[c1, c1, c1, c2, c2, c2], pos=[3.5, 0.9, 0], size=FS_TAG,
+                         width=6.2)
         note = label("SFC332P switch outputs: open collector, external DC supply", FS_TAG - 2,
                      GREY_INK).next_to(tab, DOWN, 0.3)
+        fit(note, 6.2).set_x(tab.get_x())
         self.play(FadeIn(note), run_time=0.4)
         self.sync(self.c(s, "وَكِلْتَاهُمَا"))
         self.say(f"Both cross an optical isolator  ·  {D.LIMIT_RESISTOR_OHM} Ω at 12–24 VDC, "
@@ -413,25 +413,25 @@ class SvpWinsfcFull(SyncedScene):
                              ("Semi-annual", "borescope: piston + poppet seals, chrome")],
                       cues=[self.c(s, "قَبْلَ كُلِّ جَلْسَةٍ"), self.c(s, "شَهْرِيًّا"),
                             self.c(s, "وَكُلَّ نِصْفِ")],
-                      y=1.55, width=12.4)
+                      y=1.8, width=10.5)
         self.sync(self.c(s, "ثُمَّ اخْتِبَارُ") - 0.3)
-        t1 = label("Static leak test", FS_LABEL, ALERT_C, weight=BOLD).move_to([-3.4, -0.35, 0])
+        t1 = label("Static leak test", FS_LABEL, ALERT_C, weight=BOLD).move_to([-3.4, 0.1, 0])
         self.play(FadeIn(t1), run_time=0.4)
         ck1 = checklist(self, ["Isolated full, piston pulled up",
                                f"ΔP raised to {D.LEAK_DP_PSID} psid",
                                f"Wait {D.LEAK_SETTLE_MIN} min, watch {D.LEAK_WATCH_MIN} min",
                                f"Drop > {D.LEAK_MAX_DROP_PCT} % → seal leak"],
-                        pos=[-3.4, -1.75, 0], size=FS_TAG + 4,
+                        pos=[-3.4, -1.55, 0], size=FS_TAG + 4,
                         cues=[self.c(s, "نَعْزِلُ"), self.c(s, "وَنَرْفَعُ"), self.c(s, "وَبَعْدَ خَمْسِ"),
                               self.c(s, "فَهُبُوطٌ")])
         self.sync(self.c(s, "وَأَخِيرًا الوُوتَر") + 0.8)
-        t2 = label("Water draw", FS_LABEL, PROVER_C, weight=BOLD).move_to([3.4, -0.35, 0])
+        t2 = label("Water draw", FS_LABEL, PROVER_C, weight=BOLD).move_to([3.4, 0.1, 0])
         self.play(FadeIn(t2), run_time=0.4)
         checklist(self, [f"≥ {D.WD_MIN_DRAWS} consecutive draws",
                          f"within {D.WD_REPEAT_PCT} %",
                          f"one at a {D.WD_FLOW_CHANGE_PCT} % different flow",
                          "every year, or per the authority"],
-                  pos=[3.4, -1.75, 0], size=FS_TAG + 4,
+                  pos=[3.4, -1.55, 0], size=FS_TAG + 4,
                   cues=[self.c(s, "ثَلَاثُ سَحَبَاتٍ"), self.c(s, "ضِمْنَ صِفْرٍ"),
                         self.c(s, "إِحْدَاهَا"), self.c(s, "سَنَوِيًّا")])
         self.sync(self.c(s, "فَالتَّكْرَارِيَّةُ"))
@@ -530,13 +530,15 @@ class SvpWinsfcFull(SyncedScene):
         self.sync(self.c(s, "ثُمَّ نُقَسِّمُ") - 0.3)
         self.clear(self.head)
         cmp = comparison(self, ("Safe", "Historical Data", "Historical Reports", "(read only)"),
-                         ("Dangerous", "Calibration: changes raw → engineering",
+                         ("Dangerous", "Calibration: raw → engineering value",
                           "Override: manual value used as live",
-                          "Reset Prev. Prove Data  ·  Clear System"),
-                         colors=(ACCENT_3, ALERT_C), pos=UP * 0.5, card_w=5.9,
+                          "Reset Prev. Prove Data · Clear System"),
+                         colors=(ACCENT_3, ALERT_C), pos=UP * 0.5, card_w=6.1,
                          cues=[self.c(s, "الآمِنُ"), self.c(s, "وَالخَطِرُ")])
         self.sync(self.c(s, "وَأَخْطَرُ بُنُودِهِ"))
-        emphasize(self, cmp[0][1][1][3], ALERT_C)
+        worst = cmp[0][1][1][3]
+        self.play(Indicate(worst, color=ALERT_C, scale_factor=1.15), run_time=1.0)
+        self.play(Create(Underline(worst, color=ALERT_C, stroke_width=4)), run_time=0.5)
 
     def seg11(self, s):
         self.heading("B11  Prove Data")
@@ -672,12 +674,12 @@ class SvpWinsfcFull(SyncedScene):
         self.part("Wrap-up", hold=0.8)
         self.heading("Troubleshooting and golden rules")
         rule = label("Find the last step that worked — the fault is in the next one",
-                     FS_LABEL + 2, ACCENT_2, weight=BOLD).move_to(UP * 2.75)
+                     FS_LABEL + 2, ACCENT_2, weight=BOLD).move_to(UP * 2.95)
         fit(rule)
         self.play(Write(rule), run_time=1.2)
         import explainer.scenes as _sc
         old = _sc.FS_SUMMARY, _sc.FS_HEADING
-        _sc.FS_SUMMARY, _sc.FS_HEADING = FS_LABEL - 2, FS_BODY - 4
+        _sc.FS_SUMMARY, _sc.FS_HEADING = FS_LABEL - 4, FS_BODY - 6
         try:
             summary_box(self, "Golden rules",
                         ["Upload is safe · Download is a decision",
@@ -687,7 +689,7 @@ class SvpWinsfcFull(SyncedScene):
                          "Keep the configuration file off the laptop",
                          "Good repeatability does not prove the volume",
                          "Safety: covers on · pressurise slowly · depressurise first"],
-                        pos=DOWN * 0.55,
+                        pos=DOWN * 0.05,
                         cues=[self.c(s, "أَبْلُود آمِنٌ"), self.c(s, "المُتَحَكِّمُ فِي مِيتَر"),
                               self.c(s, "افْحَصْ فِيل"), self.c(s, "تَكْرَارِيَّةٌ صِفْرِيَّةٌ"),
                               self.c(s, "احْفَظْ مِلَفَّ"), self.c(s, "التَّكْرَارِيَّةُ الجَيِّدَةُ"),
