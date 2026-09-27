@@ -24,12 +24,24 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 ```
 3. **No LaTeX in the container**: build equations from `Text` pieces, not `MathTex`/`Tex`.
 
+## Quality standard
+- The quality reference is the prover series (`projects/prover`). Quality comes before time; time is measured, not targeted.
+- The material sets the length: each main section of the source gets 2–4 minutes, and each segment carries one main idea. The default format is a series of 3–5-minute episodes.
+- Every concept: what it is, why, and a worked example when it involves numbers.
+- Every mechanism, motion or sequence is shown as an animated drawing, drawn from scratch when the library does not have it. Text and table scenes take no more than about a third of an episode's duration.
+- Privacy transforms, it does not delete: site cases, real numbers and screenshots become illustrative examples or simplified drawings.
+- Every video stands on its own: a concept is not shortened because an earlier video explained it.
+- Nothing is dropped for lack of verification or of time without showing it to the owner with a proposal.
+- The narration is presented with a quality gate: the number of worked examples, the number of custom drawings, the share of text-scene time in each episode, and everything left out with its reason.
+- In a series, the first episode is produced in full and pushed; the others are completed only after the owner approves its level.
+
 ## Fast workflow (every project)
+The Fast workflow is subject to the Quality standard above; the step-by-step procedure is the `explainer-video` skill (`.claude/skills/explainer-video/SKILL.md`).
 1. **Source first.** Each project has a cleaned source file `projects/<name>/sources/<name>_source.md`. It is the primary reference for the content and holds no real (site, personal or confidential) data.
 2. **Research only verifies.** Use web research only to check the claims in the source. Add nothing except to correct an error or to fill a gap the explanation cannot do without; mark every such addition or correction with [+] and its source.
-3. **One approval message.** Write the narration of ALL episodes (or all segments of a single video) in one go, and present it in ONE message together with any source conflicts and any new values.
-4. **Then produce without stopping.** Once the narration is approved, continue the whole production (preview, final render, commit, push) without pausing, up to ONE pull request. Stop early only for an error that blocks completion.
-5. After the owner approves the narration, no confirmation to continue is requested; fixing layout and sync is part of production, and work stops only for an error that blocks completion.
+3. **One approval message.** Write the narration of ALL episodes (or all segments of a single video) in one go, and present it in ONE message together with the storyboard, the quality gate, any source conflicts and any new values.
+4. **Then produce without stopping.** Once the narration is approved, continue the whole production (preview, final render, commit, push) up to ONE pull request. The only stops allowed after the narration is approved are presenting the first episode for the owner's approval of its level, and an error that blocks completion; no other confirmation to continue is requested, and fixing layout and sync is part of production.
+5. **Every preview is checked before the final render:** the automatic overlap check and the `video-critic` agent (see Preview QA) run on it and their findings are fixed, for at most 3 rounds per video; whatever is still open after round 3 is listed in the pull request, never hidden.
 6. Reply to the owner in Arabic.
 
 ## Narration
@@ -45,21 +57,22 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 - Style: whiteboard — white background, black strokes drawn progressively.
 - On-screen text: English or equations only (Arabic RTL rendering in Manim is unreliable).
 - Merge audio + video with ffmpeg.
-- Series: each episode 3–4 minutes unless the project says otherwise. After all episodes are approved, they may be concatenated with ffmpeg into one file with a short title card between episodes (no re-render of episodes).
+- Series: each episode 3–5 minutes unless the project says otherwise (see Quality standard). After all episodes are approved, they may be concatenated with ffmpeg into one file with a short title card between episodes (no re-render of episodes).
 
 ## Templates
 - Every new video script goes in `projects/<name>/<name>_<video>.py`. The script name is also the output name (`output/<name>_<video>.mp4`) and the build folder name (`tmp/<name>_<video>/`).
 - New projects start from `templates/new_project/` (project `CLAUDE.md`, `project.toml`, `sources/<name>_source.md`, optional `<name>_data.py`, sample episode script); the copy steps are at the top of its `CLAUDE.md`.
 - New scripts use the installed `explainer` package: `from explainer import *` (Manim, style, `SyncedScene` with `timeline/sync/at/cue/say/clear`, the pipeline, and the scene library in `explainer/scenes.py`); they end with `main(__file__, "SceneName", NARRATION)`.
-- Build scenes from the library first (see Scene library).
+- The scene library is for the general structure (titles, equations, tables); mechanisms and motions are drawn custom (see Scene library).
 - Palette: `ACCENT_1`…`ACCENT_4` (blue, orange, green, red), `OK_C`, `ALERT_C`, `GREY_INK`, `LIGHT_INK`, `PANEL_FILL`; each project assigns the accents a meaning in its `CLAUDE.md`.
 - Series: join finished episodes with `explainer.series.concat_series(...)` (title cards, stream copy, no re-encode of episodes).
 - Older scripts (prover series, ut_intro) keep their header `sys.path.insert(0, .../"scripts")` + `from style import *`; `scripts/style.py` is a bridge to the package. Do not port them to the library.
-- Use `projects/ut_intro/ut_intro.py` as the reference for visual style, pacing, and scene structure.
+- The prover series (`projects/prover/`) is the reference for quality, pacing and scene structure (see Quality standard); `projects/ut_intro/ut_intro.py` is a short example of the visual style.
 - Before rendering, show the owner the narration text for approval (see Fast workflow).
 - Render a low-quality preview first to check layout, then render the final 1080p:
   `python projects/<name>/<name>_<video>.py --preview` → `tmp/<name>_<video>/preview.mp4`, then
   `python projects/<name>/<name>_<video>.py` → `output/<name>_<video>.mp4`.
+  `--segments 2` (or `2-3`) renders only those narration segments as a preview (`tmp/<name>_<video>/preview_seg02.mp4`); `--qa` adds the preview QA below.
 
 ## Scene library
 `explainer/scenes.py`, imported by `from explainer import *`. Every function takes the scene first, animates its block and returns the group; staged blocks take `cues=[...]` (times from `self.cue(seg, phrase)`). Catalogue: `output/template_scene_gallery.mp4` (clip number = row number; each clip shows `NN / 18  name()` in the corner).
@@ -87,7 +100,15 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 
 Helpers: `emphasize(scene, mob)` frames any part; `badge(n)` is a numbered circle. In `SyncedScene`: `self.say(text)` is the bottom caption line and `self.clear(*keep)` fades the screen.
 
-**Rule:** in every new project, build each scene from the library first. Draw a scene from scratch only when the library does not cover it, and give the reason for each such scene in the narration approval message. A block that proves reusable goes into the library (with a clip in the catalogue) rather than staying in one project.
+**Rule:** the library is for the general structure (titles, equations, tables); mechanisms and motions are drawn custom. The storyboard names, for each segment, what comes from the library and what is drawn custom. A custom block that proves reusable goes into the library (with a clip in the catalogue) rather than staying in one project.
+
+**Layout rule:** place texts and labels relative to each other and to what they name (`next_to`, `arrange`, `align_to`), not at fixed coordinates, and keep them at least `SAFE_MARGIN` (0.3 units) inside the frame; `fit()` keeps a group within `SAFE_WIDTH`. Text stays at `MIN_FONT_SIZE` (16) or larger after any scaling.
+
+## Preview QA
+Every preview passes these checks before the final render (procedure: the `explainer-video` skill):
+- **Overlap check** (`explainer/qa/overlap.py`): `python projects/<name>/<script>.py --segments 2 --qa`, or for any script, old ones included, `python -m explainer.qa projects/<name>/<script>.py [--segments 2]`. After every animation it records texts and labels overlapping each other or shapes, anything leaving the frame, text inside the safe margin, and text below `MIN_FONT_SIZE`; a text inside its own frame is not an error. Output: one JSON report per segment in `tmp/<script>/qa/<run>/overlap/segNN.json` (time, the two elements, overlap amount, grid cell, fix suggestion).
+- **Contact sheets** (`explainer/qa/contact_sheet.py`, made by the same `--qa` run): a frame every 3 s plus the start and end of each segment, with a 6×6 grid (A1 top-left … F6 bottom-right) and the time, 3×3 frames per sheet in `tmp/<script>/qa/<run>/sheets/`.
+- **Critic** (`.claude/agents/video-critic.md`): a read-only agent that reads the sheets, the overlap reports, the storyboard, the approved narration and the data module, scores each segment and returns PASS or FIX. It keeps its recurring findings in `.claude/agent-memory/video-critic/MEMORY.md`.
 
 ## Accuracy and privacy (the repository is PUBLIC)
 - Never put real site, personal or confidential data in the repository or the videos (serial numbers, IDs, real measured values, names, dates, locations). Use illustrative values.
