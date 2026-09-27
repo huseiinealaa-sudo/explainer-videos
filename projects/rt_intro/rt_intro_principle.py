@@ -34,6 +34,7 @@ assert f"{D.UG1:.2f}" == "0.15" and f"{D.UG2:.2f}" == "0.30"                # se
 assert round(D.UG_RATIO) == 2                                               # seg 5 "doubled"
 assert f"{D.UG_MAX:.2f}" == "0.51" and f"{D.D_MIN:.1f}" == "117.6"          # seg 5 "0.51", "117.6"
 assert D.IR192_HALF_LIFE_DAYS == 74                                         # seg 3 "about 74 days"
+assert D.UG_MAX_UNDER_IN == 2                                              # seg 5 "under two inches"
 
 AUDIO_DIR = audio_dir_for(__file__)
 
@@ -762,7 +763,7 @@ class RtIntroPrinciple(SyncedScene):
         self.play(FadeIn(lim, shift=UP * 0.1), run_time=0.6)
         self.sync(self.c(s, "أَزْمِي") - 0.2)
         asme = VGroup(label("ASME V recommended max.", FS_TAG, GREY_INK),
-                      label("for thickness < 2 in", FS_TAG, GREY_INK))
+                      label(f"for thickness < {D.UG_MAX_UNDER_IN} in", FS_TAG, GREY_INK))
         asme.arrange(DOWN, aligned_edge=LEFT, buff=0.08)
         asme.next_to(lim, DOWN, 0.15).align_to(lim, LEFT)
         self.play(FadeIn(asme), run_time=0.5)

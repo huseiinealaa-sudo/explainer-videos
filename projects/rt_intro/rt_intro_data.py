@@ -15,6 +15,7 @@ UG_MAX = 0.51               # mm, illustrative limit (0.020 in, ASME V, thicknes
 
 # ---------------- Published value (see sources/rt_intro_principle.md) ----------------
 IR192_HALF_LIFE_DAYS = 74   # days, approximate (73.8 d)
+UG_MAX_UNDER_IN = 2         # in, ASME V T-274.2 thickness class "Under 2" of the 0.020 in maximum
 
 
 # ---------------- Derived ----------------
@@ -40,6 +41,7 @@ def self_test():
     assert UG1 <= UG_MAX and UG2 <= UG_MAX              # both set-ups pass the limit
     assert abs(UG_MAX / 25.4 - 0.020) < 1e-3            # 0.51 mm is 0.020 in
     assert IR192_HALF_LIFE_DAYS == 74
+    assert UG_MAX_UNDER_IN == 2 and UG_MAX_UNDER_IN * 25.4 > 50   # "under 2 in (50 mm)"
 
 
 self_test()
@@ -55,7 +57,8 @@ def print_table():
                               ("Ug2 / Ug1", f"{UG_RATIO:.0f}", ""),
                               ("Ug max (illustr.)", f"{UG_MAX:.2f}", "mm"),
                               ("D min = F d / Ug max", f"{D_MIN:.6f}", "mm"),
-                              ("Ir-192 half-life", f"{IR192_HALF_LIFE_DAYS}", "days")]:
+                              ("Ir-192 half-life", f"{IR192_HALF_LIFE_DAYS}", "days"),
+                              ("Ug max applies under", f"{UG_MAX_UNDER_IN}", "in")]:
         print(f"  {name:<22} {value:>12} {unit}")
 
 
