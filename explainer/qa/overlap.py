@@ -496,20 +496,62 @@ class OverlapChecker:
 
 
 # ---------------- per-segment reports ----------------
+def group_findings(findings):
+    """Single-element findings of one kind that appear together (a menu bar of small
+    texts, a list inside the margin) become one record that lists its elements."""
+    out, groups = [], {}
+    for f in findings:
+        if f["b"] is None:
+            groups.setdefault((f["type"], f["time"], f["overlap"].get("side")), []).append(f)
+        else:
+            out.append(f)
+    for fs in groups.values():
+        if len(fs) == 1:
+            out.append(fs[0])
+            continue
+        f0, n = fs[0], len(fs)
+        names = [x["a"].get("text") or x["a"]["name"] for x in fs]
+        boxes = np.array([x["a"]["bbox"] for x in fs])
+        bounds = (boxes[:, 0].min(), boxes[:, 1].min(), boxes[:, 2].max(), boxes[:, 3].max())
+        members = f"{n} texts: " + ", ".join(f"'{_short(t, 24)}'" for t in names[:6]) \
+            + (" …" if n > 6 else "")
+        rec = {**f0, "until": max(x["until"] for x in fs),
+               "a": {"name": members, "kind": "group", "cells": cells(bounds),
+                     "bbox": [round(float(v), 3) for v in bounds],
+                     "members": [x["a"] for x in fs]}}
+        if f0["type"] == "text_too_small":
+            sizes = [x["overlap"]["font_size"] for x in fs]
+            rec["overlap"] = {**f0["overlap"], "font_size": [min(sizes), max(sizes)]}
+            size = f"{min(sizes)}" if min(sizes) == max(sizes) else f"{min(sizes)}–{max(sizes)}"
+            rec["suggestion"] = (f"{n} texts at font size {size} "
+                                 f"(< {f0['overlap']['minimum']}): enlarge them, show fewer, or "
+                                 "draw that part larger")
+        else:
+            far = max(x["overlap"]["distance"] for x in fs)
+            rec["overlap"] = {**f0["overlap"], "distance": far}
+            rec["suggestion"] = (f"Shift the {n} texts (as one group) "
+                                 f"{OPPOSITE[f0['overlap']['side']]} by {far:.2f}, "
+                                 f"or shrink the group with fit()")
+        out.append(rec)
+    return sorted(out, key=lambda r: (r["time"], r["type"]))
+
+
 def report_by_segment(raw_path, starts, out_dir, segments, offset=0.0, meta=None):
     """Split the raw findings into overlap/segNN.json, one per narration segment.
 
-    A finding is listed in every segment during which it is on screen. starts: segment
-    start times plus the total length (segment_starts); segments: 1-based numbers.
+    A finding is listed in every segment during which it is on screen; findings of one
+    kind that appear together are grouped (group_findings). starts: segment start times
+    plus the total length (segment_starts); segments: 1-based numbers.
     """
     raw = json.loads(Path(raw_path).read_text())
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     summary = {}
+    findings = group_findings(raw["findings"])
     for k in segments:
         s, e = starts[k - 1], starts[k]
         rows = []
-        for f in raw["findings"]:
+        for f in findings:
             if f["time"] < e - 1e-3 and (f["until"] > s + 1e-3 or f["time"] >= s - 1e-3):
                 rows.append({**f, "video_time": round(f["time"] - offset, 2)})
         counts = {"critical": sum(r["severity"] == "critical" for r in rows),

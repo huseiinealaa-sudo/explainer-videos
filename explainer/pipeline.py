@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import ssl
 import subprocess
 import tomllib
@@ -174,7 +175,8 @@ def build(script, scene, narration, preview=False, segments=None, qa=False):
         preview = True
     qa_dir = build_dir / "qa" / run
     if qa:
-        qa_dir.mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(qa_dir, ignore_errors=True)       # no findings left from an older run
+        qa_dir.mkdir(parents=True)
         env[QA_ENV] = str(qa_dir / "overlap_raw.json")
     log = build_dir / "render.json"
     log.unlink(missing_ok=True)
