@@ -57,8 +57,12 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
 2. QA loop — at most 3 rounds (commands and critic call: `qa_loop.md`):
    preview in QA mode → overlap reports → contact sheets → `video-critic` → fix every
    critical and important issue (and the cheap improvements) → next round.
-   Stop the loop when the critic returns PASS and the overlap reports have no critical
-   finding left, or after round 3.
+   Severity: **critical** = an error of accuracy or numbers, an overlap, anything leaving
+   the frame, unreadable text; **important** = drawing not matching the speech at that
+   moment (a spoken motion that does not happen), or no visual pointer on the element
+   being explained; **improvement** = everything else, never blocking.
+   **PASS** = no critical and no important issue. Stop at PASS, or after round 3: then
+   production goes on and what remains is listed in the PR (step f).
 3. Render 1080p (`python projects/<name>/<name>_<video>.py`), check the file size (< 100 MB),
    commit the script, data, storyboard, sources, the video in `output/` and the critic's
    memory (`.claude/agent-memory/video-critic/`), and push the branch.

@@ -21,8 +21,8 @@ Round 1 runs on the whole video. Later rounds may run only the segments that cha
 Each finding has `time` / `until` (narration clock, s), `video_time` (in the preview file),
 the two elements (`a`, `b`: name, text, bbox, cells), the amount (`area`, `share_of_text` or
 `distance`, `font_size`), the grid `cell` and a `suggestion`. Severity: `critical` (texts
-overlapping, a line through a text, text off the frame) or `important` (text touching its
-frame, text inside the safe margin, text below the minimum size). A text inside its own
+overlapping, a line through a text, a text touching its frame, anything off the frame, text
+below the minimum size) or `improvement` (text inside the safe margin). A text inside its own
 frame, a badge number or a ✓/✗ mark on its box is not a finding.
 
 ## 3. Call the critic
@@ -44,10 +44,10 @@ call a `general-purpose` agent with: "Act exactly as the agent defined in
 
 ## 4. Fix and repeat
 - Fix every critical and important issue of the critic and every critical overlap finding;
-  take the cheap improvements too. Fix layout by relative placement (`next_to`, `arrange`,
-  `align_to`), not by nudging fixed coordinates.
+  take the cheap improvements too (improvements never block PASS). Fix layout by relative
+  placement (`next_to`, `arrange`, `align_to`), not by nudging fixed coordinates.
 - Record per round: counts before and after, what changed.
-- Stop when the critic says PASS and no critical overlap finding is left, or after round 3.
-  Whatever is still open after round 3 goes to the PR description (skill step f).
+- PASS = no critical and no important issue. Stop at PASS, or after round 3: production
+  then goes on, and whatever is still open goes to the PR description (skill step f).
 - Commit `.claude/agent-memory/video-critic/MEMORY.md` with the video: the container is
   temporary, so the critic's memory survives only through the repository.

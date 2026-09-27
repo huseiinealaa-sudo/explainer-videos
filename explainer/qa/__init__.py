@@ -44,6 +44,6 @@ def finish_qa(video, qa_dir, starts, offset, segments, script=""):
     print(f"QA {script}: {qa_dir}")
     for k in segs:
         c = counts[k]
-        print(f"  segment {k:2d}: {c['critical']} critical, {c['important']} important")
+        print(f"  segment {k:2d}: {c['critical']} critical, {c['improvement']} improvement")
     print(f"  {len(index['frames'])} frames on {len(index['sheets'])} sheets")
     return summary

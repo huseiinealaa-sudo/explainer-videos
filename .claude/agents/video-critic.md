@@ -81,14 +81,21 @@ The caller names the script and the QA run folder. If something is not named, fi
 - Overlap report: N findings → confirmed …, dismissed … (reason each)
 ### Issues
 | # | Severity | Time | Cell | Seg | Issue | Fix |
-(critical = wrong content, unreadable or overlapping text, anything cut by the frame;
- important = weak depth, speech and drawing out of step, crowding, missing pointer,
- text inside the safe margin, text too small; improvement = polish)
 ### Verdict: PASS | FIX
 ```
-Verdict: **FIX** if there is any critical or important issue, any score of 2 or less, or a
-full episode whose text-scene share is clearly above one third; otherwise **PASS**
-(improvements alone do not block).
+Severity (these three classes only):
+- **critical**: an error of accuracy or in a number; any overlap (text on text, a line or
+  shape through a text, a text touching its frame); anything leaving the frame; a text that
+  cannot be read (too small, blurred, hidden).
+- **important**: the drawing does not match the speech at that moment (a motion is spoken
+  but does not happen, the screen shows something else); no visual pointer on the element
+  being explained.
+- **improvement**: everything else (depth, pacing, wording, colours, crowding, a text inside
+  the safe margin, the text-scene share ...). Improvements never block PASS.
+
+Verdict: **PASS** when there is no critical and no important issue; otherwise **FIX**.
+After round 3 production goes on whatever the verdict, and every issue still open is
+listed in the pull request description.
 
 ## End of every review: update your memory
 Add to `.claude/agent-memory/video-critic/MEMORY.md` every new fault that is likely to come

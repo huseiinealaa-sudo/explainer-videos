@@ -5,7 +5,7 @@ and calls check() after every animation. It records:
     text_overlap        two texts or labels overlap
     text_over_shape     a line, arrow or drawing runs through a text
     text_touches_frame  a text inside its frame touches or crosses the frame's outline
-    out_of_frame        a text (critical) or a shape (important) leaves the 16:9 frame
+    out_of_frame        a text or a shape leaves the 16:9 frame
     in_safe_margin      a text inside the frame but closer than SAFE_MARGIN to its edge
     text_too_small      a text whose size after fit()/scale is below MIN_FONT_SIZE
 Intended overlaps are not errors: a text inside a closed shape (its box, badge, table
@@ -35,9 +35,11 @@ MIN_AREA = 0.002            # scene units² (about 36 px² at 1080p): smaller co
 ATTACHED = 0.35             # parts of the same on-screen group this close move with a text
 TEXT_TYPES = (Text, MarkupText, Paragraph)
 MARKS = set("✓✗✔✘×•·○●◦▪■□▲▼►◄★")
+# Same classes as the critic: overlap, off-frame and unreadable text are critical; a text
+# inside the safe margin is an improvement (it never blocks PASS).
 SEVERITY = {"text_overlap": "critical", "text_over_shape": "critical", "out_of_frame": "critical",
-            "text_touches_frame": "important", "in_safe_margin": "important",
-            "text_too_small": "important"}
+            "text_touches_frame": "critical", "text_too_small": "critical",
+            "in_safe_margin": "improvement"}
 DIRECTIONS = {"RIGHT": (1, 0), "LEFT": (-1, 0), "UP": (0, 1), "DOWN": (0, -1)}
 OPPOSITE = {"RIGHT": "LEFT", "LEFT": "RIGHT", "UP": "DOWN", "DOWN": "UP"}
 COLS, GRID = "ABCDEF", 6
@@ -289,8 +291,6 @@ class Finding:
     def __init__(self, kind, a, b=None, geom=None, **extra):
         self.kind, self.a, self.b, self.geom, self.extra = kind, a, b, geom, extra
         self.severity = SEVERITY[kind]
-        if kind == "out_of_frame" and a.kind != "text":
-            self.severity = "important"
         self.key = (kind, id(a.mob), a.text or a.cls,
                     id(b.mob) if b else 0, (b.text or b.cls) if b else "")
 
@@ -554,8 +554,8 @@ def report_by_segment(raw_path, starts, out_dir, segments, offset=0.0, meta=None
         for f in findings:
             if f["time"] < e - 1e-3 and (f["until"] > s + 1e-3 or f["time"] >= s - 1e-3):
                 rows.append({**f, "video_time": round(f["time"] - offset, 2)})
-        counts = {"critical": sum(r["severity"] == "critical" for r in rows),
-                  "important": sum(r["severity"] == "important" for r in rows)}
+        counts = {sev: sum(r["severity"] == sev for r in rows)
+                  for sev in ("critical", "improvement")}
         (out_dir / f"seg{k:02d}.json").write_text(json.dumps(
             {**(meta or {}), "segment": k, "start": round(s, 2), "end": round(e, 2),
              "clock_offset": round(offset, 3), "settings": raw["settings"],
