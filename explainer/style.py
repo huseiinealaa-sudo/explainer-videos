@@ -47,8 +47,8 @@ FS_TAG = 22                         # peak tags, small annotations
 
 # ---------------- Frame ----------------
 SAFE_WIDTH = 13.2                   # widest group that keeps a side margin in 16:9
-SAFE_MARGIN = 0.3                   # keep text this far inside the frame (QA check)
-MIN_FONT_SIZE = 16                  # smallest readable text at 1080p (x-height ≈ 16 px; QA check)
+SAFE_MARGIN = 0.25                  # keep text this far inside the frame (QA check)
+MIN_FONT_SIZE = 14                  # smallest readable text at 1080p (x-height ≈ 14 px; QA check)
 CAPTION_Y = -3.3                    # caption line (SyncedScene.say)
 
 # ---------------- Render settings ----------------

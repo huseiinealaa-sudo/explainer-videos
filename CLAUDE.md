@@ -102,7 +102,7 @@ Helpers: `emphasize(scene, mob)` frames any part; `badge(n)` is a numbered circl
 
 **Rule:** the library is for the general structure (titles, equations, tables); mechanisms and motions are drawn custom. The storyboard names, for each segment, what comes from the library and what is drawn custom. A custom block that proves reusable goes into the library (with a clip in the catalogue) rather than staying in one project.
 
-**Layout rule:** place texts and labels relative to each other and to what they name (`next_to`, `arrange`, `align_to`), not at fixed coordinates, and keep them at least `SAFE_MARGIN` (0.3 units) inside the frame; `fit()` keeps a group within `SAFE_WIDTH`. Text stays at `MIN_FONT_SIZE` (16) or larger after any scaling.
+**Layout rule:** place texts and labels relative to each other and to what they name (`next_to`, `arrange`, `align_to`), not at fixed coordinates, and keep them at least `SAFE_MARGIN` (0.25 units) inside the frame; `fit()` keeps a group within `SAFE_WIDTH`. Text stays at `MIN_FONT_SIZE` (14) or larger after any scaling. Both limits are set so that the prover series passes them.
 
 ## Preview QA
 Every preview passes these checks before the final render (procedure: the `explainer-video` skill):
