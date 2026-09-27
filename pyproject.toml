@@ -7,7 +7,7 @@ name = "explainer"
 version = "0.1.0"
 description = "Whiteboard-style explainer videos: Manim scenes, edge-tts narration, ffmpeg merge."
 requires-python = ">=3.11"
-dependencies = ["manim", "edge-tts>=7.2"]
+dependencies = ["manim", "edge-tts>=7.2", "shapely>=2.0", "pillow"]
 
 [tool.setuptools]
-packages = ["explainer"]
+packages = ["explainer", "explainer.qa"]

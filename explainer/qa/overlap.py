@@ -1,0 +1,522 @@
+"""Overlap check (QA mode): the layout faults a viewer would notice, after every animation.
+
+SyncedScene creates an OverlapChecker when the pipeline runs in QA mode (EXPLAINER_QA)
+and calls check() after every animation. It records:
+    text_overlap        two texts or labels overlap
+    text_over_shape     a line, arrow or drawing runs through a text
+    text_touches_frame  a text inside its frame touches or crosses the frame's outline
+    out_of_frame        a text (critical) or a shape (important) leaves the 16:9 frame
+    in_safe_margin      a text inside the frame but closer than SAFE_MARGIN to its edge
+    text_too_small      a text whose size after fit()/scale is below MIN_FONT_SIZE
+Intended overlaps are not errors: a text inside a closed shape (its box, badge, table
+row, panel or emphasis frame) that keeps clear of the outline, single-symbol marks
+(✓ ✗ • ...) placed on a drawing on purpose, and lines that cross out a whole text.
+
+Each finding is an interval on the narration clock: first seen (time) -> gone (until).
+write() saves them raw; report_by_segment() (run by the pipeline) writes one JSON report
+per narration segment: the time, the two elements, the overlap amount, the grid cell
+(6×6, A1 top-left ... F6 bottom-right, as on the contact sheets) and a fix suggestion.
+"""
+import json
+import re
+from pathlib import Path
+
+import numpy as np
+from manim import (DL, UR, Group, ImageMobject, MarkupText, Mobject, Paragraph, Text,
+                   VGroup, VMobject, config)
+from shapely import STRtree
+from shapely.affinity import translate
+from shapely.geometry import LinearRing, LineString, MultiPoint, Point, Polygon, box
+from shapely.ops import unary_union
+
+from ..style import MIN_FONT_SIZE, SAFE_MARGIN, SAFE_WIDTH
+
+MIN_AREA = 0.002            # scene units² (about 36 px² at 1080p): smaller contacts are noise
+ATTACHED = 0.35             # parts of the same on-screen group this close move with a text
+TEXT_TYPES = (Text, MarkupText, Paragraph)
+MARKS = set("✓✗✔✘×•·○●◦▪■□▲▼►◄★")
+SEVERITY = {"text_overlap": "critical", "text_over_shape": "critical", "out_of_frame": "critical",
+            "text_touches_frame": "important", "in_safe_margin": "important",
+            "text_too_small": "important"}
+DIRECTIONS = {"RIGHT": (1, 0), "LEFT": (-1, 0), "UP": (0, 1), "DOWN": (0, -1)}
+OPPOSITE = {"RIGHT": "LEFT", "LEFT": "RIGHT", "UP": "DOWN", "DOWN": "UP"}
+COLS, GRID = "ABCDEF", 6
+
+
+# ---------------- grid (same cells as the contact sheets) ----------------
+def cell(x, y):
+    """Grid cell of a scene point: A1 (top-left) ... F6 (bottom-right)."""
+    fw, fh = config.frame_width, config.frame_height
+    c = min(GRID - 1, max(0, int((x + fw / 2) / fw * GRID)))
+    r = min(GRID - 1, max(0, int((fh / 2 - y) / fh * GRID)))
+    return f"{COLS[c]}{r + 1}"
+
+
+def cells(bounds):
+    """Cells covered by bounds (x0, y0, x1, y1), e.g. 'A4-B5'."""
+    a, b = cell(bounds[0], bounds[3]), cell(bounds[2], bounds[1])
+    return a if a == b else f"{a}-{b}"
+
+
+# ---------------- what is on screen ----------------
+class Item:
+    """A visible element: a text (its box) or a shape (its ink, closed region and outline)."""
+
+    def __init__(self, kind, mob, ink, region=None, outline=None, text="", font=None, core=None):
+        self.kind, self.mob, self.ink = kind, mob, ink
+        self.core = ink if core is None else core      # text: hull of its glyphs; shape: its ink
+        self.region, self.outline = region, outline
+        self.text, self.font = text, font
+        self.cls = type(mob).__name__
+        self.root = None                # the on-screen mobject (scene.mobjects entry) it is part of
+
+    @property
+    def open_path(self):
+        return self.region is None or self.cls in ("Line", "Arrow", "DoubleArrow", "DashedLine",
+                                                   "Vector")
+
+
+_T = np.linspace(0, 1, 9)[:, None]
+_BERNSTEIN = [(1 - _T) ** 3, 3 * (1 - _T) ** 2 * _T, 3 * (1 - _T) * _T ** 2, _T ** 3]
+
+
+def _subpaths(vm):
+    """[(xy samples, closed), ...] along each cubic Bézier subpath of a VMobject."""
+    out = []
+    for sp in vm.get_subpaths():
+        n = len(sp) // 4 * 4
+        if n < 4:
+            continue
+        curves = np.asarray(sp[:n], dtype=float).reshape(-1, 4, 3)
+        pts = sum(b[None] * curves[:, i:i + 1] for i, b in enumerate(_BERNSTEIN))
+        xy = pts[:, :, :2].reshape(-1, 2)
+        if np.ptp(xy, axis=0).max() < 1e-6:
+            continue
+        out.append((xy, bool(np.allclose(sp[0], sp[n - 1], atol=1e-4))))
+    return out
+
+
+def _shape_item(m, skip):
+    """One primitive shape (Line, Arrow with its tip, DashedLine with its dashes, ...)."""
+    strokes, rings, fills, regions = [], [], [], []
+    for f in m.get_family():
+        if id(f) in skip or not isinstance(f, VMobject) or not f.has_points():
+            continue
+        width = f.get_stroke_width() if f.get_stroke_opacity() > 0.05 else 0
+        filled = f.get_fill_opacity() > 0.05
+        if width <= 0 and not filled:
+            continue
+        half = max(width * 0.01 / 2, 0.01)          # Cairo draws stroke_width × 0.01 units
+        for xy, closed in _subpaths(f):
+            closed = closed and len(xy) >= 4
+            if closed:
+                poly = Polygon(xy).buffer(0)
+                if not poly.is_empty:
+                    regions.append(poly)
+                    if filled:
+                        fills.append(poly)
+            if width > 0:
+                line = LinearRing(xy) if closed else LineString(xy)
+                (rings if closed else strokes).append(line.buffer(half, cap_style="flat"))
+    ink = unary_union(strokes + rings + fills)
+    if ink.is_empty:
+        return None
+    return Item("shape", m, ink, region=unary_union(regions) if regions else None,
+                outline=unary_union(rings) if rings else None)
+
+
+def _text_of(m):
+    t = getattr(m, "original_text", None) or getattr(m, "text", None)   # .text drops spaces
+    if t is None and hasattr(m, "lines_text"):          # Paragraph
+        t = getattr(m.lines_text, "original_text", "")
+    return " ".join(re.sub(r"<[^>]+>", "", str(t or "")).split())
+
+
+def _font_size(m):
+    """Font size after scaling (Text.font_size breaks on rotated text, e.g. a y-axis label)."""
+    fs0, h0 = getattr(m, "_font_size", None), getattr(m, "initial_height", None)
+    if not fs0 or not h0:
+        return None
+    raw = str(getattr(m, "original_text", "") or getattr(m, "text", ""))
+    turned = m.height > 1.5 * m.width and "\n" not in raw and len(raw.strip()) > 2
+    return fs0 * (m.width if turned else m.height) / h0
+
+
+def _text_item(m):
+    glyphs = m.family_members_with_points()
+    if not glyphs or max(g.get_fill_opacity() for g in glyphs) <= 0.05:
+        return None
+    text = _text_of(m)
+    if text.replace(" ", "") in MARKS:                   # a mark placed on purpose, not a label
+        return None
+    (x0, y0), (x1, y1) = m.get_corner(DL)[:2], m.get_corner(UR)[:2]
+    if x1 - x0 < 1e-6 or y1 - y0 < 1e-6:
+        return None
+    # the box catches a line through a label, even through the gap between two words;
+    # the hull of the glyphs decides whether the text sits inside a (round) frame
+    hull = MultiPoint(np.vstack([g.points[:, :2] for g in glyphs])).convex_hull
+    return Item("text", m, box(x0, y0, x1, y1), text=text, font=_font_size(m), core=hull)
+
+
+def collect(mobjects):
+    """Visible items: whole texts, primitive shapes (with their tips or dashes) and images.
+    VGroups (and point-less VMobjects) are only containers."""
+    items, seen = [], set()
+
+    def visit(m):
+        if id(m) in seen:
+            return
+        seen.add(id(m))
+        if isinstance(m, TEXT_TYPES):
+            it = _text_item(m)
+            if it:
+                items.append(it)
+            return
+        if isinstance(m, ImageMobject):
+            (x0, y0), (x1, y1) = m.get_corner(DL)[:2], m.get_corner(UR)[:2]
+            r = box(x0, y0, x1, y1)
+            items.append(Item("image", m, r, region=r))
+            return
+        if (isinstance(m, (VGroup, Group)) or not isinstance(m, VMobject)
+                or (type(m) in (VMobject, Mobject) and not m.has_points())):
+            for s in m.submobjects:
+                visit(s)
+            return
+        texts = [d for d in m.get_family()[1:] if isinstance(d, TEXT_TYPES)]
+        skip = {id(g) for t in texts for g in t.get_family()}
+        it = _shape_item(m, skip)
+        if it:
+            items.append(it)
+        seen.update(id(f) for f in m.get_family() if id(f) not in skip)
+        for t in texts:
+            visit(t)
+
+    for m in mobjects:
+        first = len(items)
+        visit(m)
+        for it in items[first:]:
+            it.root = id(m)
+    return items
+
+
+def inside(it, region, min_area=MIN_AREA):
+    """Is item `it` (a text: the hull of its glyphs) inside a closed region? A sliver
+    sticking out (into the frame's own stroke) still counts as inside."""
+    if region is None or not region.intersects(it.core):
+        return False
+    return it.core.difference(region).area < max(min_area, 0.02 * it.core.area)
+
+
+def struck_through(text, shape, tol=0.15):
+    """A cross-out or strike-through drawn on purpose: a line spanning the text's width
+    and lying within its height (e.g. a wrong statement crossed out)."""
+    if not shape.open_path:
+        return False
+    tx0, ty0, tx1, ty1 = text.ink.bounds
+    sx0, sy0, sx1, sy1 = shape.ink.bounds
+    return (abs(sx0 - tx0) <= tol and abs(sx1 - tx1) <= tol
+            and sy0 >= ty0 - tol and sy1 <= ty1 + tol)
+
+
+# ---------------- naming (for the report) ----------------
+def _short(text, n=48):
+    return text if len(text) <= n else text[:n - 1] + "…"
+
+
+def _nearest_label(point, items, texts, reach=0.6):
+    """The label nearest to a point: a text, or the text inside a closed shape (a box,
+    named by its content, wins over a loose text at the same distance; a bare one- or
+    two-character text, such as a badge number, loses to the label beside it)."""
+    p, best = Point(point[:2]), None
+    for it in items:
+        if it.kind == "text":
+            d, t = it.ink.distance(p), it
+        elif not it.open_path:
+            inner = [x for x in texts if inside(x, it.region)]
+            if not inner:
+                continue
+            d, t = it.region.distance(p) - 0.25, max(inner, key=lambda x: len(x.text))
+        else:
+            continue
+        if it.kind == "text" and len(t.text) <= 2:
+            d += 0.25
+        if d <= reach and (best is None or d < best[0]):
+            best = (d, t)
+    return best[1] if best else None
+
+
+def describe(it, texts, items=()):
+    """A readable name: Text 'Guide block', Arrow from 'Motor' to 'M', Rectangle around 'M'."""
+    if it.kind == "text":
+        return f"Text '{_short(it.text)}'"
+    if it.kind == "image":
+        return f"Image at {cells(it.ink.bounds)}"
+    if it.open_path:
+        try:
+            p0, p1 = it.mob.get_start(), it.mob.get_end()
+        except Exception:
+            p0 = p1 = None
+        v = np.asarray(p1) - np.asarray(p0) if p0 is not None else np.zeros(3)
+        if np.linalg.norm(v) > 1e-3:
+            v = v / np.linalg.norm(v) * 0.12          # look just behind the start, past the tip
+            others = [o for o in (items or texts) if o is not it and not (
+                o.kind == "text" and o.ink.intersection(it.ink).area >= MIN_AREA)]
+            a = _nearest_label(np.asarray(p0) - v, others, texts)
+            b = _nearest_label(np.asarray(p1) + v, others, texts)
+            start = f"'{_short(a.text, 30)}'" if a else cell(*p0[:2])
+            end = f"'{_short(b.text, 30)}'" if b else cell(*p1[:2])
+            return f"{it.cls} from {start} to {end}"
+    if it.region is not None:
+        inner = [t for t in texts if inside(t, it.region)]
+        if inner:
+            return f"{it.cls} around '{_short(max(inner, key=lambda t: len(t.text)).text, 30)}'"
+    return f"{it.cls} at {cells(it.ink.bounds)}"
+
+
+def _element(it, texts, items=()):
+    x0, y0, x1, y1 = it.ink.bounds
+    e = {"name": describe(it, texts, items), "kind": it.kind, "class": it.cls,
+         "bbox": [round(v, 3) for v in (x0, y0, x1, y1)], "cells": cells((x0, y0, x1, y1))}
+    if it.kind == "text":
+        e["text"] = it.text
+        if it.font is not None:
+            e["font_size"] = round(it.font, 1)
+    return e
+
+
+# ---------------- analysis ----------------
+class Finding:
+    def __init__(self, kind, a, b=None, geom=None, **extra):
+        self.kind, self.a, self.b, self.geom, self.extra = kind, a, b, geom, extra
+        self.severity = SEVERITY[kind]
+        if kind == "out_of_frame" and a.kind != "text":
+            self.severity = "important"
+        self.key = (kind, id(a.mob), a.text or a.cls,
+                    id(b.mob) if b else 0, (b.text or b.cls) if b else "")
+
+    def amount(self):
+        return self.geom.area if self.geom is not None else self.extra.get("amount", 0)
+
+
+def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA):
+    """Every fault on screen now, as Findings."""
+    texts = [i for i in items if i.kind == "text"]
+    shapes = [i for i in items if i.kind != "text"]
+    found = []
+    if texts:
+        tree = STRtree([t.ink for t in texts])
+        for i, a in enumerate(texts):
+            for j in tree.query(a.ink, predicate="intersects"):
+                if j > i:
+                    ov = a.ink.intersection(texts[j].ink)
+                    if ov.area >= min_area:
+                        found.append(Finding("text_overlap", a, texts[j], ov))
+    if texts and shapes:
+        tree = STRtree([s.ink for s in shapes])
+        for a in texts:
+            for j in tree.query(a.ink, predicate="intersects"):
+                s = shapes[j]
+                if inside(a, s.region, min_area):
+                    if s.outline is not None:           # inside its frame: fine unless it touches
+                        ov = a.core.intersection(s.outline)
+                        if ov.area >= min_area:
+                            found.append(Finding("text_touches_frame", a, s, ov))
+                    continue
+                if struck_through(a, s):
+                    continue
+                ov = a.ink.intersection(s.ink)
+                if ov.area >= min_area:
+                    found.append(Finding("text_over_shape", a, s, ov))
+    fw, fh = config.frame_width / 2, config.frame_height / 2
+    for it in items:
+        x0, y0, x1, y1 = it.ink.bounds
+        side, over = max({"RIGHT": x1 - fw, "LEFT": -fw - x0, "UP": y1 - fh,
+                          "DOWN": -fh - y0}.items(), key=lambda kv: kv[1])
+        if over > 0.01:
+            found.append(Finding("out_of_frame", it, amount=over, side=side))
+        elif it.kind == "text" and over + margin > 0.01:
+            found.append(Finding("in_safe_margin", it, amount=over + margin, side=side))
+        if it.kind == "text" and it.font is not None and it.font < min_font - 0.05:
+            found.append(Finding("text_too_small", it, amount=it.font))
+    return found
+
+
+# ---------------- fix suggestions ----------------
+def _free_moves(it, items, offenders, margin, step=0.05, reach=2.5):
+    """Shortest moves [(distance, direction), ...] that clear `it` of every obstacle and
+    keep it in the safe area. A text moves together with its small label group (e.g. the
+    badge of a callout); its own leader arrow and a frame that contains it move with it,
+    so they are not obstacles; the offenders always are."""
+    fw, fh = config.frame_width / 2 - margin, config.frame_height / 2 - margin
+    group = [o for o in items if o.root == it.root and o.ink.distance(it.ink) < ATTACHED]
+    if any(o.ink.intersects(off.ink) for o in group if o is not it for off in offenders):
+        group = [it]
+    body = unary_union([o.ink for o in group])
+    obstacles = [o.ink for o in offenders]
+    for o in items:
+        if o in group or o in offenders:
+            continue
+        if inside(it, o.region):
+            continue                                    # its frame or panel
+        if o.open_path and not o.ink.intersects(body):
+            try:
+                if Point(o.mob.get_start()[:2]).distance(body) < 0.2:
+                    continue                            # its own leader arrow
+            except Exception:
+                pass
+        obstacles.append(o.ink)
+    tree = STRtree(obstacles) if obstacles else None
+    moves = []
+    for name, (dx, dy) in DIRECTIONS.items():
+        for k in range(1, int(reach / step) + 1):
+            g = translate(body, dx * k * step, dy * k * step)
+            x0, y0, x1, y1 = g.bounds
+            if x0 < -fw or x1 > fw or y0 < -fh or y1 > fh:
+                break
+            if tree is None or not len(tree.query(g, predicate="intersects")):
+                moves.append((round(k * step, 2), name))
+                break
+    return sorted(moves)
+
+
+def _move_text(name, moves):
+    if not moves:
+        return f"No free spot within 2.5 units: rearrange the group around {name}"
+    d, where = moves[0]
+    alt = f" (or {moves[1][1]} by {moves[1][0]:.2f})" if len(moves) > 1 else ""
+    return f"Move {name} {where} by {d:.2f}{alt} — e.g. .shift({where} * {d:.2f})"
+
+
+def suggest(f, items, texts, margin):
+    a, b = f.a, f.b
+    name_a = describe(a, texts, items)
+    if f.kind == "text_overlap":
+        ma = _free_moves(a, items, [b], margin)
+        mb = _free_moves(b, items, [a], margin)
+        if mb and (not ma or mb[0][0] < ma[0][0]):
+            a, ma, name_a = b, mb, describe(b, texts, items)
+        return (_move_text(name_a, ma) + "; lay texts out with next_to()/arrange() "
+                "(buff ≥ 0.15) instead of fixed coordinates")
+    if f.kind == "text_over_shape":
+        s = _move_text(name_a, _free_moves(a, items, [b], margin))
+        if b.open_path:
+            return s + f"; or re-route {describe(b, texts, items)} (another callout direction or " \
+                       "end point) so it does not cross the text"
+        return s + " — keep labels off the drawing, placed with next_to()"
+    if f.kind == "text_touches_frame":
+        return (f"Keep {name_a} clear of the outline of {describe(b, texts, items)}: shrink the text "
+                "(scale_to_fit_width(frame width − 0.3)) or enlarge the frame")
+    if f.kind in ("out_of_frame", "in_safe_margin"):
+        amount, side = f.extra["amount"], f.extra["side"]
+        move = amount + (margin if f.kind == "out_of_frame" and a.kind == "text" else 0)
+        width = a.ink.bounds[2] - a.ink.bounds[0]
+        tip = f"Shift {name_a} {OPPOSITE[side]} by {move:.2f}"
+        if side in ("LEFT", "RIGHT") and width > config.frame_width - 2 * margin:
+            tip = f"{name_a} is {width:.2f} wide: shrink it with fit() (SAFE_WIDTH {SAFE_WIDTH})"
+        return tip + f" to keep {margin} clear of the frame edge"
+    if f.kind == "text_too_small":
+        return (f"{name_a} is font size {f.extra['amount']:.1f} (< {MIN_FONT_SIZE}): use a "
+                "larger font_size, shorten the text, or let fit()/scale shrink it less")
+    return ""
+
+
+# ---------------- the checker ----------------
+class OverlapChecker:
+    """Called by SyncedScene after every animation in QA mode; findings become intervals."""
+
+    def __init__(self, safe_margin=SAFE_MARGIN, min_font_size=MIN_FONT_SIZE, min_area=MIN_AREA):
+        self.margin, self.min_font, self.min_area = safe_margin, min_font_size, min_area
+        self.open, self.done = {}, []
+        self.checks, self.last_time = 0, 0.0
+
+    def check(self, scene, t):
+        self.checks += 1
+        self.last_time = t
+        items = collect(scene.mobjects)
+        texts = [i for i in items if i.kind == "text"]
+        now = {}
+        for f in analyse(items, self.margin, self.min_font, self.min_area):
+            now.setdefault(f.key, f)
+        for key, f in now.items():
+            rec = self.open.get(key)
+            if rec is None:
+                self.open[key] = self._record(f, t, items, texts)
+            else:
+                rec["until"] = round(t, 2)
+                if f.amount() > rec["_peak"]:
+                    rec["_peak"] = f.amount()
+                    rec["overlap"] = self._amount(f)
+        for key in [k for k in self.open if k not in now]:
+            rec = self.open.pop(key)
+            rec["until"] = round(t, 2)         # gone by the end of this animation
+            self.done.append(rec)
+
+    def _amount(self, f):
+        if f.geom is not None:
+            c = f.geom.centroid
+            out = {"area": round(f.geom.area, 4),
+                   "share_of_text": round(f.geom.area / max(f.a.ink.area, 1e-9), 3),
+                   "at": [round(c.x, 3), round(c.y, 3)], "cell": cell(c.x, c.y)}
+            if f.kind == "text_overlap":
+                out["share_of_text"] = round(
+                    f.geom.area / max(min(f.a.ink.area, f.b.ink.area), 1e-9), 3)
+            return out
+        if f.kind == "text_too_small":
+            return {"font_size": round(f.extra["amount"], 1), "minimum": self.min_font}
+        return {"distance": round(f.extra["amount"], 3), "side": f.extra["side"],
+                "limit": "frame edge" if f.kind == "out_of_frame"
+                else f"safe margin {self.margin}"}
+
+    def _record(self, f, t, items, texts):
+        return {"type": f.kind, "severity": f.severity,
+                "time": round(t, 2), "until": round(t, 2),
+                "a": _element(f.a, texts, items), "b": _element(f.b, texts, items) if f.b else None,
+                "overlap": self._amount(f),
+                "suggestion": suggest(f, items, texts, self.margin), "_peak": f.amount()}
+
+    def findings(self):
+        out = self.done + list(self.open.values())
+        for r in self.open.values():
+            r["until"] = round(self.last_time, 2)
+        return sorted(({k: v for k, v in r.items() if not k.startswith("_")} for r in out),
+                      key=lambda r: (r["time"], r["type"]))
+
+    def write(self, path):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_text(json.dumps(
+            {"settings": self.settings(), "checks": self.checks,
+             "last_time": round(self.last_time, 2), "findings": self.findings()},
+            ensure_ascii=False, indent=1))
+
+    def settings(self):
+        return {"safe_margin": self.margin, "min_font_size": self.min_font,
+                "min_area": self.min_area,
+                "frame": [round(config.frame_width, 3), round(config.frame_height, 3)],
+                "grid": "6x6: columns A-F left to right, rows 1-6 top to bottom"}
+
+
+# ---------------- per-segment reports ----------------
+def report_by_segment(raw_path, starts, out_dir, segments, offset=0.0, meta=None):
+    """Split the raw findings into overlap/segNN.json, one per narration segment.
+
+    A finding is listed in every segment during which it is on screen. starts: segment
+    start times plus the total length (segment_starts); segments: 1-based numbers.
+    """
+    raw = json.loads(Path(raw_path).read_text())
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    summary = {}
+    for k in segments:
+        s, e = starts[k - 1], starts[k]
+        rows = []
+        for f in raw["findings"]:
+            if f["time"] < e - 1e-3 and (f["until"] > s + 1e-3 or f["time"] >= s - 1e-3):
+                rows.append({**f, "video_time": round(f["time"] - offset, 2)})
+        counts = {"critical": sum(r["severity"] == "critical" for r in rows),
+                  "important": sum(r["severity"] == "important" for r in rows)}
+        (out_dir / f"seg{k:02d}.json").write_text(json.dumps(
+            {**(meta or {}), "segment": k, "start": round(s, 2), "end": round(e, 2),
+             "clock_offset": round(offset, 3), "settings": raw["settings"],
+             "counts": counts, "findings": rows}, ensure_ascii=False, indent=1))
+        summary[k] = counts
+    return summary
