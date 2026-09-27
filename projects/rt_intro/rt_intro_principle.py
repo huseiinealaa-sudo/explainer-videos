@@ -701,7 +701,8 @@ class RtIntroPrinciple(SyncedScene):
         SCALE = 100.0                                  # mm per drawing unit for D (not to scale)
         r = Rig(xe=3.3, px0=1.3, px1=5.3, y_top=-1.1, thick=1.1, F=1.5, Dd=D.D1 / SCALE, gap=0.0,
                 feat_x1=5.3)
-        tag = label("not to scale", FS_TAG, GREY_INK).move_to([5.9, 3.0, 0])
+        tag = label("not to scale", FS_TAG, GREY_INK).next_to(self.sec, RIGHT, buff=0.6) \
+            .align_to(self.sec, DOWN)
         self.play(Create(r.plate), FadeIn(r.feature), FadeIn(tag), run_time=0.8)
         self.add(r.film, r.rays, r.source)
         l_F = always_redraw(lambda: label(f"F = {D.F:.1f} mm", FS_NOTE, SRC_C)
@@ -755,11 +756,14 @@ class RtIntroPrinciple(SyncedScene):
 
         # the limit and the smallest distance
         self.sync(self.c(s, "صِفْرٌ فَاصِلَةُ") - 0.2)
-        lim = VGroup(label(f"Illustrative limit: Ug ≤ {D.UG_MAX:.2f} mm", FS_LABEL, OK_LIM))
-        lim.next_to(line2, DOWN, 0.4).align_to(line2, LEFT)
+        lim = VGroup(label("Illustrative limit:", FS_LABEL, OK_LIM),
+                     label(f"Ug ≤ {D.UG_MAX:.2f} mm", FS_LABEL, OK_LIM))
+        lim.arrange(DOWN, aligned_edge=LEFT, buff=0.1).next_to(line2, DOWN, 0.4).align_to(line2, LEFT)
         self.play(FadeIn(lim, shift=UP * 0.1), run_time=0.6)
         self.sync(self.c(s, "أَزْمِي") - 0.2)
-        asme = label("ASME V recommended max., thickness < 2 in", FS_TAG, GREY_INK)
+        asme = VGroup(label("ASME V recommended max.", FS_TAG, GREY_INK),
+                      label("for thickness < 2 in", FS_TAG, GREY_INK))
+        asme.arrange(DOWN, aligned_edge=LEFT, buff=0.08)
         asme.next_to(lim, DOWN, 0.15).align_to(lim, LEFT)
         self.play(FadeIn(asme), run_time=0.5)
         self.sync(self.c(s, "فَأَقَلُّ") - 0.3)

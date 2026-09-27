@@ -23,6 +23,9 @@ Look for every one of them in each preview. Keep this file under 150 lines; merg
 - **always_redraw label beside a moving object collides with shapes added at its end position** (limit line / zone at the source height) · spot: finding only in the last seconds of a segment · fix: put the label on the side away from later shapes (UP) · first seen rt_intro_principle seg 5.
 - **Label `next_to` a thin marker box on a strip lands on the strip** ("Ug" on the film) · fix: attach it to the existing label below (`next_to(l_pen, RIGHT)`) · first seen rt_intro_principle seg 4.
 
+- **Layout fix creates a new collision with a text column that grows later** (a label moved with `next_to(part, LEFT)` lands on a later `next_to(prev, DOWN)` line) · spot: a new finding in round N+1 on the element that was fixed · fix: check the new box against every text added later in the segment; split long result lines in two · first seen rt_intro_principle seg 5, round 2.
+- **Corner tag at a fixed coordinate crossed by a tracker-driven dimension arrow or guide** (source height changes with D) · spot: `text_over_shape` with a DashedLine/DoubleArrow at the tracker's extreme value · fix: attach the tag to the section heading (`next_to(self.sec, RIGHT)`), away from the rig's range of motion · first seen rt_intro_principle seg 5.
+
 ## Captions (`self.say`)
 - **Stale caption**: a caption stays 20–30 s while the narration moves on to other parts · spot: identical bottom line across 6+ consecutive frames whose callouts change · fix: replace or clear it at the next sentence cue · first seen svp_winsfc_full seg 2.
 - **Bare number on a caption** (e.g. "±0.0005%") with no quantity name · fix: name it ("repeatability ±0.0005 %"), split long captions into two at their own cues · first seen svp_winsfc_full seg 2.
