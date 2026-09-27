@@ -322,7 +322,7 @@ class RtIntroPrinciple(SyncedScene):
         self.remove_foreground_mobject(through)
         self.add(through)
         self.sync(self.c(s, "وَيَمْتَصُّ") - 0.5)
-        self.play(FadeOut(VGroup(light, light_l, blk, blk_l, through)), run_time=0.45)
+        gone = VGroup(light, light_l, blk, blk_l, through)
 
         # plate with a thin step, a void and a tungsten inclusion; parallel beam; film
         TOP, TOP_THIN, BOT, STEP = 1.2, 0.5, -0.2, -3.3
@@ -333,14 +333,14 @@ class RtIntroPrinciple(SyncedScene):
         FT, FH = -1.55, 0.34
         MU, MU_W = 0.9, 5.4          # illustrative absorption per unit (steel, tungsten)
         cells = {"thin": (X0, STEP), "a": (STEP, -0.45), "void": (-0.45, 0.45),
-                 "b": (0.45, 3.08), "w": (3.08, 3.52), "c": (3.52, X1)}
+                 "b": (0.45, 2.38), "w": (2.38, 2.82), "c": (2.82, X1)}
         cell = {k: Rectangle(width=b - a, height=FH, stroke_width=0).set_fill(FILM_NEW, 1)
                 .move_to([(a + b) / 2, FT - FH / 2, 0]) for k, (a, b) in cells.items()}
         film_frame = Rectangle(width=X1 - X0, height=FH, stroke_width=2, color=INK)
         film_frame.move_to([(X0 + X1) / 2, FT - FH / 2, 0])
         film = VGroup(*cell.values(), film_frame)
         film_l = label("Film", FS_NOTE).next_to(film_frame, DOWN, 0.15).align_to(film_frame, LEFT)
-        self.play(Create(plate), FadeIn(film), FadeIn(film_l), run_time=1.0)
+        self.play(FadeOut(gone), Create(plate), FadeIn(film), FadeIn(film_l), run_time=1.0)
 
         def beam(x, t_metal, extra=0.0):
             top = TOP_THIN if x < STEP else TOP
@@ -351,7 +351,7 @@ class RtIntroPrinciple(SyncedScene):
                        stroke_opacity=0.55)
             return inc, out, i
         t_full, t_thin = TOP - BOT, TOP_THIN - BOT
-        base = [beam(-4.25, t_thin), beam(-2.0, t_full), beam(1.6, t_full)]
+        base = [beam(-4.25, t_thin), beam(-2.0, t_full), beam(1.4, t_full)]
         self.sync(self.c(s, "جُزْءًا") - 0.3)
         self.play(*[Create(b[0]) for b in base], run_time=0.8)
         self.play(*[Create(b[1]) for b in base], run_time=0.8)
@@ -377,7 +377,7 @@ class RtIntroPrinciple(SyncedScene):
         self.sync(self.c(s, "تَقِلُّ"))
         vin, vout, vi = beam(0.0, t_full - 0.5)
         path = VGroup(Line([0.12, TOP, 0], [0.12, 0.75, 0]), Line([0.12, 0.25, 0], [0.12, BOT, 0]))
-        path.set_stroke(SRC_C, 6)
+        path.set_stroke(GREY_INK, 6)
         self.play(Create(vin), run_time=0.6)
         self.play(Create(path), run_time=0.6)
         self.say("Void: less metal in the beam path")
@@ -389,12 +389,12 @@ class RtIntroPrinciple(SyncedScene):
 
         # the denser inclusion: more absorbed, lighter film
         self.sync(self.c(s, "شَائِبَةٌ"))
-        w = Circle(radius=0.22, color=DEF_C, stroke_width=3).set_fill("#5a1010", 1).move_to([3.3, 0.5, 0])
+        w = Circle(radius=0.22, color=DEF_C, stroke_width=3).set_fill("#5a1010", 1).move_to([2.6, 0.5, 0])
         w_l = label("Tungsten", FS_LABEL, DEF_C).next_to(w, RIGHT, 0.3)
         self.play(GrowFromCenter(w), FadeIn(w_l), run_time=0.7)
         self.say("Denser inclusion: more radiation absorbed")
         self.sync(self.c(s, "يُمْتَصُّ"))
-        win, wout, wi = beam(3.3, t_full - 0.44, extra=MU_W * 0.44)
+        win, wout, wi = beam(2.6, t_full - 0.44, extra=MU_W * 0.44)
         self.play(Create(win), run_time=0.6)
         self.play(Create(wout), run_time=0.6)
         self.sync(self.c(s, "أَفْتَحَ") - 0.2)
@@ -493,7 +493,7 @@ class RtIntroPrinciple(SyncedScene):
                   Transform(sw_t, on_t), FadeIn(cone), FadeIn(l_x), run_time=0.6)
         self.sync(self.c(s, "بِالجُهْدِ") - 0.2)
         deep = cone.copy().set_fill(RAY_C, 0.55)
-        kv_l = label("higher kV: more penetrating", FS_NOTE, RAY_C).move_to([-3.4, -2.35, 0])
+        kv_l = label("higher kV:\nmore penetrating", FS_NOTE, RAY_C).move_to([-4.9, -2.5, 0])
         self.play(Rotate(needle, -PI / 2, about_point=dial.get_center()),
                   Transform(cone, deep), FadeIn(kv_l), run_time=1.2)
 
@@ -531,11 +531,11 @@ class RtIntroPrinciple(SyncedScene):
                               head.get_center() + 0.7 * rotate_vector(RIGHT, a),
                               stroke_width=3, color=RAY_C) for a in np.linspace(0, TAU, 12,
                                                                                 endpoint=False)])
-        l_exp = label("Exposure position", FS_NOTE).move_to([5.4, -2.2, 0])
+        l_exp = label("Exposure\nposition", FS_NOTE).next_to(head, DOWN, 0.85)
         self.play(LaggedStart(*[Create(b) for b in burst], lag_ratio=0.05), FadeIn(l_exp),
                   run_time=0.8)
 
-        tag_pos = [2.2, 0.05, 0]
+        tag_pos = [1.85, 0.05, 0]
         tags = [("يَحْتَاجُ", "No power needed", INK), ("المَيْدَانِ", "Portable: field work", INK),
                 ("يُطْفَأُ", "Cannot be switched off", ALERT_C),
                 ("فَعُمْرُ", f"Half-life ≈ {D.IR192_HALF_LIFE_DAYS} days", INK)]
@@ -609,7 +609,7 @@ class RtIntroPrinciple(SyncedScene):
         self.say("Penumbra: the edge is blurred")
 
         self.sync(self.c(s, "عَرْضُهَا"))
-        ug_l = label("Ug", FS_LABEL, SRC_C, weight=BOLD).next_to(pz, RIGHT, 0.15)
+        ug_l = label("width = Ug", FS_NOTE, SRC_C, weight=BOLD).next_to(l_pen, RIGHT, 0.2)
         self.play(FadeIn(ug_l), Indicate(pz, color=SRC_C), run_time=0.8)
         self.sync(self.c(s, "تَشَابُهِ"))
         t1, t2 = r.triangles()
@@ -622,13 +622,13 @@ class RtIntroPrinciple(SyncedScene):
         self.say("Similar triangles: Ug / d = F / D")
 
         # definitions with their dimension lines
-        dx = -5.9
+        dx = -5.75
 
         def dline_D():
-            return dim_line(dx, r.ys(), r.y_top, "D", INK, RIGHT)
+            return dim_line(dx, r.ys(), r.y_top, "D", INK, LEFT)
 
         def dline_d():
-            return dim_line(dx, r.y_top, r.film_top(), "d", INK, RIGHT)
+            return dim_line(dx, r.y_top, r.film_top(), "d", INK, LEFT)
         defs = VGroup(label("F = largest projected size of the source", FS_TAG + 2),
                       label("D = source → source side of the part", FS_TAG + 2),
                       label("d = source side of the part → film", FS_TAG + 2))
@@ -680,7 +680,8 @@ class RtIntroPrinciple(SyncedScene):
         self.sync(self.c(s, "وَيُوصِي") - 0.2)
         note = VGroup(label("ASME V, T-274: recommended maximum Ug", FS_TAG + 2),
                       label("Binding limit: referencing Code or contract", FS_TAG + 2, ALERT_C))
-        note.arrange(DOWN, aligned_edge=LEFT, buff=0.15).next_to(ways, DOWN, 0.4).align_to(ways, LEFT)
+        note.arrange(DOWN, aligned_edge=LEFT, buff=0.15)
+        fit(note, 5.1).next_to(ways, DOWN, 0.4).align_to(ways, LEFT)
         box = SurroundingRectangle(note, buff=0.15, corner_radius=0.08, color=GREY_INK,
                                    stroke_width=2)
         self.play(FadeOut(self.caption), run_time=0.2)
@@ -698,17 +699,17 @@ class RtIntroPrinciple(SyncedScene):
         s = 5
         section_title(self, "5  Worked example", prev=self.sec)
         SCALE = 100.0                                  # mm per drawing unit for D (not to scale)
-        r = Rig(xe=3.3, px0=1.3, px1=5.3, y_top=-1.3, thick=0.9, F=0.8, Dd=D.D1 / SCALE, gap=0.0,
+        r = Rig(xe=3.3, px0=1.3, px1=5.3, y_top=-1.1, thick=1.1, F=1.5, Dd=D.D1 / SCALE, gap=0.0,
                 feat_x1=5.3)
         tag = label("not to scale", FS_TAG, GREY_INK).move_to([5.9, 3.0, 0])
         self.play(Create(r.plate), FadeIn(r.feature), FadeIn(tag), run_time=0.8)
         self.add(r.film, r.rays, r.source)
         l_F = always_redraw(lambda: label(f"F = {D.F:.1f} mm", FS_NOTE, SRC_C)
-                            .next_to(r.source, LEFT, 0.2))
+                            .next_to(r.source, UP, 0.15))
         self.sync(self.c(s, "ثَلَاثَةُ") - 0.2)
         self.play(FadeIn(l_F), Indicate(r.source, color=SRC_C), run_time=0.7)
         self.sync(self.c(s, "سَمَاكَتُهُ"))
-        l_t = label(f"weld {D.d:.0f} mm", FS_NOTE).move_to([2.25, -1.75, 0])
+        l_t = label(f"weld {D.d:.0f} mm", FS_NOTE).next_to(r.plate, LEFT, 0.2)
         self.play(FadeIn(l_t), Indicate(r.plate, color=GREY_INK, scale_factor=1.0), run_time=0.7)
         dx = 5.85
         dd = dim_line(dx, r.y_top, r.film_top(), "d", INK, RIGHT)
@@ -762,8 +763,9 @@ class RtIntroPrinciple(SyncedScene):
         asme.next_to(lim, DOWN, 0.15).align_to(lim, LEFT)
         self.play(FadeIn(asme), run_time=0.5)
         self.sync(self.c(s, "فَأَقَلُّ") - 0.3)
-        self.play(FadeOut(VGroup(calc, line2, x2)), lim.animate.move_to([-3.6, 2.4, 0]),
-                  asme.animate.next_to([-3.6, 2.4, 0], DOWN, 0.35), run_time=0.7)
+        pair = VGroup(lim, asme)
+        target = pair.copy().arrange(DOWN, aligned_edge=LEFT, buff=0.15).move_to([-3.4, 2.2, 0])
+        self.play(FadeOut(VGroup(calc, line2, x2)), Transform(pair, target), run_time=0.7)
         calc2 = worked_calculation(
             self, ["Dmin", "=", "F", "×", "d", "/", "Ug max"],
             ["=", f"{D.F:.1f}", "×", f"{D.d:.0f}", "/", f"{D.UG_MAX:.2f}"],
@@ -790,7 +792,7 @@ class RtIntroPrinciple(SyncedScene):
                     ["Radiograph = map of thickness and density",
                      "Void → darker · denser inclusion → lighter",
                      "X-ray tube switches off · Ir-192 cannot",
-                     "Ug = F × d / D: smaller F, larger D, film in contact"],
+                     "Ug = F·d/D: smaller F, larger D, film close"],
                     cues=[self.c(s, "الصُّورَةُ"), self.c(s, "الفَرَاغُ"),
                           self.c(s, "وَالمَصْدَرُ"), self.c(s, "وَحَجْمُ")])
         self.sync(self.end(s) + 1.0)
