@@ -40,3 +40,4 @@ Look for every one of them in each preview. Keep this file under 150 lines; merg
 - Older prover scripts define a local text-position `cue()` (not word timings): check each cue against the word clock (prover_ep03 seg 4: within ±0.3 s, acceptable).
 - The checker keeps a Text's original name after `Transform(state, new_text)`: a finding's `until` can run past the text change; check a frame after the transform before confirming the whole window.
 - **Checker blind spots**: radial Line bursts touching a text, and a `dim_line` label touching the part on the side it faces · look at every label next to a burst or a dimension line · fix: shift the tags, or `side=LEFT` / outer side · first seen rt_intro_principle seg 3, seg 4.
+- Ghosted or half-drawn text on a 3 s frame (FadeIn/Write in progress, e.g. rt_intro_principle 0:21, 0:48, 3:51) is not an overlap: check the next frame before confirming.
