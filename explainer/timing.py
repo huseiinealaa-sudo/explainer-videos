@@ -8,15 +8,28 @@ on the narration clock:
     self.say(text) / clear()     bottom caption / fade everything out
 cue() uses the edge-tts word timings saved next to the audio (seg{i}.json). Without
 them (older audio) it falls back to the phrase's relative position in the text.
+
+Every SyncedScene (old scripts included) also obeys two switches that the pipeline
+passes as environment variables (see pipeline.render):
+    EXPLAINER_WINDOW="t0,t1"     render only this part of the narration clock (segment
+                                 previews): earlier animations run without frames
+    EXPLAINER_QA=<json path>     QA mode: explainer.qa.overlap checks the screen after
+                                 every animation and writes its raw findings there
+    EXPLAINER_RENDER_LOG=<path>  where the scene records the clock time of its first frame
 """
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
 
-from manim import DOWN, UP, FadeIn, FadeOut, Scene, VMobject, logger
+from manim import DOWN, UP, FadeIn, FadeOut, Scene, VMobject, Wait, logger
+from manim.constants import DEFAULT_WAIT_TIME
+from manim.utils.exceptions import EndSceneEarlyException
 
 from .style import CAPTION_Y, FS_LABEL, INK, fit, label
+
+WINDOW_ENV, QA_ENV, RENDER_LOG_ENV = "EXPLAINER_WINDOW", "EXPLAINER_QA", "EXPLAINER_RENDER_LOG"
 
 
 # ---------------- Audio segments ----------------
@@ -101,6 +114,70 @@ def word_coverage(audio_dir, narration):
 class SyncedScene(Scene):
     """Scene that places animations on the narration timeline."""
 
+    window = None           # (t0, t1) on the narration clock, from EXPLAINER_WINDOW
+    first_frame = None      # clock time of the first rendered frame
+    qa = None               # explainer.qa.overlap.OverlapChecker in QA mode
+
+    # ---------- render window and QA mode (set by the pipeline) ----------
+    def setup(self):
+        super().setup()
+        if os.environ.get(WINDOW_ENV):
+            self.window = tuple(float(x) for x in os.environ[WINDOW_ENV].split(","))
+        if os.environ.get(QA_ENV):
+            from .qa.overlap import OverlapChecker
+            self.qa = OverlapChecker()
+
+    def play(self, *args, **kwargs):
+        r = self.renderer
+        if self.window is not None:
+            t0, t1 = self.window
+            if r.time >= t1 - 1e-3:                 # past the window: stop rendering
+                raise EndSceneEarlyException()
+            if self.first_frame is None:
+                anims = self.compile_animations(
+                    *args, **{k: v for k, v in kwargs.items() if not k.startswith("subcaption")})
+                if r.time + self.get_run_time(anims) <= t0 + 1e-3:
+                    self._play_without_frames(*args, **kwargs)
+                    return
+        if self.first_frame is None:
+            self.first_frame = r.time
+        super().play(*args, **kwargs)
+        if self.qa is not None and not (len(args) == 1 and isinstance(args[0], Wait)):
+            self.qa.check(self, r.time)             # after every animation (pauses change nothing)
+
+    def _play_without_frames(self, *args, **kwargs):
+        """Run an animation before the window: its end state and clock time, no frames."""
+        r = self.renderer
+        keep = r._original_skipping_status
+        r._original_skipping_status = True
+        try:
+            super().play(*args, **kwargs)
+        finally:
+            r._original_skipping_status = keep
+
+    def wait(self, duration=DEFAULT_WAIT_TIME, stop_condition=None, frozen_frame=None):
+        if self.window is not None:
+            t, (t0, t1) = self.renderer.time, self.window
+            if self.first_frame is None and t < t0 - 1e-3 and t + duration > t0 + 1e-3:
+                super().wait(t0 - t, frozen_frame=frozen_frame)    # split the pause at t0
+                duration -= t0 - t
+            t = self.renderer.time
+            if t < t1 < t + duration:
+                duration = t1 - t
+            if duration <= 1e-3:
+                return
+        super().wait(duration, stop_condition=stop_condition, frozen_frame=frozen_frame)
+
+    def tear_down(self):
+        super().tear_down()
+        if os.environ.get(RENDER_LOG_ENV):
+            Path(os.environ[RENDER_LOG_ENV]).write_text(json.dumps(
+                {"first_frame": self.first_frame, "last_time": self.renderer.time,
+                 "window": self.window}))
+        if self.qa is not None:
+            self.qa.write(os.environ[QA_ENV])
+
+    # ---------- narration clock ----------
     def timeline(self, narration, audio_dir):
         """Load segment starts and word timings; returns START (N + 1 entries)."""
         self.narration = list(narration)
