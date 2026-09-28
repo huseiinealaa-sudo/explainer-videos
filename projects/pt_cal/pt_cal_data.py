@@ -328,3 +328,51 @@ def _self_test_ep2():
 
 
 _self_test_ep2()
+
+
+# =====================================================================
+# Ep 6 — the URV mistake worked through (0–10 bar transmitter, error at mid-span only)
+# =====================================================================
+MIS_LRV = 0.0
+MIS_PV_50 = (MIS_URV_OLD - MIS_LRV) / 2                               # 5 bar applied
+MIS_READ_50 = MIS_LRV + (MIS_I_AT_50 - 4) / 16 * (MIS_URV_OLD - MIS_LRV)   # sensor reads 5.3125 bar
+MIS_I_50_AFTER = 4 + 16 * (MIS_READ_50 - MIS_LRV) / (MIS_URV_NEW - MIS_LRV)  # ≈ 12.10 mA: "looks fine"
+MIS_I_100_AFTER = 4 + 16 * (MIS_URV_OLD - MIS_LRV) / (MIS_URV_NEW - MIS_LRV)  # 19.24 mA: good end spoiled
+MIS_I_0_AFTER = 4.0
+# Ep 6 — shapes of the five error patterns (illustrative, % of span at 0/25/50/75/100 %)
+PATTERN_SHAPES = {
+    "offset": [0.25, 0.25, 0.25, 0.25, 0.25],
+    "slope": [0.0, 0.1, 0.2, 0.3, 0.4],
+    "linearity": [0.0, 0.2, 0.3, 0.2, 0.0],
+    "hysteresis_up": [-0.12, -0.12, -0.12, -0.12, -0.12],
+    "hysteresis_down": [0.12, 0.12, 0.12, 0.12, 0.12],
+    "repeatability": [[0.1, -0.2, 0.3], [-0.25, 0.2, 0.05], [0.3, -0.1, -0.3], [0.0, 0.35, -0.2],
+                      [-0.3, 0.15, 0.25]],
+}
+
+
+def _self_test_ep6():
+    assert f"{MIS_READ_50:.4f}" == "5.3125"
+    assert f"{MIS_I_100_AFTER:.2f}" == "19.24" and abs(MIS_I_50_AFTER - 12.0) < 0.15
+
+
+_self_test_ep6()
+
+
+# =====================================================================
+# Ep 5 — illustrative As-Found history and the interval rules quoted in the narration
+# =====================================================================
+AF_HISTORY = [0.08, 0.15, 0.22, 0.30, 0.38, 0.52]   # % of span, largest As-Found error per year (illustrative)
+AL_AFTER_TRIM = 0.05                                 # % of span, As-Left after the trim in the last year
+INTERVAL_CRITICAL_MONTHS = (3, 6)                    # owner's text: safety and custody-transfer loops
+EXTEND_WITHIN_PCT_OF_TOL = 20                        # owner's text: always back within 20 % of tolerance
+REF_ALERT_MONTHS = 1                                 # owner's text: alert one month before expiry
+SQRT_SHOW = [10, 25, 50, 75, 90]                     # rows of the square-root table shown on screen
+
+
+def _self_test_ep5():
+    assert AF_HISTORY[-1] > TOL_PCT > AF_HISTORY[-2]
+    assert all(p in SQRT_POINTS_PCT for p in SQRT_SHOW)
+
+
+_self_test_ep5()

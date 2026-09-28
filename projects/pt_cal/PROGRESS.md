@@ -10,7 +10,9 @@ Timing: start 17:50:19 UTC; narration done 18:19:26; model episode 19:03 → 20:
 - ep02 `pt_cal_ep02_pressure` — 5:30, 12.2 MB, critic PASS (round 3), owner approved the level.
 
 ## In progress
-- ep06 `pt_cal_ep06_trim` — writing the script.
+- ep06 `pt_cal_ep06_trim` — script written; automatic QA iteration 2 running (iteration 1: 13 critical, fixed).
+- ep05 `pt_cal_ep05_verdict` — script written; automatic QA iteration 1 running.
+- Shared helpers: `projects/pt_cal/pt_cal_common.py` (used by ep01, ep03–ep07).
 
 ## Next step
-- Write `projects/pt_cal/pt_cal_ep06_trim.py`, run `python projects/pt_cal/pt_cal_ep06_trim.py --preview --qa`.
+- Read the QA output of ep06/ep05 (`python3 <findings script>` or `tmp/<script>/qa/full/overlap/segNN.json`), fix, repeat to 0 critical, then call the video-critic; meanwhile write `pt_cal_ep01_device.py`.
