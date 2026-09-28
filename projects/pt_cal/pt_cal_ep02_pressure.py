@@ -275,12 +275,12 @@ class PtCalEp02(SyncedScene):
         # pump block, tee, reference module + calibrator, transmitter
         pump = RoundedRectangle(width=1.8, height=1.3, corner_radius=0.15, color=INK, stroke_width=4) \
             .set_fill(BODY_FILL, 1).move_to([-4.6, -0.8, 0])
-        pump_lab = tag("Hand pump", FS_LABEL).next_to(pump, DOWN, buff=0.25)
+        pump_lab = tag("Hand pump", FS_LABEL).next_to(pump, UP, buff=0.25)
         grip = Line(pump.get_corner(DL) + RIGHT * 0.2 + DOWN * 0.02,
                     pump.get_corner(DL) + LEFT * 0.9 + DOWN * 0.5, stroke_width=10, color=MOVE)
         tee = Dot([-1.2, -0.8, 0], radius=0.1, color=INK)
         p1 = pipe(pump.get_right(), tee.get_center())
-        ext = Rectangle(width=1.9, height=0.9, color=INK, stroke_width=4).set_fill(WHITE, 1) \
+        ext = Rectangle(width=2.5, height=0.9, color=INK, stroke_width=4).set_fill(WHITE, 1) \
             .move_to([-1.2, 1.6, 0])
         p2 = pipe(tee.get_center(), ext.get_bottom())
         ext_lab = tag("Reference module", FS_LABEL).next_to(ext, UP, buff=0.2)
@@ -292,7 +292,7 @@ class PtCalEp02(SyncedScene):
         cable = DashedLine(ext.get_right(), cal.get_left(), color=GREY_INK, stroke_width=3)
         wire = pipe(xm.body.get_right(), [4.9, -0.8 + 0.2, 0], cal.get_bottom(), color=MOVE, width=3)
         pv = ValueTracker(0.0)
-        read_p = always_redraw(lambda: tag(f"{fmt(pv.get_value(), 2)} {D.UNIT}", FS_TAG + 2)
+        read_p = always_redraw(lambda: tag(f"{fmt(pv.get_value(), 2)} {D.UNIT}", FS_TAG)
                                .move_to(ext))
         read_i = always_redraw(lambda: tag(f"{fmt(D.i_linear(pv.get_value()), 2)} mA", FS_TAG + 2)
                                .move_to(cal))
@@ -305,18 +305,18 @@ class PtCalEp02(SyncedScene):
                   FadeIn(read_p), FadeIn(read_i), run_time=0.8)
         self.sync(self.c(1, "فَيَرَيَانِ"))
         path = pipe(pump.get_right(), tee.get_center())
-        self.play(flow(path), grip.animate.rotate(0.25, about_point=grip.get_start()), run_time=0.7)
+        self.play(flow(path), grip.animate.rotate(0.25, about_point=grip.get_start()), run_time=0.5)
         self.play(flow(p2.copy()), flow(p3.copy()), pv.animate.set_value(D.SETUP_DEMO_PV),
-                  grip.animate.rotate(-0.25, about_point=grip.get_start()), run_time=1.6)
-        same = tag("same pressure, same moment", FS_LABEL, FLUID).next_to(tee, DOWN, buff=0.5)
-        self.play(FadeIn(same), Indicate(ext), Indicate(xm.body), run_time=0.9)
+                  grip.animate.rotate(-0.25, about_point=grip.get_start()), run_time=1.2)
+        same = tag("same pressure, same moment", FS_LABEL, FLUID).move_to([-1.2, -2.6, 0])
+        self.play(FadeIn(same), Indicate(ext), Indicate(xm.body), run_time=0.6)
         self.sync(self.end(1) - 0.6)
         self.clear(self.sec)
 
     # ---------------- Segment 2: the hand-pump family ----------------
     def seg2_family(self):
         section_title(self, "Beamex hand pumps: medium and range", prev=self.sec)
-        x0, xneg, xlen = -1.6, 1.3, 7.9           # zero, width of −1 bar, width of 0 → 1000 bar
+        x0, xneg, xlen = -1.2, 1.3, 7.5           # zero, width of −1 bar, width of 0 → 1000 bar
 
         def X(p):
             if p < 0:
@@ -363,9 +363,9 @@ class PtCalEp02(SyncedScene):
         bench = tag("bench · screw handle", FS_TAG, FLUID).next_to(rows[-1][2], DOWN, buff=0.1) \
             .align_to(rows[-1][2], RIGHT)
         self.sync(self.c(2, "بِمِقْبَضٍ"))
-        self.play(FadeIn(bench), run_time=0.5)
-        self.sync(self.end(2) - 0.6)
-        self.clear(self.sec)
+        self.play(FadeIn(bench), run_time=0.4)
+        self.sync(self.end(2) - 0.5)
+        self.clear(self.sec, run_time=0.5)
 
     # ---------------- Segment 3: anatomy of the hydraulic hand pump ----------------
     def seg3_anatomy(self, pm):
@@ -373,10 +373,10 @@ class PtCalEp02(SyncedScene):
         callouts = [("Reservoir\n200 ml", pm.res, LEFT),
                     ("Handles +\npump piston", pm.lever_end(), LEFT),
                     ("Stroke selector\nPrime / High", P(-3.37, -0.9), LEFT),
-                    ("Vent\nvalve", pm.vent, UP),
-                    ("Fine adjust", P(2.7, -0.9), RIGHT),
-                    ("Side port: hose", P(2.45, 0.05), RIGHT),
-                    ("Top port:\nEXT module", pm.ext, RIGHT)]
+                    ("Vent\nvalve", pm.vent.get_left() + UP * 0.12, UP),
+                    ("Fine\nadjust", P(2.7, -0.9), RIGHT),
+                    ("Side port:\nhose", P(2.45, 0.05), RIGHT),
+                    ("Top port:\nEXT", pm.ext, RIGHT)]
         cues = [self.c(3, "خَزَّانٌ"), self.c(3, "وَمِقْبَضَانِ"), self.c(3, "وَمُحَدِّدُ"),
                 self.c(3, "وَصِمَامُ"), self.c(3, "وَمُعَدِّلُ"), self.c(3, "جَانِبِيٌّ"),
                 self.c(3, "وَعُلْوِيٌّ")]
@@ -455,13 +455,17 @@ class PtCalEp02(SyncedScene):
         self.play(FadeOut(box), run_time=0.3)
         # 6) without it: oscillating around the point, overshoot on the way up
         self.sync(self.c(4, "وَبِدُونِهِ"))
-        frame = Rectangle(width=3.4, height=1.8, color=GREY_INK, stroke_width=2).move_to([5.0, -1.9, 0])
-        target = DashedLine([3.45, -1.55, 0], [6.55, -1.55, 0], color=INK, stroke_width=2)
-        t_lab = tag("point", FS_TAG).next_to(target, UP, buff=0.08).align_to(frame, LEFT).shift(RIGHT * 0.1)
+        frame = Rectangle(width=3.0, height=1.5, color=GREY_INK, stroke_width=2).move_to([5.2, -2.35, 0])
+        ty = frame.get_top()[1] - 0.45
+        target = DashedLine([frame.get_left()[0] + 0.05, ty, 0], [frame.get_right()[0] - 0.05, ty, 0],
+                            color=INK, stroke_width=2)
+        x0 = frame.get_left()[0] + 0.1
         zig = VMobject(color=BAD, stroke_width=4).set_points_as_corners(
-            [np.array(p) for p in [[3.5, -2.65, 0], [4.1, -1.25, 0], [4.6, -1.9, 0], [5.1, -1.3, 0],
-                                   [5.6, -1.8, 0], [6.1, -1.4, 0], [6.5, -1.7, 0]]])
-        z_lab = tag("no fine adjust: overshoot", FS_TAG, BAD).next_to(frame, UP, buff=0.15)
+            [np.array([x0 + dx, ty + dy, 0]) for dx, dy in
+             [(0, -0.9), (0.5, 0.3), (0.95, -0.3), (1.4, 0.25), (1.85, -0.2), (2.3, 0.15), (2.75, -0.1)]])
+        z_lab = tag("no fine adjust:\nswinging around\nthe point (dashed)", FS_TAG, BAD) \
+            .next_to(frame, LEFT, buff=0.3)
+        t_lab = VMobject()
         self.say("Without it: you swing around the point", y=-3.5)
         self.play(Create(frame), Create(target), FadeIn(t_lab), FadeIn(z_lab), run_time=0.6)
         self.play(Create(zig), run_time=1.6)
@@ -540,7 +544,7 @@ class PtCalEp02(SyncedScene):
         self.sync(self.c(5, "فُقَاعَةَ"))
         bub = Circle(radius=0.22, color=AIR, stroke_width=3).set_fill(WHITE, 1) \
             .move_to(hose.point_from_proportion(0.55))
-        b_note = fit(tag("gas bubble compresses → slow settling, looks like a leak", FS_TAG, BAD), 5.5) \
+        b_note = tag("gas bubble compresses:\nslow settling, looks like a leak", FS_TAG, BAD) \
             .next_to(rule, UP, buff=0.25)
         b_note.align_to([6.6, 0, 0], RIGHT)
         self.play(FadeIn(bub), run_time=0.4)
@@ -582,7 +586,8 @@ class PtCalEp02(SyncedScene):
             .shift(DOWN * 0.5)
         l_high = tag("High: short strokes", FS_TAG, MOVE).next_to(c_high, RIGHT, buff=0.15) \
             .shift(DOWN * 0.35)
-        l_fine = tag("fine adjust, from below", FS_TAG, GOOD).move_to([fine[1][0] + 0.3, ty - 0.9, 0])
+        l_fine = tag("fine adjust, from below", FS_TAG, GOOD).move_to([0, ty + 0.45, 0]) \
+            .align_to([ox + 0.4, 0, 0], LEFT)
         self.sync(self.c(6, "ابْدَأْ"))
         self.play(Create(c_prime), FadeIn(l_prime), run_time=1.6)
         self.sync(self.c(6, "فَانْتَقِلْ"))
@@ -597,14 +602,15 @@ class PtCalEp02(SyncedScene):
         x1 = fine[-1][0]
         sag = [[x1, ty, 0], [x1 + 0.5, ty - 0.22, 0], [x1 + 1.3, ty - 0.3, 0], [x1 + 2.2, ty - 0.31, 0]]
         c_sag = VMobject(color=MOVE, stroke_width=4).set_points_smoothly([np.array(p) for p in sag])
-        s_lab = tag("small sag: heat, hose stretch", FS_TAG, MOVE).move_to([sag[1][0] + 0.2, ty + 0.5, 0])
+        s_lab = tag("small sag: heat, hose stretch", FS_TAG, MOVE).move_to([0, ty + 0.45, 0]) \
+            .align_to([x1 - 0.1, 0, 0], LEFT)
         self.sync(self.c(6, "بَعْدَ التَّوْلِيدِ"))
         self.play(Create(c_sag), FadeIn(s_lab), run_time=1.4)
         wait = tag(f"wait {D.PGHH_WAIT_MIN[0]}–{D.PGHH_WAIT_MIN[1]} min, then re-trim", FS_TAG, GOOD)
         x2 = sag[-1][0]
         retrim = VMobject(color=GOOD, stroke_width=5).set_points_as_corners(
             [np.array(p) for p in [[x2, ty - 0.31, 0], [x2 + 0.25, ty, 0], [x2 + 1.3, ty, 0]]])
-        wait.move_to([x2 + 1.2, ty + 1.05, 0])
+        wait.move_to([0, ty + 0.95, 0]).align_to([x2 - 0.3, 0, 0], LEFT)
         self.sync(self.c(6, "فَانْتَظِرْ"))
         self.play(FadeIn(wait), run_time=0.5)
         self.play(Create(retrim), run_time=0.8)
@@ -628,30 +634,30 @@ class PtCalEp02(SyncedScene):
         pm.vent.set_color(INK)
         self.play(FadeIn(pm.static()), FadeIn(pm.moving()), run_time=0.6)
         self.sync(self.c(7, "اسْتَعْمِلْ"))
-        l1 = tag("1  fine adjust out", FS_LABEL, GOOD).move_to([4.6, -1.3, 0]).align_to([3.5, 0, 0], LEFT)
+        l1 = tag("1  fine adjust out", FS_TAG + 2, GOOD).move_to([4.6, -1.15, 0]).align_to([3.4, 0, 0], LEFT)
         self.play(FadeIn(l1), run_time=0.4)
         self.play(pm.fine.animate.set_value(0.1), pm.press.animate.set_value(D.STROKE_DEMO_BAR[-1]
                                                                              - 2 * D.FINE_STEP_BAR),
                   run_time=1.6)
         self.sync(self.c(7, "وَافْتَحِ"))
-        l2 = tag("2  vent: carefully", FS_LABEL, MOVE).next_to(l1, DOWN, buff=0.35).align_to(l1, LEFT)
+        l2 = tag("2  vent: carefully", FS_TAG + 2, MOVE).next_to(l1, DOWN, buff=0.15).align_to(l1, LEFT)
         self.play(FadeIn(l2), pm.vent.animate.set_color(MOVE), flow(pm.paths()[2]),
                   pm.press.animate.set_value(0), run_time=1.4)
         self.sync(self.c(7, "وَلَا تَفُكَّهُ"))
-        l3 = tag("never unscrew fully", FS_LABEL, BAD).next_to(l2, DOWN, buff=0.35).align_to(l1, LEFT)
+        l3 = tag("never unscrew fully", FS_TAG + 2, BAD).next_to(l2, DOWN, buff=0.15).align_to(l1, LEFT)
         stem = VGroup(Line(ORIGIN, UP * 0.7, stroke_width=6, color=INK),
                       RoundedRectangle(width=0.5, height=0.2, corner_radius=0.05, color=INK,
                                        stroke_width=3).set_fill(INK, 1).shift(UP * 0.8),
-                      Dot(DOWN * 0.15, radius=0.08, color=INK)).next_to(l3, DOWN, buff=0.35)
+                      Dot(DOWN * 0.15, radius=0.08, color=INK)).move_to([6.1, -3.0, 0])
         x = cross(stem)
         self.play(FadeIn(l3), FadeIn(stem), run_time=0.5)
-        self.play(stem[:2].animate.shift(UP * 0.35), stem[2].animate.shift(DOWN * 0.3), Create(x),
+        self.play(stem[:2].animate.shift(UP * 0.2), stem[2].animate.shift(DOWN * 0.15), Create(x),
                   run_time=0.8)
         self.sync(self.c(7, "وَالسَّوَائِلُ") - 0.5)
         self.clear(self.sec)
         # the two allowed fluids
         b1, b2, b3 = bottle("#e8d49a"), bottle(FLUID_FILL), bottle("#d9c2e8")
-        row = VGroup(b1, b2, b3).arrange(RIGHT, buff=2.6).move_to([-2.2, 1.0, 0])
+        row = VGroup(b1, b2, b3).arrange(RIGHT, buff=2.4).move_to([-1.4, 1.0, 0])
         t1 = tag("mineral hydraulic oil\n(low viscosity)", FS_TAG).next_to(b1, DOWN, buff=0.25)
         t2 = tag("distilled water\ndrain after use", FS_TAG).next_to(b2, DOWN, buff=0.25)
         t3 = tag("any other fluid\ndamages the seals", FS_TAG, BAD).next_to(b3, DOWN, buff=0.25)
@@ -745,9 +751,9 @@ class PtCalEp02(SyncedScene):
                 [np.array(p) for p in [[-5.6, y, 0], [-4.2, y + 0.25, 0], [-2.8, y - 0.2, 0], [-1.6, y, 0]]])
         hl = hose(1.5, INK, 6)
         hh = hose(0.1, INK, 10)
-        tl = tag(f"{D.HOSE_LOW_BAR} bar hose · Bx G1/8 fittings · low and medium ranges", FS_TAG) \
+        tl = tag(f"{D.HOSE_LOW_BAR} bar hose · Bx G1/8 fittings\nlow and medium ranges", FS_TAG) \
             .next_to(hl, RIGHT, buff=0.3)
-        th = tag(f"{D.PGHH_HOSE_BAR} bar hose · Bx 1215 fittings · high range", FS_TAG) \
+        th = tag(f"{D.PGHH_HOSE_BAR} bar hose · Bx 1215 fittings\nhigh range", FS_TAG) \
             .next_to(hh, RIGHT, buff=0.3)
         self.play(Create(hl), FadeIn(tl), run_time=0.7)
         self.sync(self.c(8, "وَسِتُّمِئَةٍ"))
@@ -755,7 +761,7 @@ class PtCalEp02(SyncedScene):
         self.sync(self.c(8, "وَخُرْطُومُ عِشْرِينَ"))
         bad = hose(-1.3, INK, 6)
         bulge = Ellipse(width=0.7, height=0.45, color=BAD, stroke_width=5).move_to(bad.point_from_proportion(0.5))
-        tb = tag(f"{D.BAD_HOSE_BAR} bar hose on a {D.HOSE_LOW_BAR} bar system: a time bomb", FS_TAG, BAD) \
+        tb = tag(f"{D.BAD_HOSE_BAR} bar hose on a {D.HOSE_LOW_BAR} bar system:\na time bomb", FS_TAG, BAD) \
             .next_to(bad, RIGHT, buff=0.3)
         self.play(Create(bad), FadeIn(tb), run_time=0.6)
         self.play(GrowFromCenter(bulge), bad.animate.set_color(BAD), run_time=0.7)
@@ -869,7 +875,7 @@ class PtCalEp02(SyncedScene):
         bat = icon("battery", INK, 0.5).move_to(epg.get_center() + DOWN * 0.35 + LEFT * 0.95)
         e_rng = tag(f"{fmt(D.EPG_RANGE[0], 2)} … {D.EPG_RANGE[1]} bar", FS_TAG) \
             .next_to(epg, DOWN, buff=0.25)
-        e_sub = tag("electric, battery", FS_TAG, GREY_INK).next_to(bat, RIGHT, buff=0.15)
+        e_sub = tag("battery", FS_TAG, GREY_INK).next_to(bat, RIGHT, buff=0.15)
         self.sync(self.c(10, "إِي بِي جِي"))
         self.play(Create(epg), FadeIn(e_lab), FadeIn(bat), FadeIn(e_sub), FadeIn(e_rng), run_time=0.9)
         mc6 = RoundedRectangle(width=2.2, height=1.6, corner_radius=0.18, color=INK, stroke_width=4) \
@@ -881,13 +887,12 @@ class PtCalEp02(SyncedScene):
                    max_tip_length_to_length_ratio=0.12)
         sp_lab = tag("set point", FS_TAG, MOVE).next_to(sp, UP, buff=0.12)
         self.play(GrowArrow(sp), FadeIn(sp_lab), run_time=0.6)
-        auto = tag("regulates by itself: fully automatic", FS_TAG, GOOD).next_to(sp, DOWN, buff=0.2)
+        auto = tag("regulates by itself:\nfully automatic", FS_TAG, GOOD).next_to(mc6, DOWN, buff=0.25)
         self.sync(self.c(10, "فَتَضْبِطُهَا"))
         self.play(FadeIn(auto), Indicate(epg, color=GOOD), run_time=0.8)
         self.sync(self.c(10, "وَتَعْمَلُ مَعَ"))
-        any_ = tag("also with any other calibrator (in place of a hand pump)", FS_TAG) \
-            .next_to(e_rng, DOWN, buff=0.2).align_to(e_rng, LEFT)
-        fit(any_, 7.0)
+        any_ = tag("also with any other calibrator\n(in place of a hand pump)", FS_TAG) \
+            .next_to(e_rng, DOWN, buff=0.2).align_to(epg, LEFT)
         self.play(FadeIn(any_), run_time=0.5)
         self.sync(self.c(10, "وَبِي أُو سِي"))
         poc = RoundedRectangle(width=2.6, height=1.3, corner_radius=0.15, color=INK, stroke_width=4) \
