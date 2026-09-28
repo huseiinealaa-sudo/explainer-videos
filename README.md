@@ -4,7 +4,8 @@
 - كل موضوع مشروع في `projects/<name>/` يضم سكربتاته وبياناته ومصادره، وملف `CLAUDE.md` بقواعده الخاصة.
 - الحزمة المشتركة `explainer/` (تُثبَّت بـ `pip install -e .`): الأسلوب، والتوقيت بالكلمات، وخط الإنتاج، ودمج السلاسل، ومكتبة المشاهد. والقواعد العامة في `CLAUDE.md`.
 - مشروع جديد يبدأ من `templates/new_project/`، وكتالوج المشاهد في `output/template_scene_gallery.mp4`.
-- خطوات إنتاج أي فيديو في الـ Skill `.claude/skills/explainer-video/`، وكل معاينة تمر بفحص التداخل الآلي وأوراق الإطارات (`--qa`، الحزمة `explainer/qa/`) ثم الناقد المستقل `.claude/agents/video-critic.md` قبل التصيير النهائي.
+- خطوات إنتاج أي فيديو في الـ Skill `.claude/skills/explainer-video/`. كل معاينة تمر أولًا بحلقة الفحص الآلي (`--qa`، الحزمة `explainer/qa/`: التداخل ومسافة الأمان وأوراق الإطارات) حتى صفر ملاحظات حرجة، بحد 5 تكرارات، ثم بالناقد المستقل `.claude/agents/video-critic.md` بحد 3 جولات، قبل التصيير النهائي. يحدّث الناقد ذاكرته `.claude/agent-memory/video-critic/MEMORY.md` بنفسه، ويمنعه hook من الكتابة في أي ملف آخر.
+- اختبارات أدوات الجودة: `python -m unittest discover tests` و`python -m explainer.qa.selftest`.
 - الفيديوهات النهائية في `output/`.
 
 | المشروع | المجلد | الفيديو |

@@ -1,6 +1,6 @@
 ---
 name: explainer-video
-description: The production procedure for every explainer video in this repository. Load it for ANY request to make, continue, extend or redo a video, an episode or a series (e.g. "اصنع فيديو", "حلقة جديدة", "سلسلة", "حوّل هذا الملف إلى فيديو", "make an explainer video from this source", "produce episode 2", "re-render the preview"). It covers the whole path from the cleaned source to one pull request - material inventory, storyboard, narration with the quality gate, the preview QA loop (overlap check, contact sheets, video-critic agent, fixes, at most 3 rounds), the 1080p render, the first-episode approval stop, the remaining episodes, the PR and the privacy check.
+description: The production procedure for every explainer video in this repository. Load it for ANY request to make, continue, extend or redo a video, an episode or a series (e.g. "اصنع فيديو", "حلقة جديدة", "سلسلة", "حوّل هذا الملف إلى فيديو", "make an explainer video from this source", "produce episode 2", "re-render the preview"). It covers the whole path from the cleaned source to one pull request - material inventory, storyboard, narration with the quality gate, the preview QA loops (automatic overlap loop to zero critical findings, at most 5 iterations; then contact sheets, video-critic agent and fixes, at most 3 rounds), the 1080p render, the first-episode approval stop, the remaining episodes, the PR and the privacy check.
 ---
 
 # Explainer video: from source to pull request
@@ -13,7 +13,7 @@ work begins and the end time when the PR is opened; time is measured, not target
 Reference files next to this one:
 - `storyboard_template.md`: the storyboard table and how to fill it.
 - `approval_message.md`: the one approval message (storyboard + narration + quality gate).
-- `qa_loop.md`: the commands of the preview QA loop and how to call the critic.
+- `qa_loop.md`: the commands of the two preview QA loops and how to call the critic.
 - `privacy_check.md`: the final privacy check of the pull request.
 
 ## Steps
@@ -54,15 +54,24 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
 1. Write the script `projects/<name>/<name>_<video>.py` from the storyboard (`from explainer
    import *`, `SyncedScene`, cues from the word timings, numbers from the data module,
    layout by `next_to` / `arrange` / `align_to` inside the safe margin).
-2. QA loop — at most 3 rounds (commands and critic call: `qa_loop.md`):
-   preview in QA mode → overlap reports → contact sheets → `video-critic` → fix every
-   critical and important issue (and the cheap improvements) → next round.
+2. QA — two loops, counted separately (commands and critic call: `qa_loop.md`):
+   - **Automatic loop, at most 5 iterations:** preview in QA mode (`--qa`) → overlap
+     reports → fix every critical finding → again, until the reports show **zero critical
+     findings**. Later iterations may run only the changed segments (`--segments`), the
+     last one covers the whole video. No critic round is spent here.
+   - **Critic loop, at most 3 rounds:** contact sheets + overlap reports → `video-critic`
+     → fix every critical and important issue (and the cheap improvements) → run the
+     automatic loop again on the changed segments → next critic round.
+   - If critical findings are still open after 5 automatic iterations, call the critic
+     anyway and list them in its prompt (time, elements, why they stayed); they count as
+     open issues of that round.
    Severity: **critical** = an error of accuracy or numbers, an overlap, anything leaving
    the frame, unreadable text; **important** = drawing not matching the speech at that
    moment (a spoken motion that does not happen), or no visual pointer on the element
    being explained; **improvement** = everything else, never blocking.
-   **PASS** = no critical and no important issue. Stop at PASS, or after round 3: then
-   production goes on and what remains is listed in the PR (step f).
+   **PASS** = no critical and no important issue. Stop at PASS, or after critic round 3:
+   then production goes on and what remains is listed in the PR (step f). Record per
+   video the number of automatic iterations and critic rounds.
 3. Render 1080p (`python projects/<name>/<name>_<video>.py`), check the file size (< 100 MB),
    commit the script, data, storyboard, sources, the video in `output/` and the critic's
    memory (`.claude/agent-memory/video-critic/`), and push the branch.
@@ -80,7 +89,7 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
 3. Run the privacy check of `privacy_check.md` over everything the PR contains; fix and push
    on the same PR if anything is found, and say so in the PR.
 
-### f. What remains after 3 rounds is reported, not hidden
-Every issue still open after the third round (critic or overlap report) goes in the PR
+### f. What remains after 3 critic rounds is reported, not hidden
+Every issue still open after the third critic round (critic or overlap report) goes in the PR
 description: episode, time, grid cell, the issue, and why it was left. Never present an
 episode as clean when the last round was FIX.
