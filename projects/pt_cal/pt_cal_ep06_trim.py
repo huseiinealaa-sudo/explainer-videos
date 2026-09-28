@@ -50,7 +50,7 @@ class PtCalEp06(SyncedScene):
         self.sec = section_title(self, "Four operations — do not mix them")
         cards = VGroup(
             card("Calibration", "compare only:\nnothing changes", FLUID, 3.1),
-            card("Trim", "internal adjustment:\nrecalibrate after it", MOVE, 3.1),
+            card("Trim", "internal change:\nrecalibrate after it", MOVE, 3.1),
             card("Configuration", "unit, damping,\ntransfer function,\nalarm direction", INK, 3.1),
             card("Re-ranging", "LRV / URV only:\nsensor untouched", GREY_INK, 3.1),
         ).arrange(RIGHT, buff=0.2)
@@ -76,7 +76,7 @@ class PtCalEp06(SyncedScene):
         urv = tag(f"URV {fmt(D.MIS_URV_OLD, 0)} → {fmt(D.MIS_URV_NEW)} bar", FS_TAG, MOVE) \
             .next_to(ch.p(10.5, 21), UP, buff=0.15).align_to(ch.axes[0], RIGHT)
         new_pt = ch.p(5, D.MIS_I_50_AFTER)
-        mid = tag(f"{fmt(D.MIS_I_50_AFTER, 2)} mA — looks fine", FS_TAG, MOVE) \
+        mid = tag(f"{fmt(D.MIS_I_50_AFTER, 2)} mA — looks closer", FS_TAG, MOVE) \
             .next_to(new_pt, DR, buff=0.15)
         end_pt = Dot(ch.p(10, D.MIS_I_100_AFTER), radius=0.09, color=BAD)
         self.play(FadeIn(urv), run_time=0.4)
@@ -255,7 +255,7 @@ class PtCalEp06(SyncedScene):
             x += w + gap
         # the worked example: +0.37 … −0.30 on a straight line
         self.sync(self.c(4, "مِثَالٌ"))
-        ex = Chart(-5.9, -3.35, 6.2, 1.85, (0, 100), (-0.6, 0.6), xticks=[(0, "0"), (50, "50"), (100, "100 %")],
+        ex = Chart(-5.9, -3.3, 6.2, 1.85, (0, 100), (-0.6, 0.6), xticks=[(0, "0"), (50, "50"), (100, "100 %")],
                    yticks=[(-0.5, "−0.5"), (0, "0"), (0.5, "+0.5")])
         band = ex.band(-D.TOL_PCT, D.TOL_PCT, GOOD, 0.1)
         zero = ex.hline(0, LIGHT_INK)
@@ -267,12 +267,12 @@ class PtCalEp06(SyncedScene):
         self.play(LaggedStart(*[FadeIn(dt, scale=1.5) for dt in dots], lag_ratio=0.25), FadeIn(vals), FadeIn(tband),
                   run_time=1.2)
         self.sync(self.c(4, "زَائِدِ"))
-        self.play(Indicate(VGroup(dots[0], vals[0]), color=MOVE), run_time=0.6)
+        self.play(Indicate(dots[0], color=MOVE), Indicate(vals[0], color=MOVE), run_time=0.6)
         self.sync(self.c(4, "نَاقِصِ"))
-        self.play(Indicate(VGroup(dots[-1], vals[-1]), color=MOVE), run_time=0.6)
+        self.play(Indicate(dots[-1], color=MOVE), Indicate(vals[-1], color=MOVE), run_time=0.6)
         self.sync(self.c(4, "عَلَى خَطٍّ"))
         fitl = ex.line([(0, D.PATTERN_INTERCEPT), (100, D.PATTERN_INTERCEPT + D.PATTERN_SLOPE * 100)], MOVE, 3)
-        info = VGroup(tag(f"errors in % of span; offset {sfmt(D.PATTERN_INTERCEPT, 2)} % at 0 %", FS_TAG),
+        info = VGroup(tag(f"errors in % of span; fitted line: {sfmt(D.PATTERN_INTERCEPT, 2)} % at 0 %", FS_TAG),
                       tag(f"slope {fmt(D.PATTERN_SLOPE * 100, 2)} % over the span", FS_TAG),
                       tag(f"residuals ≤ {fmt(D.PATTERN_MAX_RESID, 3)} %: a straight line", FS_TAG)) \
             .arrange(DOWN, aligned_edge=LEFT, buff=0.12)
