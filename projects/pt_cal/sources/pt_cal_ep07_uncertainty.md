@@ -1,4 +1,4 @@
-# pt_cal_ep06_uncertainty — research notes (claim → source → note)
+# pt_cal_ep07_uncertainty — research notes (claim → source → note)
 
 Sources: **[GUM]** JCGM 100:2008, Evaluation of measurement data — Guide to the expression of uncertainty
 in measurement — https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf ; **[17025]** ISO/IEC 17025:2017;

@@ -1,4 +1,4 @@
-# Project: pt_cal — Calibrating pressure transmitters with the Beamex MC6 (6 episodes)
+# Project: pt_cal — Calibrating pressure transmitters with the Beamex MC6 (7 episodes)
 
 Part 1 of the refinery transmitter-calibration series. Project-specific rules; the general rules in
 the root `CLAUDE.md` also apply, and where they differ this file wins for this project.
@@ -23,6 +23,7 @@ the root `CLAUDE.md` also apply, and where they differ this file wins for this p
 
 ## Narration
 - Arabic, ar-SA-HamedNeural, normal speed (`project.toml`); fully diacritized.
+- Decimals are spoken with «فَاصِلَة» (never «أَعْشَار» or «عُشْرَيْن», which can be heard as whole numbers).
 - Every episode opens with the one-sentence educational-material notice (each episode stands alone).
 - Foreign terms written in Arabic letters:
   | Term | Narration spelling |
@@ -48,13 +49,14 @@ the root `CLAUDE.md` also apply, and where they differ this file wins for this p
 ## Videos
 | # | Script / output | Topic | Status |
 |---|---|---|---|
-| 1 | `pt_cal_ep01_device` | the MC6, electrical side, pressure modules, modes | narration draft |
-| 2 | `pt_cal_ep02_pressure` | generating pressure; hydraulic hand pump (model episode) | narration draft |
-| 3 | `pt_cal_ep03_setup` | transmitter types, connections, 3-valve manifold, safety | narration draft |
-| 4 | `pt_cal_ep04_procedure` | ten steps, approach rule, pressure decay | narration draft |
-| 5 | `pt_cal_ep05_verdict` | calculation, certificate, trims, error patterns | narration draft |
-| 6 | `pt_cal_ep06_uncertainty` | error vs uncertainty, budget, TUR, guard band | narration draft |
-| — | `pt_cal_full_series` | the six episodes joined with title cards | after approval |
+| 1 | `pt_cal_ep01_device` | the MC6, electrical side, pressure modules, modes | narration approved |
+| 2 | `pt_cal_ep02_pressure` | generating pressure; hydraulic hand pump (model episode) | narration approved |
+| 3 | `pt_cal_ep03_setup` | transmitter types, connections, 3-valve manifold, safety | narration approved |
+| 4 | `pt_cal_ep04_procedure` | ten steps, approach rule, pressure decay | narration approved |
+| 5 | `pt_cal_ep05_verdict` | calculation, verdict, certificate, interval | narration approved |
+| 6 | `pt_cal_ep06_trim` | four operations, trims and their order, when to trim, error patterns | narration approved |
+| 7 | `pt_cal_ep07_uncertainty` | error vs uncertainty, budget, TUR, guard band | narration approved |
+| — | `pt_cal_full_series` | the seven episodes joined with title cards | after approval |
 
 Storyboards: `storyboard/pt_cal_ep0N_<name>.md` (with the narration).
 
@@ -85,3 +87,7 @@ Storyboards: `storyboard/pt_cal_ep0N_<name>.md` (with the narration).
 ## Owner decisions
 - 2026-09-28: project created; 6 episodes, ~25 min; episode 2 is the model episode; out of this part:
   temperature (unit 4, ET terminals, cold-junction compensation, thermal mass, MC6-T).
+- 2026-09-28 (narration approval): episode 5 split in two → 7 episodes (ep05 verdict, ep06 trim,
+  ep07 uncertainty); module example EXT60 vs EXT600 approved; MC5 described only as the older
+  generation (no "monochrome/keypad"); manifold sequence per the Rosemount 3051 Reference Manual;
+  decimals spoken with «فاصلة», never «أعشار / عُشْرَين» (e.g. 7.2 = سَبْعَةٌ فَاصِلَةُ اثْنَيْنِ).

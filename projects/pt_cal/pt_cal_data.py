@@ -72,7 +72,7 @@ DP_50_LINEAR_MA = I_LO + I_SPAN * 0.5                   # 12 mA
 TRAP_50_ERR_PCT = err_pct(DP_50_SQRT_MA, DP_50_LINEAR_MA)   # 20.7 % of span
 
 # =====================================================================
-# Ep 5 — error-pattern example (errors in % of span), least-squares line
+# Ep 6 — error-pattern example (errors in % of span), least-squares line
 # =====================================================================
 PATTERN_X = [0, 25, 50, 75, 100]                         # % of span
 PATTERN_E = [0.37, 0.22, 0.03, -0.14, -0.30]             # % of span
@@ -88,12 +88,12 @@ PATTERN_MAX_RESID = max(abs(r) for r in PATTERN_RESID)
 PATTERN_MAX_ERR = max(abs(e) for e in PATTERN_E)
 PATTERN_PASS = PATTERN_MAX_ERR <= TOL_PCT
 
-# URV-change mistake (Ep 5): 12.5 mA at 50 % of a 0–10 bar transmitter, URV 10 -> 10.5 bar
+# URV-change mistake (Ep 6): 12.5 mA at 50 % of a 0–10 bar transmitter, URV 10 -> 10.5 bar
 MIS_URV_OLD, MIS_URV_NEW = 10.0, 10.5                    # bar
 MIS_I_AT_50 = 12.5                                       # mA
 
 # =====================================================================
-# Ep 6 — uncertainty budget (kg/cm²) at the 100 % point, GUM
+# Ep 7 — uncertainty budget (kg/cm²) at the 100 % point, GUM
 # =====================================================================
 K = 2
 A_REF = 0.0153          # reference pressure module, rectangular half-width
@@ -140,12 +140,12 @@ DEMO_LO, DEMO_HI = DEMO_E - DEMO_U, DEMO_E + DEMO_U       # 0.38 … 0.58 %
 RDG_SPEC_PCT, RDG_AT_PCT_SPAN = 0.5, 10
 RDG_AS_SPAN_PCT = RDG_SPEC_PCT * RDG_AT_PCT_SPAN / 100   # 0.05 % of span
 
-# accuracy / uncertainty numbers quoted from specs (Ep 6 wording)
+# accuracy / uncertainty numbers quoted from specs (Ep 7 wording)
 XMTR_ACCURACY_PCT = 0.075       # illustrative smart-transmitter spec, % of span
 TUR_MIN = 4
 
 # =====================================================================
-# Ep 1 — choosing the module (MC6 brochure, 1-year uncertainty, k=2)  [new values, proposal]
+# Ep 1 — choosing the module (MC6 brochure, 1-year uncertainty, k=2)  [new values, owner-approved 2026-09-28]
 #   EXT60:  0 … 60 bar,  ±(0.01 % FS + 0.025 % RDG)
 #   EXT600: 0 … 600 bar, ±(0.015 % FS + 0.025 % RDG)
 # =====================================================================

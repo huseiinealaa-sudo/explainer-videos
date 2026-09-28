@@ -29,4 +29,4 @@ Priority-1 sources (all free at beamex.com; page = the manual's printed page):
 | 18 | Standard MC6 not intrinsically safe; Ex area → MC6-Ex or move to workshop | [MC6-UM] safety chapter (MC6 carries no Ex marking; MC6-Ex does) | confirmed in substance; "no third option" is the owner's site rule, kept as the owner's wording |
 | 19 | Pressure units | [MC6-BR] p12 lists kgf/cm² | on-screen unit "kg/cm²" (owner's convention) |
 
-Left for the owner: #2 (monochrome detail), #15 (new example values).
+Owner decisions 2026-09-28: #2 monochrome detail dropped; #15 EXT60 vs EXT600 approved.
