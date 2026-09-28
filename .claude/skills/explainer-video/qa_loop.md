@@ -53,8 +53,10 @@ Automatic loop: <k> iterations, critical findings now <0 | n: time, elements, wh
 The critic updates its memory file itself (Write/Edit, limited to
 `.claude/agent-memory/video-critic/` by the hook `.claude/hooks/critic_memory_guard.py`) and
 ends its report with a `Memory:` line; check the file changed as that line says.
-If the `video-critic` agent type is not available in the session (agent files are loaded
-when the session starts, so a newly created `.claude/agents/` folder needs a new session),
+Agent files are read when the session starts: a new `.claude/agents/` folder, or a change to
+`video-critic.md` (its tools, its hook), takes effect only in a new session. Check the
+critic's tools in the agent list (Read, Glob, Grep, Write, Edit). If the `video-critic` agent
+type is not available in the session,
 call a `general-purpose` agent with: "Act exactly as the agent defined in
 .claude/agents/video-critic.md (read it first, including its memory file); read-only except
 .claude/agent-memory/video-critic/", followed by the prompt above. That fallback has no
