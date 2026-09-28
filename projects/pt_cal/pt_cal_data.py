@@ -307,3 +307,22 @@ def print_table():
 
 if __name__ == "__main__":
     print_table()
+
+
+# =====================================================================
+# Ep 2 — illustrative on-screen values of the animations (not measurements)
+# =====================================================================
+SETUP_DEMO_PV = URV / 2                         # kg/cm², setup demo (50 % of span)
+SETUP_DEMO_MA = i_linear(SETUP_DEMO_PV)         # 12.00 mA
+STROKE_DEMO_BAR = [6.0, 12.0, 18.0]             # bar after each squeeze (illustrative)
+FINE_STEP_BAR = 0.4                             # bar moved by one fine-adjust turn (illustrative)
+BUBBLE_SHRINK = 0.4                             # a gas bubble at 50 bar drawn at 40 % size
+
+
+def _self_test_ep2():
+    assert f"{SETUP_DEMO_MA:.2f}" == "12.00"
+    assert STROKE_DEMO_BAR == sorted(STROKE_DEMO_BAR) and STROKE_DEMO_BAR[-1] < PGHH_BLEED_BAR
+    assert PUMPS[5][0] == "PGHH" and PUMPS[5][3] == 700 and PUMPS[7][3] == 1000
+
+
+_self_test_ep2()

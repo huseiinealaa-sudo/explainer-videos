@@ -1,4 +1,4 @@
-# pt_cal_ep02_pressure — Generating the pressure (model episode)   (target ~4:30, 9 segments)
+# pt_cal_ep02_pressure — Generating the pressure (model episode)   (measured narration 5:22, 10 segments)
 
 Numbers from `pt_cal_data.py` (PUMPS, PGHH_*, HOSE_*, PGC_PUMP_MAX_BAR, AIR_WAIT_S, EPG_RANGE,
 POC8_MAX_BAR, BAD_HOSE_BAR). Colours: ACCENT_1 blue = pressure / fluid flow; ACCENT_2 orange =
@@ -15,11 +15,12 @@ ACCENT_4 red = danger, error, leak; GREY_INK = air (pneumatic).
 | 6 | Reaching the point; wait; steady drop = leak | pressure–time chart with target line; step markers Prime/High/Fine | curve climbs in pump steps, switches to fine steps from below to the target; small thermal/hose sag then re-trim; alternative red curve sloping steadily → "leak: vent, check seals" | wait 2–5 min | custom chart | 0:35 |
 | 7 | Lowering and venting; allowed fluids; why not for gas service | cut-away (vent valve, fine adjust); two bottles (mineral oil / distilled water) and a crossed-out third; transmitter chamber with a residual liquid film | fine adjust turns out, gauge falls smoothly; vent opens a quarter turn (no full unscrew: red cross on a valve pulled out); drops left in the chamber move into a gas line (red) | — | custom drawing | 0:40 |
 | 8 | Safety and hoses | reservoir overfill scene; hose ratings row: 40 bar (Bx G1/8) and 630 bar (Bx 1215); a 20 bar hose on a 40 bar line; adapter chain | overfilled reservoir overflows when the vent opens (red); counterforce arrow with no gauge change → stop sign; the 20 bar hose bulges red; each extra adapter gets a leak drop | — | custom drawing + `icon("alert-triangle")`, `icon("eye")` | 0:40 |
-| 9 | Pneumatic pumps briefly; air vs liquid; automatic generation; summary | air pump cut-away (piston + check valve); PGC selector; PGPH shut-off valve; air particles heating (orange) and cooling; ePG and POC8 blocks linked to MC6; summary strip | piston pushes air, particles glow then cool while the gauge sags; hydraulic trace stays flat; MC6 sends a set-point arrow to ePG which regulates; summary items tick | pump to ~20–25 bar then fine adjust; wait 30–60 s | custom + summary_box | 0:50 |
+| 9 | Pneumatic pumps briefly; air vs liquid | air-pump cut-away (cylinder, piston, check valve, air particles); PGC pressure/vacuum selector with a lock; PGC range strip (pumped part, fine-adjust part); PGPH three-step flow; P–t mini chart air vs liquid | piston pushes air through the check valve; the strip grows to ~20–25 bar then the fine-adjust part to 35; flow boxes light at "pump / close / adjust"; particles turn orange and cool while the air curve sags, the liquid curve stays nearly flat | pump to ~20–25 bar then fine adjust; wait 30–60 s | custom + process_flow | 0:37 |
+| 10 | Automatic generation | ePG box (battery icon, −0.85 … 20 bar), MC6 box, set-point arrow; POC8 box (vacuum … 210 bar), bench / CENTRiCAL | the set-point arrow runs MC6 → ePG and the ePG box lights ("regulates by itself"); POC8 appears with its range and where it is used | — | custom | 0:25 |
 
-Text-scene share: title ≈ 6 s + summary ≈ 10 s ≈ 16 s / ≈ 290 s ≈ **6 %** (limit ~33 %).
-Custom drawings: **9** (setup, range chart, cut-away, pumping mechanism, bleeding sequence, P–t chart,
-venting/fluids, safety/hoses, pneumatic + automatic). Worked examples: **2** (the range chart with
+Text-scene share: title ≈ 6 s / ≈ 322 s ≈ **2 %** (limit ~33 %); every other segment is a drawing or chart.
+Custom drawings: **10** (setup, range chart, cut-away, pumping mechanism, bleeding sequence, P–t chart,
+venting/fluids, safety/hoses, pneumatic, automatic). Worked examples: **2** (the range chart with
 PUMPS values; the P–t chart approach and wait).
 Left out: nothing (PGHS described as a bench screw pump, see the conflicts).
 
