@@ -217,8 +217,8 @@ class PtCalEp01(SyncedScene):
         self.sync(self.c(4, "وَالقَاعِدَةُ"))
         rule = VGroup(icon("check", GOOD, 0.5), tag("set the output to 0 mA before connecting any loop",
                                                     FS_TAG + 2, GOOD)).arrange(RIGHT, buff=0.2)
-        rule.move_to([-2.6, -3.2, 0])
-        self.play(FadeIn(rule), rx.box.animate.set_stroke(INK), run_time=0.6)
+        rule.move_to([-2.6, -3.2, 0]).align_to([-6.5, 0, 0], LEFT)
+        self.play(FadeIn(rule), rx.box.animate.set_stroke(INK), vframe.animate.set_color(INK), run_time=0.6)
         self.sync(self.end(4) - 0.5)
         self.clear(self.sec, run_time=0.5)
 
@@ -290,7 +290,7 @@ class PtCalEp01(SyncedScene):
         self.sync(self.c(6, "وَبِوَحْدَةِ سِتِّمِئَةٍ"))
         self.play(GrowFromEdge(b2, DOWN), FadeIn(n2), FadeIn(v2), run_time=0.8)
         self.sync(self.c(6, "أَسْوَأَ"))
-        x6 = tag(f"× {fmt(D.MOD_RATIO)} worse", FS_LABEL, BAD, weight=BOLD).next_to(v2, RIGHT, buff=0.3)
+        x6 = tag(f"≈ × {round(D.MOD_RATIO)} worse", FS_LABEL, BAD, weight=BOLD).next_to(v2, RIGHT, buff=0.3)
         self.play(FadeIn(x6, scale=1.3), run_time=0.5)
         # zero before work
         self.sync(self.c(6, "وَقَبْلَ كُلِّ عَمَلٍ"))
@@ -348,7 +348,7 @@ class PtCalEp01(SyncedScene):
         ta = 5
         ra = DashedLine(ch.p(ta, 0), ch.p(ta, 9.5), color=GOOD, stroke_width=3)
         da = Dot(ch.p(ta, 8.5 - 0.5 * ta), radius=0.08, color=GOOD)
-        al = tag("Accept: both at once", FS_TAG, GOOD).next_to(lt, UP, buff=0.12).set_x(ra.get_x())
+        al = tag("documenting mode: both at once", FS_TAG, GOOD).next_to(lt, UP, buff=0.12).set_x(ra.get_x())
         lost = tag("pen and paper lose:", FS_TAG + 2, BAD, weight=BOLD).next_to(acc, UP, buff=0.2).align_to(acc, LEFT)
         self.sync(self.c(7, "فَتَضِيعُ"))
         self.play(FadeIn(lost), FadeIn(acc[0]), Create(ra), FadeIn(da), FadeIn(al), run_time=0.6)
@@ -377,7 +377,7 @@ class PtCalEp01(SyncedScene):
         nis = tag("not intrinsically\nsafe", FS_TAG + 1, BAD).next_to(mc6, DOWN, buff=0.2)
         self.play(FadeIn(nis), Create(cross(Dot(radius=0.13).next_to(mc6.box, LEFT, buff=0.15), BAD, 5, pad=0.02)), run_time=0.5)
         self.sync(self.c(8, "جِهَازٌ مُعْتَمَدٌ"))
-        ex = device("MC6-Ex", 1.9, 1.2, FS_LABEL).move_to([-4.6, -2.0, 0])
+        ex = device("MC6-Ex", 1.9, 1.2, FS_LABEL).move_to([-4.6, -1.85, 0])
         ex.box.set_stroke(GOOD)
         exl = VGroup(icon("shield-check", GOOD, 0.4), tag("option 1: approved for the area", FS_TAG + 2, GOOD)) \
             .arrange(RIGHT, buff=0.12).move_to([3.5, ex.get_y(), 0]).align_to([0.9, 0, 0], LEFT)
