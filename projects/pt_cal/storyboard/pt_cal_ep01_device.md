@@ -17,7 +17,7 @@ ACCENT_3 green = documented / OK; ACCENT_4 red = danger, error.
 | 7 | Five modes; the Excel-by-pen mistake | five tabs across the calibrator screen; Documenting Calibrator marked as the heart; mini timeline: input and output read at two different moments while the pressure drifts | tabs highlight in turn; the heart tab gets a frame; two readings drift apart on a falling pressure curve (red gap) vs one "Accept" capturing both at once (green) | — | custom + process_flow | 0:50 |
 | 8 | Standard MC6 is not intrinsically safe: MC6-Ex or move to the workshop | hazardous-area outline with `icon("flame")`, spark on a battery; two exits: MC6-Ex (`icon("shield-check")`) and "to workshop" arrow | spark flashes, red cross; the two options light green | — | custom drawing | 0:25 |
 
-Text-scene share: title/disclaimer ≈ 8 s + modes tab strip ≈ 15 s ≈ 23 s / ≈ 280 s ≈ **8 %**.
+Text-scene share: ≈ **39 %** (critic round 1 measure: title, family-tree cards, seg-6 opening, mode cards).
 Custom drawings: **8**. Worked examples: **1** (module choice, EXT60 vs EXT600 — new values, approved by the owner 2026-09-28).
 Left out (owner decision 2026-09-28): "monochrome screen and keypad" for MC5 — not in an official page; MC5 is called the older generation only.
 

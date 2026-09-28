@@ -135,17 +135,19 @@ class PtCalEp01(SyncedScene):
         section_title(self, "Transmitter output: measure, or supply and measure", prev=self.sec)
 
         def loop(cx, supply_label, supply_col, resistor, sup_w=2.3):
-            xm = transmitter(bubble=False).scale(0.8).move_to([cx - 1.2, 0.9, 0])
+            xm = transmitter(bubble=False).scale(0.8).move_to([cx - 1.7, 0.9, 0])
+            xt = tag(D.TAG, FS_TAG, FLUID).next_to(xm, UP, buff=0.12)
             cal = device("MC6\nmA in", 1.7, 1.2, FS_TAG + 2).move_to([cx + 1.6, 0.9, 0])
             sup = device(supply_label, sup_w, 0.9, FS_TAG).move_to([cx, -1.4, 0])
             sup.box.set_stroke(supply_col)
-            top = pipe(xm.body.get_right() + UP * 0.2, cal.box.get_left() + UP * 0.2, width=3)
+            yt = xm.body.get_right()[1] + 0.2
+            top = pipe(xm.body.get_right() + UP * 0.2, [cal.box.get_left()[0], yt, 0], width=3)
             left = pipe(xm.body.get_bottom(), [xm.body.get_bottom()[0], -1.4, 0], sup.box.get_left(), width=3)
             right = pipe(cal.box.get_bottom(), [cal.box.get_bottom()[0], -1.4, 0], sup.box.get_right(), width=3)
             path = pipe(sup.box.get_left(), [xm.body.get_bottom()[0], -1.4, 0], xm.body.get_bottom(),
-                        xm.body.get_right() + UP * 0.2, cal.box.get_left() + UP * 0.2, cal.box.get_bottom(),
+                        xm.body.get_right() + UP * 0.2, [cal.box.get_left()[0], yt, 0], cal.box.get_bottom(),
                         [cal.box.get_bottom()[0], -1.4, 0], sup.box.get_right(), width=3)
-            g = VGroup(xm, cal, sup, top, left, right)
+            g = VGroup(xm, cal, sup, top, left, right, xt)
             r = None
             if resistor:
                 r = VGroup(Rectangle(width=0.7, height=0.28, color=MOVE, stroke_width=3).set_fill(WHITE, 1)
@@ -153,10 +155,10 @@ class PtCalEp01(SyncedScene):
                 r.add(tag(f"{D.MC6_HART_R_EXT} Ω", FS_TAG, MOVE).next_to(r[0], RIGHT, buff=0.12))
             return g, path, r
 
-        ga, pa, ra = loop(-3.6, "external 24 V\nloop supply", INK, True)
+        ga, pa, ra = loop(-3.6, "external\nloop supply", INK, True)
         gb, pb, _ = loop(3.6, f"MC6 +{D.MC6_LOOP_V} V\nloop supply", MOVE, False)
         la = tag("(a) external loop: MC6 measures", FS_TAG + 1).next_to(ga, UP, buff=0.3)
-        lb = tag("(b) workshop: MC6 supplies + measures", FS_TAG + 1, MOVE).next_to(gb, UP, buff=0.3)
+        lb = tag("(b) MC6 supplies + measures", FS_TAG + 1, MOVE).next_to(gb, UP, buff=0.3)
         self.play(FadeIn(ga), FadeIn(la), run_time=0.8)
         self.play(flow(pa, FLUID, 6), run_time=1.2)
         self.sync(self.c(3, "أَوْ يُغَذِّي"))
@@ -165,7 +167,7 @@ class PtCalEp01(SyncedScene):
         self.sync(self.c(3, "وَهٰذَا الأَشْيَعُ"))
         self.play(Indicate(lb, color=MOVE), run_time=0.6)
         self.sync(self.c(3, "مُمَانَعَةُ"))
-        hart = tag("HART impedance built in", FS_TAG, GOOD).next_to(gb[2], DOWN, buff=0.2)
+        hart = tag("HART impedance built in", FS_TAG, GOOD).next_to(gb[2].box, DOWN, buff=0.2)
         self.play(FadeIn(hart), run_time=0.5)
         self.sync(self.c(3, "مُقَاوِمَةٌ قَدْرُهَا"))
         self.play(FadeIn(ra), run_time=0.6)
@@ -190,8 +192,8 @@ class PtCalEp01(SyncedScene):
         swl = tag("loop contact", FS_TAG).next_to(sw, DOWN, buff=0.25)
         volt = ValueTracker(0.2)
         vbar = always_redraw(lambda: Rectangle(width=0.4, height=max(volt.get_value() * 2.0, 0.02), stroke_width=0)
-                             .set_fill(MOVE, 0.9).move_to([-5.0, -1.9 + volt.get_value(), 0]))
-        vframe = Rectangle(width=0.4, height=2.0, color=INK, stroke_width=2).move_to([-5.0, -0.9, 0])
+                             .set_fill(MOVE, 0.9).move_to([-5.0, -2.1 + volt.get_value(), 0]))
+        vframe = Rectangle(width=0.4, height=2.0, color=INK, stroke_width=2).move_to([-5.0, -1.1, 0])
         vl = tag("output voltage", FS_TAG, MOVE).next_to(vframe, RIGHT, buff=0.2)
         ch = Chart(1.3, -2.9, 5.2, 2.6, (0, 10), (0, 30), yticks=[(D.LOOP_DEMO_MA, fmt(D.LOOP_DEMO_MA, 0))],
                    xlabel="time", ylabel="loop current, mA")
@@ -226,13 +228,13 @@ class PtCalEp01(SyncedScene):
         cal = calibrator().move_to([-4.2, -0.3, 0])
         ports = VGroup(*[Circle(radius=0.14, color=FLUID, stroke_width=3) for _ in range(3)]).arrange(RIGHT, buff=0.3)
         ports.next_to(cal.case, UP, buff=0.12).shift(LEFT * 0.4)
-        baro = Circle(radius=0.1, color=GREY_INK, stroke_width=3).next_to(ports, RIGHT, buff=0.35)
-        px = Square(side_length=0.25, color=MOVE, stroke_width=3).move_to(cal.case.get_right() + LEFT * 0.35 + UP * 1.2)
+        baro = Circle(radius=0.1, color=GREY_INK, stroke_width=3).next_to(ports, LEFT, buff=0.35)
+        px = Square(side_length=0.25, color=MOVE, stroke_width=3).next_to(cal.case, RIGHT, buff=0).shift(UP * 0.8)
         self.play(FadeIn(cal), run_time=0.5)
         self.sync(self.c(5, "الدَّاخِلِيَّةُ"))
         il = tag(f"internal: up to {D.MC6_INT_MODULES} gauge / differential", FS_TAG + 2, FLUID) \
             .move_to([1.8, 2.3, 0]).align_to([-0.7, 0, 0], LEFT)
-        l1 = Arrow(il.get_left(), ports.get_right() + RIGHT * 0.05, buff=0.1, stroke_width=3, color=FLUID,
+        l1 = Arrow(il.get_left(), ports[-1].get_top() + UP * 0.05, buff=0.1, stroke_width=3, color=FLUID,
                    max_tip_length_to_length_ratio=0.1)
         self.play(FadeIn(ports, lag_ratio=0.3), FadeIn(il), GrowArrow(l1), run_time=0.8)
         self.sync(self.c(5, "وَوَحْدَةٌ بَارُومِتْرِيَّةٌ"))
@@ -240,7 +242,7 @@ class PtCalEp01(SyncedScene):
         self.play(FadeIn(baro), FadeIn(bl), run_time=0.5)
         self.sync(self.c(5, "وَالخَارِجِيَّةُ"))
         ext = device("EXT", 1.2, 0.8, FS_LABEL).move_to([0.2, -1.2, 0])
-        cable = pipe(px.get_center(), [-1.2, px.get_center()[1], 0], [-1.2, -1.2, 0], ext.box.get_left(),
+        cable = pipe(px.get_right(), [-1.2, px.get_center()[1], 0], [-1.2, -1.2, 0], ext.box.get_left(),
                      color=MOVE, width=3)
         el = tag("external module on a cable", FS_TAG + 2, MOVE).next_to(ext, RIGHT, buff=0.3)
         self.play(FadeIn(px), Create(cable), FadeIn(ext), FadeIn(el), run_time=0.8)
@@ -305,7 +307,8 @@ class PtCalEp01(SyncedScene):
                   run_time=0.8)
         self.sync(self.c(6, "وَصَفِّرِ"))
         zb = tag("Zero", FS_TAG + 2, GOOD, weight=BOLD).next_to(box, RIGHT, buff=0.3)
-        self.play(FadeIn(zb), ro.animate.set_value(0.0), dots.animate.move_to([dots.get_center()[0], mini.p(0, 0)[1], 0])
+        ml2 = tag("offset removed in every point", FS_TAG, GOOD).move_to(ml, aligned_edge=LEFT)
+        self.play(FadeIn(zb), Transform(ml, ml2), ro.animate.set_value(0.0), dots.animate.move_to([dots.get_center()[0], mini.p(0, 0)[1], 0])
                   .set_color(GOOD), run_time=1.0)
         self.sync(self.end(6) - 0.6)
         self.clear(self.sec)
@@ -319,7 +322,7 @@ class PtCalEp01(SyncedScene):
                  "HART / FF / PA:\nread, change,\ntrim commands"]
         cues = ["المِقْيَاسُ", "وَالمُعَايِرُ:", "وَالمُعَايِرُ المُوَثِّقُ", "وَمُسَجِّلُ", "وَالمُتَّصِلُ"]
         cards = VGroup(*[card(m.replace("Documenting ", "Documenting\n"), d, FLUID if i == 2 else INK, 2.55, FS_TAG - 2)
-                         for i, (m, d) in enumerate(zip(D.MC6_MODES, descs))]).arrange(RIGHT, buff=0.1)
+                         for i, (m, d) in enumerate(zip(D.MC6_MODES, descs))]).arrange(RIGHT, buff=0.3)
         fit(cards, 13.0).move_to([0, 1.5, 0])
         for k, ph in enumerate(cues):
             self.sync(self.c(7, ph))
@@ -338,13 +341,17 @@ class PtCalEp01(SyncedScene):
                     tag("output read later", FS_TAG, BAD).next_to(r2.get_end(), UP, buff=0.05).align_to(r2, LEFT))
         self.play(Create(ch.axes), FadeIn(ch.xl), Create(curve), run_time=0.7)
         self.play(Create(r1), Create(r2), FadeIn(lt), run_time=0.7)
-        acc = VGroup(tag("Accept: both values at the same instant", FS_TAG + 1, GOOD),
-                     tag("error from the actual input", FS_TAG + 1, GOOD),
-                     tag("electronic record, no retyping", FS_TAG + 1, GOOD)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([3.5, -2.3, 0]).align_to([0.3, 0, 0], LEFT)
+        acc = VGroup(tag("synchronised readings", FS_TAG + 1, BAD),
+                     tag("error from the actual input", FS_TAG + 1, BAD),
+                     tag("electronic record chain", FS_TAG + 1, BAD)) \
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([3.5, -2.3, 0]).align_to([0.9, 0, 0], LEFT)
+        ta = 5
+        ra = DashedLine(ch.p(ta, 0), ch.p(ta, 9.5), color=GOOD, stroke_width=3)
+        da = Dot(ch.p(ta, 8.5 - 0.5 * ta), radius=0.08, color=GOOD)
+        al = tag("Accept: both at once", FS_TAG, GOOD).next_to(lt, UP, buff=0.12).set_x(ra.get_x())
         lost = tag("pen and paper lose:", FS_TAG + 2, BAD, weight=BOLD).next_to(acc, UP, buff=0.2).align_to(acc, LEFT)
         self.sync(self.c(7, "فَتَضِيعُ"))
-        self.play(FadeIn(lost), FadeIn(acc[0]), run_time=0.5)
+        self.play(FadeIn(lost), FadeIn(acc[0]), Create(ra), FadeIn(da), FadeIn(al), run_time=0.6)
         self.sync(self.c(7, "وَحِسَابُ"))
         self.play(FadeIn(acc[1]), run_time=0.4)
         self.sync(self.c(7, "وَسِلْسِلَةُ"))
@@ -361,24 +368,27 @@ class PtCalEp01(SyncedScene):
             .next_to(zone, UP, buff=0.12).align_to(zone, LEFT)
         mc6 = device("MC6", 1.8, 1.2, FS_LABEL).move_to([-4.6, 0.2, 0])
         xm = transmitter(bubble=False).scale(0.8).move_to([-1.7, -0.9, 0])
+        xm = VGroup(xm, tag(D.TAG, FS_TAG, FLUID).next_to(xm, UP, buff=0.12))
         self.play(Create(zone), FadeIn(zl), FadeIn(mc6), FadeIn(xm), run_time=0.8)
         self.sync(self.c(8, "بَطَّارِيَّتُهُ"))
         spark = VGroup(*[Line(ORIGIN, 0.35 * np.array([np.cos(a), np.sin(a), 0]), stroke_width=4, color=BAD)
                          for a in np.linspace(0, TAU, 9)[:-1]]).move_to(mc6.box.get_corner(UR))
         self.play(GrowFromCenter(spark), mc6.box.animate.set_stroke(BAD), run_time=0.5)
         nis = tag("not intrinsically\nsafe", FS_TAG + 1, BAD).next_to(mc6, DOWN, buff=0.2)
-        self.play(FadeIn(nis), run_time=0.4)
+        self.play(FadeIn(nis), Create(cross(Dot(radius=0.13).next_to(mc6.box, LEFT, buff=0.15), BAD, 5, pad=0.02)), run_time=0.5)
         self.sync(self.c(8, "جِهَازٌ مُعْتَمَدٌ"))
         ex = device("MC6-Ex", 1.9, 1.2, FS_LABEL).move_to([-4.6, -2.0, 0])
         ex.box.set_stroke(GOOD)
         exl = VGroup(icon("shield-check", GOOD, 0.4), tag("option 1: approved for the area", FS_TAG + 2, GOOD)) \
-            .arrange(RIGHT, buff=0.12).move_to([3.5, 1.0, 0]).align_to([0.9, 0, 0], LEFT)
-        self.play(FadeIn(ex), FadeIn(exl), run_time=0.6)
+            .arrange(RIGHT, buff=0.12).move_to([3.5, ex.get_y(), 0]).align_to([0.9, 0, 0], LEFT)
+        exa = Arrow(exl.get_left(), ex.box.get_right(), buff=0.1, stroke_width=3, color=GOOD,
+                    max_tip_length_to_length_ratio=0.08)
+        self.play(FadeIn(ex), FadeIn(exl), GrowArrow(exa), run_time=0.6)
         self.sync(self.c(8, "أَوْ فَصْلُ"))
-        shop = device("workshop", 2.2, 1.2, FS_LABEL).move_to([4.8, -1.5, 0])
+        shop = device("workshop", 2.2, 1.2, FS_LABEL).move_to([4.8, 0.9, 0])
         self.play(FadeIn(shop), run_time=0.4)
-        opt2 = tag("option 2: disconnect and\ntake it to the workshop", FS_TAG + 2, GOOD).next_to(exl, DOWN, buff=0.35) \
-            .align_to(exl, LEFT)
+        opt2 = tag("option 2: disconnect and\ntake it to the workshop", FS_TAG + 2, GOOD).next_to(shop, UP, buff=0.55) \
+            .align_to(shop, RIGHT)
         self.play(xm.animate.move_to(shop.box.get_left() + LEFT * 1.3), FadeIn(opt2), run_time=1.2)
         self.sync(self.end(8) + 1.0)
 
