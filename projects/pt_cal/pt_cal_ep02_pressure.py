@@ -123,7 +123,7 @@ class Pump:
         self.ret = pipe(P(0.95, 0.05), P(0.95, 0.4), P(-1.5, 0.4), P(-1.5, 0.9))
         self.vent = gate_valve(size=0.38).move_to(P(0.15, 0.4))
         self.top = pipe(P(1.75, 0.05), P(1.75, 1.12))
-        self.ext = Rectangle(width=1.35, height=0.75, color=INK, stroke_width=4) \
+        self.ext = Rectangle(width=1.8, height=0.75, color=INK, stroke_width=4) \
             .set_fill(WHITE, 1).move_to(P(1.75, 1.5))
         self.readout = always_redraw(self._readout)
         self.fine_line = pipe(P(1.35, 0.05), P(1.35, -0.9))
@@ -184,12 +184,12 @@ class Pump:
         return VGroup(fl, pl, stem, knob)
 
     def _selector(self):
-        x = -3.37 + 0.2 * self.high.get_value()
+        x = -3.37 + 0.35 * self.high.get_value()
         return Rectangle(width=0.34, height=0.3, color=MOVE, stroke_width=3).set_fill(MOVE, 1) \
             .move_to(P(x, -0.9))
 
     def _readout(self):
-        return tag(f"{fmt(self.press.get_value())} bar", FS_TAG + 2).move_to(self.ext)
+        return fit(tag(f"{fmt(self.press.get_value())} bar", FS_TAG + 2), self.ext.width - 0.4).move_to(self.ext)
 
     # ---- groups ----
     def static(self):
@@ -298,7 +298,8 @@ class PtCalEp02(SyncedScene):
                                .move_to(cal))
         self.play(Create(pump), Create(grip), FadeIn(pump_lab), run_time=0.8)
         self.sync(self.c(1, "وَتُوصَلُ"))
-        self.play(Create(p1), GrowFromCenter(tee), run_time=0.6)
+        tee_lab = tag("tee", FS_TAG).next_to(tee, DOWN, buff=0.2)
+        self.play(Create(p1), GrowFromCenter(tee), FadeIn(tee_lab), run_time=0.6)
         self.play(Create(p2), Create(p3), run_time=0.6)
         self.play(Create(ext), FadeIn(ext_lab), FadeIn(xm), run_time=0.8)
         self.play(Create(cal), FadeIn(cal_lab), Create(cable), Create(wire),
@@ -388,16 +389,20 @@ class PtCalEp02(SyncedScene):
         no_p = tag("not pressurised", FS_TAG, GREY_INK).next_to(n1[0][0], DOWN, buff=0.2)
         self.sync(self.c(3, "لَا يَقَعُ"))
         self.play(FadeIn(no_p), Indicate(pm.res, color=FLUID), run_time=0.8)
-        n2 = labeled_diagram(self, ghost, callouts[1:3], cues=cues[1:3], draw_time=0.01, start=2)[1]
+        n2 = labeled_diagram(self, ghost, callouts[1:2], cues=cues[1:2], draw_time=0.01, start=2)[1]
+        self.sync(self.c(3, "مِكْبَسَ"))
+        self.play(pm.lever.animate.set_value(1), Indicate(pm.piston, color=MOVE, scale_factor=1.4), run_time=0.8)
+        self.play(pm.lever.animate.set_value(0), run_time=0.5)
+        n2b = labeled_diagram(self, ghost, callouts[2:3], cues=cues[2:3], draw_time=0.01, start=3)[1]
         self.sync(self.c(3, "التَّحْضِيرُ"))
         self.play(Indicate(pm.selector, color=MOVE), run_time=0.6)
         self.sync(self.c(3, "وَالضَّغْطُ العَالِي"))
         self.play(pm.high.animate.set_value(1), run_time=0.5)
         self.play(pm.high.animate.set_value(0), run_time=0.5)
         n3 = labeled_diagram(self, ghost, callouts[3:], cues=cues[3:], draw_time=0.01, start=4)[1]
-        self.labels3 = VGroup(n1, no_p, n2, n3)
+        self.labels3 = VGroup(n1, no_p, n2, n2b, n3)
         self.sync(self.end(3) - 0.5)
-        self.play(FadeOut(self.labels3), run_time=0.5)
+        self.play(FadeOut(self.labels3), pm.lever.animate.set_value(1), run_time=0.5)
 
     # ---------------- Segment 4: how it pumps; the fine adjust ----------------
     def seg4_mechanism(self, pm):
@@ -406,34 +411,34 @@ class PtCalEp02(SyncedScene):
         cv1_lab = tag("inlet check valve", FS_TAG, GOOD)
         cv2_lab = tag("outlet check valve", FS_TAG, GOOD)
         cv1_lab.move_to([-4.6, 1.0, 0])
-        cv2_lab.move_to([4.9, -1.7, 0])
+        cv2_lab.move_to([4.6, 0.95, 0])
         cv1_link = Arrow(cv1_lab.get_right(), pm.cv1.get_top(), buff=0.1, stroke_width=3,
                          color=GOOD, max_tip_length_to_length_ratio=0.12)
-        cv2_link = Arrow(cv2_lab.get_left(), pm.cv2.get_bottom(), buff=0.1, stroke_width=3,
+        cv2_link = Arrow(cv2_lab.get_left(), pm.cv2.get_top(), buff=0.1, stroke_width=3,
                          color=GOOD, max_tip_length_to_length_ratio=0.12)
         # 1) handles open: piston back, suction through the inlet check valve
         self.sync(self.c(4, "حِينَ تَفْتَحُ"))
-        self.play(pm.lever.animate.set_value(0.0), run_time=0.3)
-        self.say("Handles open → piston back → liquid drawn in", y=-3.5)
+        self.play(pm.lever.animate.set_value(0.0), run_time=1.0)
+        self.say("open → piston back → suction", y=-3.5)
         self.sync(self.c(4, "فَيَسْحَبُ"))
         self.play(flow(inlet), pm.level.animate.set_value(0.66), FadeIn(cv1_lab), GrowArrow(cv1_link),
                   pm.cv1.animate.set_color(GOOD), run_time=1.4)
         # 2) handles squeezed: pushed through the outlet check valve, no way back
         self.sync(self.c(4, "وَحِينَ تَضُمُّهُمَا"))
-        self.say("Handles squeezed → liquid pushed out, cannot return", y=-3.5)
+        self.say("squeeze → out, no return", y=-3.5)
         self.play(pm.lever.animate.set_value(1.0), flow(outlet), FadeIn(cv2_lab), GrowArrow(cv2_link),
                   pm.cv2.animate.set_color(GOOD), pm.cv1.animate.set_color(INK),
                   pm.press.animate.set_value(D.STROKE_DEMO_BAR[0]), run_time=1.4)
         # 3) liquid hardly compresses: small volume, big pressure rise
         self.sync(self.c(4, "وَالسَّائِلُ"))
-        self.say("Liquid hardly compresses: a little volume, a big pressure rise", y=-3.5)
+        self.say("liquid: little volume, big pressure rise", y=-3.5)
         for p in D.STROKE_DEMO_BAR[1:]:
             self.play(pm.lever.animate.set_value(0.0), flow(inlet), run_time=0.5)
             self.play(pm.lever.animate.set_value(1.0), flow(outlet), pm.press.animate.set_value(p),
                       run_time=0.7)
         # 4) high-pressure position: shorter stroke
         self.sync(self.c(4, "وَإِذَا ثَقُلَ"))
-        self.say("Pumping heavy → High: shorter stroke, less effort", y=-3.5)
+        self.say("heavy → High = short stroke", y=-3.5)
         self.play(pm.high.animate.set_value(1), run_time=0.5)
         self.play(pm.lever.animate.set_value(0.6), run_time=0.5)
         self.play(pm.lever.animate.set_value(1.0), flow(outlet),
@@ -443,7 +448,7 @@ class PtCalEp02(SyncedScene):
         # 5) the fine adjust: a small screw piston
         self.sync(self.c(4, "أَمَّا مُعَدِّلُ"))
         box = SurroundingRectangle(pm.plunger, color=MOVE, buff=0.12, corner_radius=0.08, stroke_width=4)
-        self.say("Fine adjust: a small screw-driven piston", y=-3.5)
+        self.say("fine adjust = small screw piston", y=-3.5)
         self.play(Create(box), run_time=0.5)
         base = pm.press.get_value()
         self.sync(self.c(4, "تُدْخِلُهُ"))
@@ -464,9 +469,9 @@ class PtCalEp02(SyncedScene):
             [np.array([x0 + dx, ty + dy, 0]) for dx, dy in
              [(0, -0.9), (0.5, 0.3), (0.95, -0.3), (1.4, 0.25), (1.85, -0.2), (2.3, 0.15), (2.75, -0.1)]])
         z_lab = tag("no fine adjust:\nswinging around\nthe point (dashed)", FS_TAG, BAD) \
-            .next_to(frame, LEFT, buff=0.3)
+            .next_to(frame, UP, buff=0.15).align_to(frame, RIGHT)
         t_lab = VMobject()
-        self.say("Without it: you swing around the point", y=-3.5)
+        self.say("without it: overshoot", y=-3.5)
         self.play(Create(frame), Create(target), FadeIn(t_lab), FadeIn(z_lab), run_time=0.6)
         self.play(Create(zig), run_time=1.6)
         self.sync(self.end(4) - 0.5)
@@ -542,14 +547,16 @@ class PtCalEp02(SyncedScene):
             .shift(RIGHT * 2.3)
         self.play(FadeIn(rule), FadeOut(closed), run_time=0.5)
         self.sync(self.c(5, "فُقَاعَةَ"))
-        bub = Circle(radius=0.22, color=AIR, stroke_width=3).set_fill(WHITE, 1) \
-            .move_to(hose.point_from_proportion(0.55))
-        b_note = tag("gas bubble compresses:\nslow settling, looks like a leak", FS_TAG, BAD) \
-            .next_to(rule, UP, buff=0.25)
-        b_note.align_to([6.6, 0, 0], RIGHT)
-        self.play(FadeIn(bub), run_time=0.4)
+        ring = Circle(radius=0.75, color=GREY_INK, stroke_width=3).set_fill(WHITE, 1).move_to([5.3, -1.35, 0])
+        sect = VGroup(Line(ring.get_center() + np.array([-0.7, 0.3, 0]), ring.get_center() + np.array([0.7, 0.3, 0])),
+                      Line(ring.get_center() + np.array([-0.7, -0.3, 0]), ring.get_center() + np.array([0.7, -0.3, 0]))) \
+            .set_stroke(INK, 4)
+        liq = Rectangle(width=1.4, height=0.6, stroke_width=0).set_fill(FLUID_FILL, 1).move_to(ring)
+        bub = Circle(radius=0.26, color=AIR, stroke_width=3).set_fill(WHITE, 1).move_to(ring)
+        link = DashedLine(ring.get_top(), hose.point_from_proportion(0.6), color=GREY_INK, stroke_width=2)
+        self.play(FadeIn(ring), FadeIn(liq), Create(sect), FadeIn(bub), Create(link), run_time=0.6)
         self.play(bub.animate.scale(D.BUBBLE_SHRINK), pm.press.animate.set_value(D.PGHH_BLEED_BAR * 0.6),
-                  pm.lever.animate.set_value(1), FadeIn(b_note), run_time=1.2)
+                  pm.lever.animate.set_value(1), FadeIn(b_note), run_time=1.4)
         self.sync(self.end(5) - 0.6)
         self.clear(self.sec)
 
@@ -602,8 +609,7 @@ class PtCalEp02(SyncedScene):
         x1 = fine[-1][0]
         sag = [[x1, ty, 0], [x1 + 0.5, ty - 0.22, 0], [x1 + 1.3, ty - 0.3, 0], [x1 + 2.2, ty - 0.31, 0]]
         c_sag = VMobject(color=MOVE, stroke_width=4).set_points_smoothly([np.array(p) for p in sag])
-        s_lab = tag("small sag: heat, hose stretch", FS_TAG, MOVE).move_to([0, ty + 0.45, 0]) \
-            .align_to([x1 - 0.1, 0, 0], LEFT)
+        s_lab = tag("small sag: heat, hose stretch", FS_TAG, MOVE).next_to(l_fine, RIGHT, buff=0.5)
         self.sync(self.c(6, "بَعْدَ التَّوْلِيدِ"))
         self.play(Create(c_sag), FadeIn(s_lab), run_time=1.4)
         wait = tag(f"wait {D.PGHH_WAIT_MIN[0]}–{D.PGHH_WAIT_MIN[1]} min, then re-trim", FS_TAG, GOOD)
@@ -632,6 +638,8 @@ class PtCalEp02(SyncedScene):
         pm.fine.set_value(0.9)
         pm.lever.set_value(0)
         pm.vent.set_color(INK)
+        for m in pm.moving():
+            m.update()
         self.play(FadeIn(pm.static()), FadeIn(pm.moving()), run_time=0.6)
         self.sync(self.c(7, "اسْتَعْمِلْ"))
         l1 = tag("1  fine adjust out", FS_TAG + 2, GOOD).move_to([4.6, -1.15, 0]).align_to([3.4, 0, 0], LEFT)
@@ -642,13 +650,13 @@ class PtCalEp02(SyncedScene):
         self.sync(self.c(7, "وَافْتَحِ"))
         l2 = tag("2  vent: carefully", FS_TAG + 2, MOVE).next_to(l1, DOWN, buff=0.15).align_to(l1, LEFT)
         self.play(FadeIn(l2), pm.vent.animate.set_color(MOVE), flow(pm.paths()[2]),
-                  pm.press.animate.set_value(0), run_time=1.4)
+                  pm.press.animate.set_value(0), run_time=2.2, rate_func=smooth)
         self.sync(self.c(7, "وَلَا تَفُكَّهُ"))
         l3 = tag("never unscrew fully", FS_TAG + 2, BAD).next_to(l2, DOWN, buff=0.15).align_to(l1, LEFT)
         stem = VGroup(Line(ORIGIN, UP * 0.7, stroke_width=6, color=INK),
                       RoundedRectangle(width=0.5, height=0.2, corner_radius=0.05, color=INK,
                                        stroke_width=3).set_fill(INK, 1).shift(UP * 0.8),
-                      Dot(DOWN * 0.15, radius=0.08, color=INK)).move_to([6.1, -3.3, 0])
+                      Dot(DOWN * 0.15, radius=0.08, color=INK)).scale(1.3).next_to(pm.vent, UP, buff=0.3)
         x = cross(stem)
         self.play(FadeIn(l3), FadeIn(stem), run_time=0.5)
         self.play(stem[:2].animate.shift(UP * 0.15), stem[2].animate.shift(DOWN * 0.1), Create(x),
@@ -657,7 +665,9 @@ class PtCalEp02(SyncedScene):
         self.clear(self.sec)
         # the two allowed fluids
         b1, b2, b3 = bottle("#e8d49a"), bottle(FLUID_FILL), bottle("#d9c2e8")
-        row = VGroup(b1, b2, b3).arrange(RIGHT, buff=2.4).move_to([-1.4, 1.0, 0])
+        for b in (b1, b2, b3):
+            b.scale(1.4)
+        row = VGroup(b1, b2, b3).arrange(RIGHT, buff=2.4).move_to([0, 0.8, 0])
         t1 = tag("mineral hydraulic oil\n(low viscosity)", FS_TAG).next_to(b1, DOWN, buff=0.25)
         t2 = tag("distilled water\ndrain after use", FS_TAG).next_to(b2, DOWN, buff=0.25)
         t3 = tag("any other fluid\ndamages the seals", FS_TAG, BAD).next_to(b3, DOWN, buff=0.25)
@@ -673,12 +683,12 @@ class PtCalEp02(SyncedScene):
         self.play(Create(x3), run_time=0.4)
         # a transmitter going back to gas service
         self.sync(self.c(7, "وَلَا يَصْلُحُ"))
-        cell = RoundedRectangle(width=1.6, height=1.3, corner_radius=0.15, color=INK, stroke_width=4) \
-            .move_to([3.6, 1.1, 0])
-        film = VGroup(*[Dot(cell.get_center() + np.array([dx, -0.4, 0]), radius=0.07, color=FLUID)
-                        for dx in (-0.5, -0.2, 0.15, 0.45)])
+        cell = RoundedRectangle(width=2.4, height=1.9, corner_radius=0.2, color=INK, stroke_width=4) \
+            .move_to([0.2, 1.0, 0])
+        film = VGroup(*[Dot(cell.get_center() + np.array([dx, -0.6, 0]), radius=0.09, color=FLUID)
+                        for dx in (-0.75, -0.3, 0.2, 0.7)])
         c_lab = tag("transmitter chamber", FS_TAG).next_to(cell, UP, buff=0.2)
-        gas = pipe(cell.get_right(), cell.get_right() + RIGHT * 2.3, color=AIR, width=8)
+        gas = pipe(cell.get_right(), cell.get_right() + RIGHT * 3.2, color=AIR, width=8)
         g_lab = tag("gas service", FS_TAG, AIR).next_to(gas, UP, buff=0.2)
         self.play(FadeOut(VGroup(b1, b2, b3, t1, t2, t3, ok1, ok2, x3)), run_time=0.4)
         self.play(Create(cell), FadeIn(c_lab), FadeIn(film), run_time=0.7)
@@ -688,18 +698,26 @@ class PtCalEp02(SyncedScene):
         self.play(MoveAlongPath(mover, gas), film[3].animate.set_color(BAD), run_time=1.2)
         self.sync(self.c(7, "أَوْ يَسْتَقِرُّ"))
         column = Rectangle(width=0.25, height=0.6, stroke_width=0).set_fill(FLUID, 0.8) \
-            .next_to(cell, DOWN, buff=0).shift(LEFT * 0.4)
-        leg = Line(cell.get_bottom() + LEFT * 0.4, cell.get_bottom() + LEFT * 0.4 + DOWN * 1.0,
+            .next_to(cell, DOWN, buff=0).shift(LEFT * 0.6)
+        leg = Line(cell.get_bottom() + LEFT * 0.6, cell.get_bottom() + LEFT * 0.6 + DOWN * 1.0,
                    stroke_width=3, color=INK)
         shift = tag("liquid column shifts the reading", FS_TAG, BAD).next_to(leg, LEFT, buff=0.3)
         self.play(Create(leg), GrowFromEdge(column, UP), FadeIn(shift), run_time=0.9)
         self.sync(self.c(7, "وَلِذٰلِكَ"))
-        h1 = pipe([-5.8, -2.3, 0], [-3.4, -2.3, 0], color=AIR, width=8)
-        h2 = pipe([-5.8, -2.8, 0], [-3.4, -2.8, 0], color=FLUID, width=8)
-        rule = tag("one hose for gas and liquid: not allowed", FS_LABEL, BAD).next_to(VGroup(h1, h2), RIGHT,
-                                                                                      buff=0.4)
-        self.play(Create(h1), Create(h2), run_time=0.5)
-        self.play(Create(cross(VGroup(h1, h2))), FadeIn(rule), run_time=0.6)
+        h_air = pipe([-6.4, -2.7, 0], [-5.2, -2.7, 0], color=AIR, width=9)
+        h_liq = pipe([-5.2, -2.7, 0], [-4.0, -2.7, 0], color=FLUID, width=9)
+        i_air = icon("wind", AIR, 0.38).next_to(h_air, UP, buff=0.15)
+        i_liq = icon("droplet", FLUID, 0.38).next_to(h_liq, UP, buff=0.15)
+        one = VGroup(h_air, h_liq, i_air, i_liq)
+        rule = tag("one hose for both gas and liquid: not allowed", FS_TAG + 2, BAD) \
+            .next_to(one, RIGHT, buff=0.4)
+        two = VGroup(pipe([0, 0, 0], [1.0, 0, 0], color=AIR, width=9),
+                     pipe([0, -0.35, 0], [1.0, -0.35, 0], color=FLUID, width=9)) \
+            .next_to(rule, RIGHT, buff=0.5)
+        ok = tag("✓", FS_BODY, GOOD).next_to(two, RIGHT, buff=0.15)
+        self.play(Create(h_air), Create(h_liq), FadeIn(i_air), FadeIn(i_liq), run_time=0.5)
+        self.play(Create(cross(VGroup(h_air, h_liq), width=5).scale(1.1)), FadeIn(rule), run_time=0.6)
+        self.play(Create(two), FadeIn(ok), run_time=0.5)
         self.sync(self.end(7) - 0.6)
         self.clear(self.sec)
 
@@ -734,26 +752,39 @@ class PtCalEp02(SyncedScene):
                              color=BAD) for k in range(4)])
         back = tag("vent → all liquid returns → overflow, may break", FS_TAG, BAD) \
             .next_to(add, DOWN, buff=0.35).align_to(add, LEFT)
-        self.play(lvl.animate.set_value(1.0), FadeIn(spill, lag_ratio=0.3), res.animate.set_color(BAD),
-                  FadeIn(back), run_time=1.4)
+        vent = gate_valve(size=0.4).next_to(res, UP, buff=0.35)
+        vl = pipe(vent.get_bottom(), res.get_top(), width=4)
+        self.play(FadeIn(vent), Create(vl), run_time=0.3)
+        self.play(vent.animate.set_color(MOVE), lvl.animate.set_value(1.0), res.animate.set_color(BAD),
+                  FadeIn(back), run_time=0.8)
+        self.play(LaggedStart(*[AnimationGroup(FadeIn(d), d.animate.shift(DOWN * 0.6)) for d in spill],
+                              lag_ratio=0.3), run_time=1.0)
         # strong counterforce without a pressure rise: stop
         self.sync(self.c(8, "وَمُقَاوَمَةٌ"))
+        gauge = Rectangle(width=1.6, height=0.6, color=INK, stroke_width=3).move_to([-4.2, -2.6, 0])
+        g_txt = tag(f"{fmt(D.STROKE_DEMO_BAR[1])} bar", FS_TAG + 2).move_to(gauge)
+        push = Arrow([-2.2, -2.6, 0], [-2.2, -2.6, 0] + UP * 0.1, buff=0, stroke_width=8, color=BAD,
+                     max_tip_length_to_length_ratio=0.35)
+        push_lab = tag("hand force", FS_TAG, BAD).next_to(push, RIGHT, buff=0.2)
         stop = VGroup(icon("alert-triangle", BAD, 0.6),
-                      tag("strong resistance, no pressure rise → stop, find the fault", FS_TAG, BAD)) \
-            .arrange(RIGHT, buff=0.2)
-        fit(stop, 8.0).move_to([1.4, -2.3, 0])
-        self.play(FadeIn(stop), run_time=0.6)
+                      tag("strong resistance, no pressure rise:\nstop and find the fault", FS_TAG, BAD)) \
+            .arrange(RIGHT, buff=0.2).move_to([2.4, -2.5, 0])
+        self.play(Create(gauge), FadeIn(g_txt), GrowArrow(push), run_time=0.4)
+        self.play(push.animate.put_start_and_end_on([-2.2, -3.1, 0], [-2.2, -1.9, 0]), FadeIn(push_lab),
+                  Indicate(g_txt, color=BAD), run_time=1.0)
+        self.play(FadeIn(stop), run_time=0.5)
         self.sync(self.c(8, "وَلِكُلِّ مَدًى") - 0.4)
-        self.play(FadeOut(VGroup(res, maxl, max_lab, liq, r_lab, add, spill, back, stop, top)), run_time=0.4)
+        self.play(FadeOut(VGroup(res, maxl, max_lab, liq, r_lab, add, spill, back, stop, top, vent, vl,
+                                 gauge, g_txt, push, push_lab)), run_time=0.4)
         # hose ratings
         def hose(y, color, width):
             return VMobject(color=color, stroke_width=width).set_points_smoothly(
                 [np.array(p) for p in [[-5.6, y, 0], [-4.2, y + 0.25, 0], [-2.8, y - 0.2, 0], [-1.6, y, 0]]])
         hl = hose(1.5, INK, 6)
         hh = hose(0.1, INK, 10)
-        tl = tag(f"{D.HOSE_LOW_BAR} bar hose · Bx G1/8 fittings\nlow and medium ranges", FS_TAG) \
+        tl = tag(f"{D.HOSE_LOW_BAR} bar hose · {D.HOSE_LOW_FITTING} fittings\nlow and medium ranges", FS_TAG) \
             .next_to(hl, RIGHT, buff=0.3)
-        th = tag(f"{D.PGHH_HOSE_BAR} bar hose · Bx 1215 fittings\nhigh range", FS_TAG) \
+        th = tag(f"{D.PGHH_HOSE_BAR} bar hose · {D.HOSE_HIGH_FITTING} fittings\nhigh range", FS_TAG) \
             .next_to(hh, RIGHT, buff=0.3)
         self.play(Create(hl), FadeIn(tl), run_time=0.7)
         self.sync(self.c(8, "وَسِتُّمِئَةٍ"))
@@ -804,12 +835,9 @@ class PtCalEp02(SyncedScene):
         self.play(px.animate.set_value(-4.3), flow(out2, AIR), run_time=0.8)
         # PGC: pressure / vacuum selector; pump to ~20–25 bar, then fine adjust
         self.sync(self.c(9, "فِي بِي جِي سِي"))
-        sel = VGroup(RoundedRectangle(width=2.2, height=0.6, corner_radius=0.3, color=INK, stroke_width=3),
-                     tag("pressure", FS_TAG), tag("vacuum", FS_TAG)).move_to([2.2, 2.3, 0])
-        sel[1].move_to(sel[0].get_center() + LEFT * 0.5)
-        sel[2].move_to(sel[0].get_center() + RIGHT * 0.55)
-        sel[1].scale(0.85)
-        sel[2].scale(0.85)
+        words = VGroup(tag("pressure", FS_TAG), tag("vacuum", FS_TAG)).arrange(RIGHT, buff=0.35)
+        pill = SurroundingRectangle(words, buff=0.15, corner_radius=0.25, color=INK, stroke_width=3)
+        sel = VGroup(pill, words)
         pgc = tag("PGC", FS_LABEL, AIR, weight=BOLD).next_to(sel, LEFT, buff=0.3)
         lock = VGroup(icon("lock", BAD, 0.4), tag("never switch under pressure", FS_TAG, BAD)) \
             .arrange(RIGHT, buff=0.15).next_to(sel, RIGHT, buff=0.3)
@@ -829,7 +857,10 @@ class PtCalEp02(SyncedScene):
             .next_to(pumped, DOWN, buff=0.2).align_to(pumped, LEFT)
         lf = tag(f"fine adjust to {_P['PGC'][1]}", FS_TAG, MOVE).next_to(finead, UP, buff=0.2) \
             .align_to(finead, RIGHT)
-        self.play(Create(strip), GrowFromEdge(pumped, LEFT), FadeIn(lp), run_time=0.8)
+        tks = VGroup(*[VGroup(Line([f(v), 1.1, 0], [f(v), 1.5, 0], stroke_width=2, color=INK))
+                       for v in (0, D.PGC_PUMP_MAX_BAR[1], _P["PGC"][1])])
+        t0 = tag("0", FS_TAG).next_to([f(0), 1.5, 0], UP, buff=0.08)
+        self.play(Create(strip), Create(tks), FadeIn(t0), GrowFromEdge(pumped, LEFT), FadeIn(lp), run_time=0.8)
         self.play(GrowFromEdge(finead, LEFT), FadeIn(lf), run_time=0.6)
         # PGPH: pump → close the shut-off valve → adjust with the wheel
         self.sync(self.c(9, "وَفِي بِي جِي بِي إِتْش") - 0.2)
@@ -887,7 +918,7 @@ class PtCalEp02(SyncedScene):
                    max_tip_length_to_length_ratio=0.12)
         sp_lab = tag("set point", FS_TAG, MOVE).next_to(sp, UP, buff=0.12)
         self.play(GrowArrow(sp), FadeIn(sp_lab), run_time=0.6)
-        auto = tag("regulates by itself:\nfully automatic", FS_TAG, GOOD).next_to(mc6, DOWN, buff=0.25)
+        auto = tag("regulates by itself: fully automatic", FS_TAG, GOOD).next_to(epg, UP, buff=0.2)
         self.sync(self.c(10, "فَتَضْبِطُهَا"))
         self.play(FadeIn(auto), Indicate(epg, color=GOOD), run_time=0.8)
         self.sync(self.c(10, "وَتَعْمَلُ مَعَ"))
@@ -906,7 +937,12 @@ class PtCalEp02(SyncedScene):
                                                                   FS_TAG)).arrange(RIGHT, buff=0.15) \
             .next_to(p_rng, DOWN, buff=0.25).align_to(p_rng, LEFT)
         self.play(FadeIn(p_where), run_time=0.6)
-        self.sync(self.end(10) + 1.0)
+        self.sync(self.end(10) - 0.2)
+        self.clear(self.sec)
+        steps = ["choose medium\nand range", "fill, bleed:\nliquid only", "approach\nfrom below",
+                 "fine adjust", "wait, then\nre-trim"]
+        process_flow(self, steps, size=FS_TAG + 2, width=12.4)
+        self.wait(3.2)
 
 
 if __name__ == "__main__":
