@@ -242,21 +242,20 @@ class PtCalEp04(SyncedScene):
         self.play(Create(sag25), FadeIn(l1), run_time=0.8)
         # 2 leak points along the chain
         self.sync(self.c(4, "وَالثَّانِي التَّسْرِيبُ"))
-        parts = VGroup(device("pump", 1.2, 0.7, FS_TAG), device("quick\nconnector", 1.5, 0.7, FS_TAG),
-                       device("threaded\nadapter", 1.5, 0.7, FS_TAG), device("transmitter\nconnection", 1.9, 0.7, FS_TAG))
-        parts.arrange(RIGHT, buff=0.3)
-        fit(parts, 6.3).move_to([3.4, 1.7, 0])
-        links = VGroup(*[Line(parts[i].box.get_right(), parts[i + 1].box.get_left(), stroke_width=5, color=INK)
+        parts = VGroup(*[device(n, 2.4, 0.7, FS_TAG - 2) for n in
+                         ("pump", "quick\nconnector", "threaded\nadapter", "transmitter\nconnection")])
+        parts.arrange(DOWN, buff=0.25).move_to([1.5, 0.75, 0])
+        links = VGroup(*[Line(parts[i].box.get_bottom(), parts[i + 1].box.get_top(), stroke_width=5, color=INK)
                          for i in range(3)])
-        h2 = tag("2  leaks", FS_TAG + 1, BAD).next_to(parts, UP, buff=0.2).align_to(parts, LEFT)
+        h2 = tag("2  leaks", FS_TAG + 1, BAD).next_to(parts, LEFT, buff=0.5).align_to(parts, UP)
         self.play(FadeIn(parts), Create(links), FadeIn(h2), run_time=0.6)
-        notes = [(1, "O-rings\nfirst", "الوَصَلَاتُ السَّرِيعَةُ"), (2, "tape wrong\nor torn", "ثُمَّ المُحَوِّلَاتُ"),
-                 (0, "check valve\nworn", "وَصِمَامُ عَدَمِ"), (3, "seal face /\ngasket", "وَوَصْلَةُ")]
+        notes = [(1, "O-rings first", "الوَصَلَاتُ السَّرِيعَةُ"), (2, "tape wrong or torn", "ثُمَّ المُحَوِّلَاتُ"),
+                 (0, "check valve worn", "وَصِمَامُ عَدَمِ"), (3, "seal face / gasket", "وَوَصْلَةُ")]
         for i, txt, ph in notes:
             self.sync(self.c(4, ph))
-            d = Dot(parts[i].box.get_bottom() + DOWN * 0.18, radius=0.07, color=BAD)
-            t = tag(txt, FS_TAG - 2, BAD).next_to(d, DOWN, buff=0.1)
-            self.play(FadeIn(d), d.animate.shift(DOWN * 0.1), FadeIn(t), parts[i].box.animate.set_stroke(BAD), run_time=0.5)
+            d = Dot(parts[i].box.get_right() + RIGHT * 0.2, radius=0.07, color=BAD)
+            t = tag(txt, FS_TAG - 2, BAD).next_to(d, RIGHT, buff=0.35)
+            self.play(FadeIn(d), d.animate.shift(RIGHT * 0.1), FadeIn(t), parts[i].box.animate.set_stroke(BAD), run_time=0.5)
         # 3 not exercised
         self.sync(self.c(4, "وَالثَّالِثُ"))
         groove = VGroup(Line([1.2, -1.9, 0], [1.8, -1.9, 0]), Line([1.8, -1.9, 0], [1.8, -2.3, 0]),
@@ -264,7 +263,8 @@ class PtCalEp04(SyncedScene):
                         Line([2.6, -1.9, 0], [3.2, -1.9, 0])).set_stroke(INK, 4)
         oring = Circle(radius=0.18, color=MOVE, stroke_width=4).move_to([2.2, -1.55, 0])
         h3 = tag("3  not exercised:\nO-rings and diaphragm\nstill settling", FS_TAG + 1, MOVE) \
-            .next_to(groove, RIGHT, buff=0.4)
+            .next_to(groove, RIGHT, buff=0.3)
+        fit(h3, 3.2).next_to(groove, RIGHT, buff=0.3)
         self.play(Create(groove), FadeIn(oring), FadeIn(h3), run_time=0.6)
         self.play(oring.animate.move_to([2.2, -2.1, 0]), run_time=0.8)
         self.sync(self.end(4) - 0.6)
