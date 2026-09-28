@@ -9,7 +9,7 @@ Numbers from `pt_cal_data.py` (PATTERN_*, MIS_*, TOL_PCT). Colours as episode 5.
 | 3 | When to trim | decision chart (in / near limit / out / out-and-cannot-fix / mid-points only) | branches light at their words | — | custom decision tree | 0:25 |
 | 4 | Reading error patterns; the worked example | 5 small error plots (offset, slope, linearity, hysteresis, repeatability); the example points with the fitted line | each pattern draws; the example dots appear, the least-squares line fits through them with tiny residuals; "PASS — do not touch, shorten interval" | +0.37 … −0.30: slope −0.68 % over the span, residuals ≤ 0.014 % | custom charts | 0:45 |
 
-Text-scene share: ≈ 5 %. Custom drawings: **4**. Worked examples: **2** (URV mistake; error-pattern fit).
+Text-scene share: ≈ 40 % (critic round 1 measure; cards, checklist and remedy labels). Custom drawings: **4**. Worked examples: **2** (URV mistake; error-pattern fit).
 Left out: nothing.
 
 ## Narration (fully diacritized)

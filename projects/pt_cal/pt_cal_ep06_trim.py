@@ -51,7 +51,7 @@ class PtCalEp06(SyncedScene):
         cards = VGroup(
             card("Calibration", "compare only:\nnothing changes", FLUID, 3.1),
             card("Trim", "internal adjustment:\nrecalibrate after it", MOVE, 3.1),
-            card("Configuration", "unit, damping,\ntransfer function, alarm", INK, 3.1),
+            card("Configuration", "unit, damping,\ntransfer function,\nalarm direction", INK, 3.1),
             card("Re-ranging", "LRV / URV only:\nsensor untouched", GREY_INK, 3.1),
         ).arrange(RIGHT, buff=0.2)
         fit(cards, 13.0).move_to([0, 2.15, 0])
@@ -59,7 +59,7 @@ class PtCalEp06(SyncedScene):
             self.sync(self.c(1, ph))
             self.play(FadeIn(cards[k], shift=DOWN * 0.15), run_time=0.5)
         # the URV mistake on a 0–10 bar transmitter
-        ch = Chart(-6.1, -3.1, 5.6, 3.4, (0, 11), (4, 21), xticks=[(0, "0"), (5, "5"), (10, "10")],
+        ch = Chart(-6.1, -3.0, 5.6, 3.3, (0, 11), (4, 21), xticks=[(0, "0"), (5, "5"), (10, "10")],
                    yticks=[(4, "4"), (12, "12"), (20, "20")], xlabel="bar", ylabel="mA")
         ideal = ch.line([(0, 4), (10, 20)], LIGHT_INK, 3)
         before = ch.line([(0, 4), (5, D.MIS_I_AT_50), (10, 20)], MOVE, 5, smooth=True)
@@ -77,9 +77,9 @@ class PtCalEp06(SyncedScene):
             .next_to(ch.p(10.5, 21), UP, buff=0.15).align_to(ch.axes[0], RIGHT)
         new_pt = ch.p(5, D.MIS_I_50_AFTER)
         mid = tag(f"{fmt(D.MIS_I_50_AFTER, 2)} mA — looks fine", FS_TAG, MOVE) \
-            .next_to(new_pt, RIGHT, buff=0.2).shift(DOWN * 0.25)
+            .next_to(new_pt, DR, buff=0.15)
         end_pt = Dot(ch.p(10, D.MIS_I_100_AFTER), radius=0.09, color=BAD)
-        self.play(FadeIn(urv_old), FadeIn(urv), run_time=0.4)
+        self.play(FadeIn(urv), run_time=0.4)
         self.play(Transform(before, after), pt.animate.move_to(new_pt), FadeOut(pt_lab), run_time=1.4)
         self.play(FadeIn(mid), FadeIn(end_pt), run_time=0.5)
         self.sync(self.c(1, "وَيَكْتُبُ"))
@@ -94,7 +94,7 @@ class PtCalEp06(SyncedScene):
             f"good ends spoiled: {fmt(D.MIS_I_100_AFTER, 2)} mA at {fmt(D.MIS_URV_OLD, 0)} bar",
             "signal meaning changed, nobody told",
             "no As-Found, no As-Left"]]).arrange(DOWN, aligned_edge=LEFT, buff=0.22)
-        faults.move_to([3.4, -2.2, 0]).align_to([0.3, 0, 0], LEFT)
+        fit(faults, 6.1).move_to([3.4, -2.2, 0]).align_to([0.6, 0, 0], LEFT)
         for k, ph in enumerate(["عَالَجَ", "وَأَفْسَدَ", "وَغَيَّرَ مَعْنَى", "وَلَمْ يُوَثِّقْ"]):
             self.sync(self.c(1, ph))
             anims = [FadeIn(faults[k], shift=RIGHT * 0.15)]
@@ -127,19 +127,21 @@ class PtCalEp06(SyncedScene):
         d = trim_tag("D/A trim: outputs 4, then 20 mA;\nenter what you measure", boxes[2], 0.7)
         sc = tag("scaled D/A trim: same, in another unit", FS_TAG, GREY_INK).next_to(d, DOWN, buff=0.15) \
             .align_to(d, LEFT)
-        l1 = Line(boxes[0].get_bottom(), z.get_top(), stroke_width=2, color=MOVE)
-        l2 = Line(boxes[2].get_bottom(), d.get_top(), stroke_width=2, color=MOVE)
+        l1 = Line(boxes[0].get_bottom(), z.get_top() + UP * 0.1, stroke_width=2, color=MOVE)
+        l1b = DashedLine(z.get_bottom() + DOWN * 0.05, s.get_top() + UP * 0.08, stroke_width=2, color=MOVE)
+        l2 = Line(boxes[2].get_bottom(), d.get_top() + UP * 0.1, stroke_width=2, color=MOVE)
+        rr = tag("re-range acts here:\nLRV / URV only", FS_TAG - 1, GREY_INK).next_to(boxes[1], DOWN, buff=0.35)
         self.sync(self.c(2, "ضَبْطُ الصِّفْرِ"))
         self.play(Create(l1), FadeIn(z), Indicate(boxes[0], color=MOVE), run_time=0.7)
         self.sync(self.c(2, "وَضَبْطُ الحَسَّاسِ"))
-        self.play(FadeIn(s), run_time=0.5)
+        self.play(Create(l1b), FadeIn(s), run_time=0.5)
         self.sync(self.c(2, "وَضَبْطُ الخَرْجِ"))
-        self.play(Create(l2), FadeIn(d), Indicate(boxes[2], color=MOVE), run_time=0.7)
+        self.play(Create(l2), FadeIn(d), Indicate(boxes[2], color=MOVE), FadeIn(rr), run_time=0.7)
         self.sync(self.c(2, "المُقَيَّسِ"))
         self.play(FadeIn(sc), run_time=0.4)
         # the order: sensor first, then output; a change ripples to the right
         self.sync(self.c(2, "وَالتَّرْتِيبُ"))
-        b1 = badge(1, MOVE).next_to(VGroup(z, s), RIGHT, buff=0.2)
+        b1 = badge(1, MOVE).next_to(z, RIGHT, buff=0.2)
         b2 = badge(2, MOVE).next_to(d, RIGHT, buff=0.2)
         self.play(FadeIn(b1), FadeIn(b2), run_time=0.4)
         self.play(*[flow(a, MOVE, 8) for a in arrows], run_time=1.2)
@@ -158,12 +160,12 @@ class PtCalEp06(SyncedScene):
         self.play(FadeOut(VGroup(ch.axes, ideal, wrong, ends, wl)), run_time=0.3)
         save = VGroup(icon("database", INK, 0.5),
                       tag("save the configuration;\nlog each change: before, after, why", FS_TAG)) \
-            .arrange(RIGHT, buff=0.2).move_to([-3.9, -1.2, 0])
+            .arrange(RIGHT, buff=0.2).move_to([-3.7, -1.0, 0])
         self.play(FadeIn(save), run_time=0.5)
         self.sync(self.c(2, "يَقْفِزُ"))
         tr = Chart(-6.3, -3.3, 2.6, 1.3, (0, 10), (0, 10))
         trace = tr.line([(0, 3), (4, 3), (4.05, 8), (10, 8)], MOVE, 4)
-        tl = tag("output jumps", FS_TAG, MOVE).next_to(tr.axes, UP, buff=0.12).align_to(tr.axes, LEFT)
+        tl = tag("output jumps", FS_TAG, MOVE).next_to(tr.axes, RIGHT, buff=0.15).align_to(tr.axes, UP)
         valve = control_valve(size=0.9).move_to([-2.2, -2.6, 0])
         vl = tag("a valve may move", FS_TAG, BAD).next_to(valve, RIGHT, buff=0.25)
         self.play(Create(tr.axes), FadeIn(tl), run_time=0.3)
@@ -173,31 +175,46 @@ class PtCalEp06(SyncedScene):
         checklist(self, ["inform the control room", "loop to MANUAL", "afterwards: restore all,\nwrite protect ON"],
                   cues=[self.c(2, "فَأَبْلِغْ"), self.c(2, "وَضَعِ"), self.c(2, "ثُمَّ أَعِدْ")],
                   pos=[3.9, -2.1, 0], size=FS_TAG + 2)
+        low = tr.line([(0, 3), (4, 3), (4.05, 8), (7, 8), (7.05, 3), (10, 3)], GOOD, 4)
+        self.play(valve.animate.set_color(INK).shift(DOWN * 0.12), Transform(trace, low), run_time=0.6)
         self.sync(self.end(2) - 0.6)
         self.clear(self.sec)
 
     # ---------------- Segment 3: when to trim ----------------
     def seg3_when(self):
         section_title(self, "When to trim", prev=self.sec)
-        root = card("As-Found", "result against\nthe tolerance", INK, 2.6).move_to([-5.2, 0.0, 0])
-        outs = [("within tolerance → do not trim · document", GOOD, "دَاخِلَ التَّفَاوُتِ"),
-                ("within, near the limit → do not trim · shorten the interval", MOVE, "دَاخِلَهُ قُرْبَ"),
-                ("out of tolerance → trim, then a full As-Left", MOVE, "خَارِجَهُ: اضْبِطْ"),
-                ("out, and trim cannot fix it → replace", BAD, "خَارِجَهُ وَالضَّبْطُ"),
-                ("regular error at mid-points only → check the transfer function", FLUID, "وَخَطَأٌ")]
+        root = card("As-Found", "result against\nthe tolerance", INK, 2.6).move_to([-5.5, 0.0, 0])
+        outs = [("within tolerance → do not trim · document", GOOD, "دَاخِلَ التَّفَاوُتِ", 0.3),
+                ("near the limit → do not trim · shorten interval", MOVE, "دَاخِلَهُ قُرْبَ", 0.9),
+                ("out of tolerance → trim, then a full As-Left", MOVE, "خَارِجَهُ: اضْبِطْ", 1.25),
+                ("out, and trim cannot fix it → replace", BAD, "خَارِجَهُ وَالضَّبْطُ", 1.25),
+                ("mid-points only → check the transfer function", FLUID, "وَخَطَأٌ", None)]
         items = VGroup()
-        for k, (t, col, _) in enumerate(outs):
+        gauges = VGroup()
+        for k, (t, col, _, pos) in enumerate(outs):
             txt = tag(t, FS_TAG + 2, col)
-            fr = RoundedRectangle(width=8.4, height=0.72, corner_radius=0.12, color=col, stroke_width=3)
-            fit(txt, 7.9)
+            fr = RoundedRectangle(width=7.4, height=0.72, corner_radius=0.12, color=col, stroke_width=3)
             items.add(VGroup(fr, txt.move_to(fr)))
-        items.arrange(DOWN, buff=0.28).move_to([2.35, -0.1, 0])
-        links = VGroup(*[Line(root.frame.get_right(), it[0].get_left(), stroke_width=3, color=LIGHT_INK)
-                         for it in items])
+        items.arrange(DOWN, buff=0.28).move_to([2.95, -0.1, 0])
+        for it, (t, col, _, pos) in zip(items, outs):
+            gx = it[0].get_left()[0] - 1.05
+            gy = it[0].get_center()[1]
+            band = Rectangle(width=1.4, height=0.3, color=GREY_INK, stroke_width=2).set_fill(GOOD, 0.15) \
+                .move_to([gx, gy, 0])
+            if pos is None:
+                ch = Chart(gx - 0.7, gy - 0.28, 1.4, 0.56, (0, 100), (-1, 1))
+                mark = ch.line([(0, 0), (50, 0.9), (100, 0)], col, 3, smooth=True)
+                gauges.add(VGroup(ch.axes, mark))
+            else:
+                x = gx - 0.7 + 1.4 * pos / 1.4 if pos <= 1 else gx + 0.7 + 0.25
+                mark = Dot([gx - 0.7 + 1.4 * min(pos, 1.0) if pos <= 1 else gx + 0.95, gy, 0], radius=0.08, color=col)
+                gauges.add(VGroup(band, mark))
+        links = VGroup(*[Line(root.frame.get_right(), g.get_left(), stroke_width=3, color=LIGHT_INK)
+                         for g in gauges])
         self.play(FadeIn(root), run_time=0.5)
-        for it, ln, (t, col, ph) in zip(items, links, outs):
+        for it, g, ln, (t, col, ph, _) in zip(items, gauges, links, outs):
             self.sync(self.c(3, ph))
-            self.play(Create(ln), FadeIn(it, shift=RIGHT * 0.15), run_time=0.5)
+            self.play(Create(ln), FadeIn(g), FadeIn(it, shift=RIGHT * 0.15), run_time=0.5)
             self.play(ln.animate.set_color(col), run_time=0.2)
         self.sync(self.end(3) - 0.5)
         self.clear(self.sec, run_time=0.5)
@@ -208,14 +225,14 @@ class PtCalEp06(SyncedScene):
         P = D.PATTERN_SHAPES
         xs = D.PATTERN_X
         specs = [("Offset", "zero trim", P["offset"], "ثَابِتٌ"),
-                 ("Slope", "zero + span trim", P["slope"], "يَتَدَرَّجُ"),
-                 ("Linearity", "multi-point trim,\nelse replace", P["linearity"], "طَرَفَانِ"),
-                 ("Hysteresis", "trim cannot fix:\nwatch it", None, "فَرْقٌ ثَابِتٌ"),
-                 ("Repeatability", "worst: candidate\nfor replacement", None, "وَاخْتِلَافٌ")]
+                 ("Slope", "zero + span\ntrim", P["slope"], "يَتَدَرَّجُ"),
+                 ("Linearity", "multi-point trim\nif supported,\nelse replace", P["linearity"], "طَرَفَانِ"),
+                 ("Hysteresis", "trim cannot\nfix it: watch", None, "فَرْقٌ ثَابِتٌ"),
+                 ("Repeatability", "the most serious:\nreplace", None, "وَاخْتِلَافٌ")]
         w, gap, y0 = 2.3, 0.3, 0.75
         x = -6.6
         for name, fix, ys, ph in specs:
-            ch = Chart(x, y0, w, 1.8, (0, 100), (-0.45, 0.45))
+            ch = Chart(x, y0, w, 1.8, (-8, 108), (-0.45, 0.45))
             zero = ch.hline(0, LIGHT_INK)
             frame = Rectangle(width=w, height=1.8, color=GREY_INK, stroke_width=2).move_to(
                 [x + w / 2, y0 + 0.9, 0])
@@ -223,13 +240,15 @@ class PtCalEp06(SyncedScene):
                 pts = VGroup(ch.line(list(zip(xs, P["hysteresis_up"])), FLUID, 3),
                              ch.line(list(zip(xs, P["hysteresis_down"])), MOVE, 3),
                              ch.dots(list(zip(xs, P["hysteresis_up"])), FLUID),
-                             ch.dots(list(zip(xs, P["hysteresis_down"])), MOVE))
+                             ch.dots(list(zip(xs, P["hysteresis_down"])), MOVE),
+                             tag("up", FS_TAG - 4, FLUID).next_to(ch.p(100, P["hysteresis_up"][-1]), DOWN, buff=0.08).shift(LEFT * 0.2),
+                             tag("down", FS_TAG - 4, MOVE).next_to(ch.p(100, P["hysteresis_down"][-1]), UP, buff=0.08).shift(LEFT * 0.3))
             elif name == "Repeatability":
                 pts = VGroup(*[ch.dots([(xx, v) for v in vs], BAD, 0.055) for xx, vs in zip(xs, P["repeatability"])])
             else:
                 pts = VGroup(ch.line(list(zip(xs, ys)), MOVE, 3), ch.dots(list(zip(xs, ys)), MOVE))
             nm = tag(name, FS_TAG + 2, weight=BOLD).next_to(frame, DOWN, buff=0.15)
-            fx = tag(fix, FS_TAG, GREY_INK, line_spacing=1.1).next_to(nm, DOWN, buff=0.1)
+            fx = fit(tag(fix, FS_TAG - 1, GREY_INK, line_spacing=1.1), w + gap - 0.25).next_to(nm, DOWN, buff=0.1)
             self.sync(self.c(4, ph))
             self.play(Create(frame), Create(zero), FadeIn(nm), run_time=0.4)
             self.play(Create(pts), FadeIn(fx), run_time=0.8)
@@ -244,14 +263,22 @@ class PtCalEp06(SyncedScene):
         vals = VGroup(*[tag(sfmt(e), FS_TAG, MOVE).move_to([ex.p(x_, 0)[0], -1.2, 0])
                         for x_, e in zip(D.PATTERN_X, D.PATTERN_E)])
         self.play(FadeIn(band), Create(ex.axes), FadeIn(ex.ticks), Create(zero), run_time=0.6)
-        self.play(LaggedStart(*[FadeIn(dt, scale=1.5) for dt in dots], lag_ratio=0.25), FadeIn(vals), run_time=1.2)
+        tband = tag(f"tolerance ±{fmt(D.TOL_PCT, 2)} %", FS_TAG - 2, GOOD).move_to(ex.p(88, 0.42))
+        self.play(LaggedStart(*[FadeIn(dt, scale=1.5) for dt in dots], lag_ratio=0.25), FadeIn(vals), FadeIn(tband),
+                  run_time=1.2)
+        self.sync(self.c(4, "زَائِدِ"))
+        self.play(Indicate(VGroup(dots[0], vals[0]), color=MOVE), run_time=0.6)
+        self.sync(self.c(4, "نَاقِصِ"))
+        self.play(Indicate(VGroup(dots[-1], vals[-1]), color=MOVE), run_time=0.6)
         self.sync(self.c(4, "عَلَى خَطٍّ"))
         fitl = ex.line([(0, D.PATTERN_INTERCEPT), (100, D.PATTERN_INTERCEPT + D.PATTERN_SLOPE * 100)], MOVE, 3)
-        info = VGroup(tag(f"errors in % of span\nslope {fmt(D.PATTERN_SLOPE * 100, 2)} % over the span", FS_TAG + 1),
-                      tag(f"residuals ≤ {fmt(D.PATTERN_MAX_RESID, 3)} %: a straight line", FS_TAG + 1)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.15).move_to([4.2, -1.6, 0]).align_to([0.8, 0, 0], LEFT)
-        self.play(Create(fitl), FadeIn(info[0]), run_time=0.9)
-        self.play(FadeIn(info[1]), run_time=0.4)
+        info = VGroup(tag(f"errors in % of span; offset {sfmt(D.PATTERN_INTERCEPT, 2)} % at 0 %", FS_TAG),
+                      tag(f"slope {fmt(D.PATTERN_SLOPE * 100, 2)} % over the span", FS_TAG),
+                      tag(f"residuals ≤ {fmt(D.PATTERN_MAX_RESID, 3)} %: a straight line", FS_TAG)) \
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.12)
+        fit(info, 5.4).next_to(ex.axes, RIGHT, buff=0.9).align_to(ex.axes, UP)
+        self.play(Create(fitl), FadeIn(info[0]), FadeIn(info[1]), run_time=0.9)
+        self.play(FadeIn(info[2]), run_time=0.4)
         self.sync(self.c(4, "لٰكِنَّهُ نَاجِحٌ"))
         verdict = VGroup(tag("PASS: do not touch", FS_LABEL, GOOD, weight=BOLD),
                          tag("note it · shorten the interval", FS_TAG + 2, GOOD)) \

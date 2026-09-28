@@ -11,3 +11,5 @@ Sources as in `pt_cal_ep05_verdict.md` ([R3051] Rosemount 3051 Reference Manual 
 | 12 | Before HART writes set loop to manual, etc. | [R3051] p69, p72 ("Select OK after setting the control loop to manual") | confirmed |
 | 13 | Error patterns and the corrected example (+0.37 … −0.30) | least-squares fit in `pt_cal_data.py`: slope −0.68 % over the span, intercept +0.376 %, residuals ≤ 0.014 % → linear (zero + span) | confirmed |
 | 14 | Hysteresis is not fixed by trimming | Beamex hysteresis blog ("cannot be completely eliminated, it can be managed") | consistent |
+
+| 15 | On-screen remedies of the five patterns (seg 4): offset → zero trim; slope → zero + span trim; linearity → multi-point trim if the transmitter supports it, else replace; hysteresis → trim cannot fix, watch it; repeatability → most serious, candidate for replacement | owner's cleaned source §5 («قراءة نمط الأخطاء»), verbatim meaning | shown as the owner's text |
