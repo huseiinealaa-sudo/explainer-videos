@@ -282,7 +282,7 @@ class PtCalEp05(SyncedScene):
         self.play(links[1].animate.set_color(BAD), FadeIn(cal), run_time=0.6)
         self.play(links[1].animate.scale(0.01), run_time=0.4)
         void = tag("every certificate issued with it is void", FS_TAG + 2, BAD).next_to(cal, DOWN, buff=0.2)
-        stamp = tag("VOID", FS_BODY, BAD, weight=BOLD).rotate(0.3).next_to(head, RIGHT, buff=0.3)
+        stamp = tag("VOID", FS_LABEL, BAD, weight=BOLD).rotate(0.3).move_to([paper.get_right()[0] - 0.75, head.get_center()[1], 0])
         self.play(FadeIn(void), paper.animate.set_stroke(BAD, 5), FadeIn(stamp, scale=1.4), run_time=0.6)
         self.sync(self.c(5, "فَنَبِّهْ"))
         alert = VGroup(icon("bell", MOVE, 0.4), tag(f"alert {D.REF_ALERT_MONTHS} month before expiry", FS_TAG, MOVE)) \
