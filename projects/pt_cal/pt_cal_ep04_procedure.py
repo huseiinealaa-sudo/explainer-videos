@@ -146,7 +146,7 @@ class PtCalEp04(SyncedScene):
     # ---------------- Segment 2: the golden rule ----------------
     def seg2_rule(self):
         section_title(self, "Golden rule: approach from one direction", prev=self.sec)
-        ch = Chart(-6.2, -3.0, 7.4, 5.2, (0, 20), (0, 110), yticks=[(v, f"{v} %") for v in D.CAL_POINTS_PCT],
+        ch = Chart(-5.3, -3.0, 6.6, 5.2, (0, 20), (0, 110), yticks=[(v, f"{v} %") for v in D.CAL_POINTS_PCT],
                    xlabel="time")
         targets = VGroup(*[ch.hline(v, LIGHT_INK) for v in D.CAL_POINTS_PCT])
         up, t = [], 0
@@ -167,8 +167,8 @@ class PtCalEp04(SyncedScene):
         self.play(Create(path_dn), FadeIn(l_dn), run_time=2.0, rate_func=linear)
         self.sync(self.c(2, "فَإِنْ تَجَاوَزْتَ"))
         over = ch.line([(4, 46), (4.5, 58), (5.2, 50)], BAD, 5)
-        ol = tag("overshoot, then back: the reading now carries\nhysteresis, taken for linearity",
-                 FS_TAG + 1, BAD).next_to(l_dn, DOWN, buff=0.4).align_to(l_up, LEFT)
+        ol = fit(tag("overshoot, then back:\nthe reading now carries hysteresis,\ntaken for linearity",
+                     FS_TAG + 1, BAD), 5.1).next_to(l_dn, DOWN, buff=0.4).align_to(l_up, LEFT)
         self.play(Create(over), FadeIn(ol), run_time=1.2)
         self.sync(self.c(2, "فَفَسَدَ"))
         both = tag("both numbers spoiled", FS_TAG + 2, BAD, weight=BOLD).next_to(ol, DOWN, buff=0.25).align_to(ol, LEFT)
@@ -181,7 +181,8 @@ class PtCalEp04(SyncedScene):
         section_title(self, "Pressure decay: read the shape, not the amount", prev=self.sec)
         setup = VGroup(tag("pump to 100 % · close the pump valve", FS_TAG + 1),
                        tag(f"Data Logger: 1 reading / s for {D.DECAY_TEST_MIN} min", FS_TAG + 1)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.15).move_to([3.9, 2.35, 0]).align_to([1.1, 0, 0], LEFT)
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.15)
+        fit(setup, 5.5).move_to([3.9, 2.35, 0]).align_to([1.1, 0, 0], LEFT)
         self.play(FadeIn(setup[0]), run_time=0.5)
         self.sync(self.c(3, "وَشَغِّلْ"))
         self.play(FadeIn(setup[1]), run_time=0.5)
@@ -199,7 +200,7 @@ class PtCalEp04(SyncedScene):
             cv = ch.line([(t, f(t)) for t in ts], col, 4)
             lab = VGroup(Line(ORIGIN, RIGHT * 0.5, stroke_width=5, color=col), tag(txt, FS_TAG + 1, col)) \
                 .arrange(RIGHT, buff=0.15)
-            lab.move_to([4.2, 0.9 - 0.55 * k, 0]).align_to([1.6, 0, 0], LEFT)
+            fit(lab, 5.0).move_to([4.2, 0.9 - 0.55 * k, 0]).align_to([1.6, 0, 0], LEFT)
             labs.add(lab)
             self.play(Create(cv), FadeIn(lab), run_time=2.2, rate_func=linear)
         fixf = tag("fix the leak, then repeat the test", FS_TAG + 1, BAD).next_to(labs, DOWN, buff=0.3).align_to(labs, LEFT)
@@ -207,7 +208,7 @@ class PtCalEp04(SyncedScene):
         self.play(FadeIn(fixf), run_time=0.5)
         self.sync(self.c(3, "لَاحِظْ"))
         end = Circle(radius=0.25, color=INK, stroke_width=3).move_to(ch.p(D.DECAY_T_END, D.p_leak(D.DECAY_T_END)))
-        same = tag("same end value", FS_TAG + 1).next_to(end, UP, buff=0.12)
+        same = tag("same end value", FS_TAG + 1).next_to(end, RIGHT, buff=0.12)
         self.play(Create(end), FadeIn(same), run_time=0.6)
         self.sync(self.end(3) - 0.6)
         self.clear(self.sec)
@@ -226,7 +227,7 @@ class PtCalEp04(SyncedScene):
             Dot([px.get_value() + 0.25 + (k % 4) * (-4.1 - px.get_value() - 0.25) / 3.3, 1.45 + (k // 4) * 0.5, 0],
                 radius=0.06, color=interpolate_color(ManimColor(GREY_INK), ManimColor(BAD), heat.get_value()))
             for k in range(8)]))
-        h1 = tag("1  heat: compressed air warms, then cools", FS_TAG + 1, MOVE).next_to(cyl, DOWN, buff=0.2) \
+        h1 = tag("1  heat: compressed air\nwarms, then cools", FS_TAG + 1, MOVE).next_to(cyl, DOWN, buff=0.2) \
             .align_to(cyl, LEFT)
         self.play(Create(cyl), FadeIn(piston), FadeIn(dots), FadeIn(h1), run_time=0.6)
         self.play(px.animate.set_value(-4.9), heat.animate.set_value(1), run_time=1.0)
@@ -243,13 +244,14 @@ class PtCalEp04(SyncedScene):
         self.sync(self.c(4, "وَالثَّانِي التَّسْرِيبُ"))
         parts = VGroup(device("pump", 1.2, 0.7, FS_TAG), device("quick\nconnector", 1.5, 0.7, FS_TAG),
                        device("threaded\nadapter", 1.5, 0.7, FS_TAG), device("transmitter\nconnection", 1.9, 0.7, FS_TAG))
-        parts.arrange(RIGHT, buff=0.45).move_to([3.4, 1.7, 0])
+        parts.arrange(RIGHT, buff=0.3)
+        fit(parts, 6.3).move_to([3.4, 1.7, 0])
         links = VGroup(*[Line(parts[i].box.get_right(), parts[i + 1].box.get_left(), stroke_width=5, color=INK)
                          for i in range(3)])
         h2 = tag("2  leaks", FS_TAG + 1, BAD).next_to(parts, UP, buff=0.2).align_to(parts, LEFT)
         self.play(FadeIn(parts), Create(links), FadeIn(h2), run_time=0.6)
-        notes = [(1, "O-rings first", "الوَصَلَاتُ السَّرِيعَةُ"), (2, "tape wrong or torn", "ثُمَّ المُحَوِّلَاتُ"),
-                 (0, "check valve worn", "وَصِمَامُ عَدَمِ"), (3, "seal face / gasket", "وَوَصْلَةُ")]
+        notes = [(1, "O-rings\nfirst", "الوَصَلَاتُ السَّرِيعَةُ"), (2, "tape wrong\nor torn", "ثُمَّ المُحَوِّلَاتُ"),
+                 (0, "check valve\nworn", "وَصِمَامُ عَدَمِ"), (3, "seal face /\ngasket", "وَوَصْلَةُ")]
         for i, txt, ph in notes:
             self.sync(self.c(4, ph))
             d = Dot(parts[i].box.get_bottom() + DOWN * 0.18, radius=0.07, color=BAD)
@@ -261,7 +263,7 @@ class PtCalEp04(SyncedScene):
                         Line([1.8, -2.3, 0], [2.6, -2.3, 0]), Line([2.6, -2.3, 0], [2.6, -1.9, 0]),
                         Line([2.6, -1.9, 0], [3.2, -1.9, 0])).set_stroke(INK, 4)
         oring = Circle(radius=0.18, color=MOVE, stroke_width=4).move_to([2.2, -1.55, 0])
-        h3 = tag("3  not exercised: O-rings and diaphragm\nstill settling", FS_TAG + 1, MOVE) \
+        h3 = tag("3  not exercised:\nO-rings and diaphragm\nstill settling", FS_TAG + 1, MOVE) \
             .next_to(groove, RIGHT, buff=0.4)
         self.play(Create(groove), FadeIn(oring), FadeIn(h3), run_time=0.6)
         self.play(oring.animate.move_to([2.2, -2.1, 0]), run_time=0.8)
@@ -280,7 +282,7 @@ class PtCalEp04(SyncedScene):
                      tag(f"wait {D.AIR_WAIT_S[0]}–{D.AIR_WAIT_S[1]} s at the point", FS_TAG + 1, GOOD),
                      tag("high pressure: the hydraulic pump, if the procedure allows", FS_TAG + 1, GOOD)) \
             .arrange(DOWN, aligned_edge=LEFT, buff=0.15).move_to([2.6, 2.05, 0]).align_to([-3.6, 0, 0], LEFT)
-        for r, ph in zip(rem, ["وَخُرْطُومٌ أَقْصَرُ", "وَخُرْطُومٌ مَعْدِنِيٌّ", "وَانْتِظَارُ", "وَلِلضُّغُوطِ"]):
+        for r, ph in zip(rem, ["خُرْطُومٌ أَقْصَرُ", "وَخُرْطُومٌ مَعْدِنِيٌّ", "وَانْتِظَارُ", "وَلِلضُّغُوطِ"]):
             self.sync(self.c(5, ph))
             self.play(FadeIn(r, shift=RIGHT * 0.1), run_time=0.4)
         # the acceptance window on a live pressure trace
@@ -290,7 +292,7 @@ class PtCalEp04(SyncedScene):
         tgt = ch.hline(7, INK)
         live = ch.line([(t, 7 - 3.2 * np.exp(-t / 1.6) + 0.1 * np.sin(3 * t) * np.exp(-t / 3)) for t in np.linspace(0, 10, 40)],
                        FLUID, 4, smooth=True)
-        s1 = tag(f"Max. Point Deviation: {D.ACCEPT_DEV_PCT[0]}–{D.ACCEPT_DEV_PCT[1]} % of span (suggested)",
+        s1 = tag(f"Max. Point Deviation:\n{D.ACCEPT_DEV_PCT[0]}–{D.ACCEPT_DEV_PCT[1]} % of span (suggested)",
                  FS_TAG, GOOD)
         s2 = tag("Stability check", FS_TAG, GOOD)
         s3 = tag(f"Point Delay: {D.ACCEPT_DELAY_S[0]}–{D.ACCEPT_DELAY_S[1]} s", FS_TAG, GOOD)
@@ -307,16 +309,15 @@ class PtCalEp04(SyncedScene):
         # why a wide window is fine: Accept captures both at once
         self.sync(self.c(5, "وَتَوْسِيعُ"))
         cap = DashedLine(ch.p(7.5, 0), ch.p(7.5, 9.5), color=GOOD, stroke_width=3)
-        cl = tag("Accept: actual input + output, same instant", FS_TAG, GOOD).next_to(sets, DOWN, buff=0.4) \
+        cl = tag("Accept: actual input + output,\nsame instant", FS_TAG, GOOD).next_to(sets, DOWN, buff=0.4) \
             .align_to(sets, LEFT)
         self.play(Create(cap), FadeIn(cl), run_time=0.6)
         self.sync(self.c(5, "أَمَّا القِرَاءَةُ"))
         fall = ch.line([(t, 7.2 - 0.25 * t) for t in np.linspace(1, 9, 10)], BAD, 3)
         pen = VGroup(DashedLine(ch.p(3, 0), ch.p(3, 9.5), color=BAD, stroke_width=2),
                      DashedLine(ch.p(5, 0), ch.p(5, 9.5), color=BAD, stroke_width=2))
-        pl = tag("by eye and pen: the pressure falls between the two looks", FS_TAG, BAD).next_to(cl, DOWN, buff=0.2) \
-            .align_to(cl, LEFT)
-        fit(pl, 5.8)
+        pl = fit(tag("by eye and pen: the pressure\nfalls between the two looks", FS_TAG, BAD), 5.6) \
+            .next_to(cl, DOWN, buff=0.2).align_to(cl, LEFT)
         self.play(FadeOut(VGroup(live, cap)), Create(fall), Create(pen), FadeIn(pl), run_time=0.8)
         self.sync(self.end(5) - 0.6)
         self.clear(self.sec)
@@ -327,11 +328,11 @@ class PtCalEp04(SyncedScene):
         xs = [-5.2, -2.6, 0.0, 2.6, 5.2]
         panels = VGroup(*[RoundedRectangle(width=2.4, height=2.6, corner_radius=0.15, color=GREY_INK, stroke_width=2)
                           .move_to([x, 0.9, 0]) for x in xs])
-        texts = ["mounting changed:\nre-zero (gravity\nshifts the diaphragm)", "damping high:\nlower it, then\nrestore it",
-                 "liquid trapped in\nimpulse lines:\ndrain them",
+        texts = ["mounting changed:\nre-zero (gravity\nshifts diaphragm)", "damping high:\nlower it, then\nrestore it",
+                 "liquid in the\nimpulse lines:\ndrain them",
                  f"cold from outside:\nwait {D.COLD_WAIT_MIN[0]}–{D.COLD_WAIT_MIN[1]} min", "module range\nexceeded"]
         cues = ["تَغْيِيرُ وَضْعِ", "وَتَخْمِيدٌ", "وَسَائِلٌ", "وَمُرْسِلٌ بَارِدٌ", "وَتَجَاوُزُ"]
-        caps = VGroup(*[tag(t, FS_TAG, line_spacing=1.1).next_to(p, DOWN, buff=0.2) for t, p in zip(texts, panels)])
+        caps = VGroup(*[fit(tag(t, FS_TAG - 2, line_spacing=1.1), 2.4).next_to(p, DOWN, buff=0.2) for t, p in zip(texts, panels)])
         for k, ph in enumerate(cues):
             self.sync(self.c(6, ph))
             p = panels[k]

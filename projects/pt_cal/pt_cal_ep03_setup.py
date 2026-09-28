@@ -170,8 +170,8 @@ class PtCalEp03(SyncedScene):
                  ("Absolute\nref: vacuum", "absolute", "وَالمُطْلَقُ"),
                  ("Differential\nHP − LP", "dp", "وَالتَّفَاضُلِيُّ"),
                  ("Sealed gauge\nref: sealed", "sealed", "وَالنِّسْبِيُّ المَخْتُومُ")]
-        cells = VGroup(*[cell_drawing(k, 2.0, 1.5) for _, k, _ in kinds]).arrange(RIGHT, buff=1.05)
-        cells.move_to([0.2, 0.7, 0])
+        cells = VGroup(*[cell_drawing(k, 2.0, 1.5) for _, k, _ in kinds]).arrange(RIGHT, buff=0.8)
+        cells.move_to([0.0, 0.7, 0])
         names = VGroup(*[tag(n, FS_TAG + 1, weight=BOLD).next_to(c.box, UP, buff=0.25) for (n, _, _), c in zip(kinds, cells)])
         notes = [tag("vented: reads 0\navoid gusty wind", FS_TAG - 1),
                  tag("vented: reads\natmospheric\n→ BARO or\nabsolute ref.", FS_TAG - 1),
@@ -254,7 +254,7 @@ class PtCalEp03(SyncedScene):
         la = pipe(xa_t.body.get_right() + UP * 0.1, ma.box.get_left() + UP * 0.1, width=3)
         la2 = pipe(xa_t.body.get_bottom(), [xa_t.body.get_bottom()[0], -0.3, 0], [ma.box.get_bottom()[0], -0.3, 0],
                    ma.box.get_bottom(), width=3)
-        ha = tag("HART available", FS_TAG, GOOD).move_to([xa, -0.62, 0])
+        ha = tag("HART available", FS_TAG, GOOD).move_to([xa, -0.9, 0])
         # B: DCS supplies, MC6 in series measures
         xb_t = transmitter(bubble=False).scale(0.55).move_to([xb - 1.2, 0.7, 0])
         dcs = device("DCS\nsupply", 1.3, 0.85, FS_TAG).move_to([xb + 1.3, 0.8, 0])
@@ -405,8 +405,8 @@ class PtCalEp03(SyncedScene):
         wl = tag("wind", FS_TAG, FLUID).next_to(wind, UP, buff=0.08)
         self.play(FadeIn(person), GrowArrow(wind), FadeIn(wl), run_time=0.6)
         self.sync(self.c(6, "صَرِّفْ"))
-        tip = tag("drain to a closed system\nstand with the wind at your back", FS_TAG + 1, GOOD) \
-            .next_to(ground, DOWN, buff=0.35).align_to([0.8, 0, 0], LEFT).shift(DOWN * 0.35)
+        tip = tag("drain to a closed system\nstand with the wind at your back", FS_TAG, GOOD) \
+            .next_to(ground, DOWN, buff=0.2).align_to([0.8, 0, 0], LEFT)
         self.play(FadeIn(tip), run_time=0.6)
         self.sync(self.end(6) - 0.6)
         self.clear(self.sec)
@@ -432,7 +432,7 @@ class PtCalEp03(SyncedScene):
         # process isolation: double block and bleed, lock and tag
         self.sync(self.c(7, "وَلِعَزْلِ العَمَلِيَّةِ"))
         sds = VGroup(icon("file-text", INK, 0.45), tag("process fluid from the safety data sheet", FS_TAG + 1)) \
-            .arrange(RIGHT, buff=0.15).move_to([2.8, 2.5, 0]).align_to([-1.2, 0, 0], LEFT)
+            .arrange(RIGHT, buff=0.15).move_to([2.8, 2.5, 0]).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(sds), run_time=0.5)
         self.sync(self.c(7, "وَاعْزِلْ"))
         v1 = gate_valve(size=0.6).move_to([-0.3, 1.5, 0])
@@ -450,26 +450,26 @@ class PtCalEp03(SyncedScene):
         self.play(FadeIn(one), run_time=0.4)
         self.sync(self.c(7, "وَضَعْ قُفْلًا"))
         lock = VGroup(icon("lock", MOVE, 0.5), tag("lock + tag with your name", FS_TAG + 1, MOVE)) \
-            .arrange(RIGHT, buff=0.12).move_to([0, -0.05, 0]).align_to([-1.2, 0, 0], LEFT)
+            .arrange(RIGHT, buff=0.12).move_to([0, -0.05, 0]).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(lock), run_time=0.5)
         self.sync(self.c(7, "وَافْتَرِضْ"))
-        trapped = tag("assume trapped pressure until proven otherwise", FS_TAG + 1, BAD).next_to(lock, DOWN, buff=0.2) \
+        trapped = tag("assume trapped pressure\nuntil proven otherwise", FS_TAG, BAD).next_to(lock, DOWN, buff=0.12) \
             .align_to(lock, LEFT)
         self.play(FadeIn(trapped), run_time=0.5)
         # loop isolation
         self.sync(self.c(7, "وَلِعَزْلِ الحَلْقَةِ"))
-        cr = device("control room", 2.4, 0.8, FS_TAG + 2).move_to([0.0, -1.55, 0])
+        cr = device("control room", 2.4, 0.8, FS_TAG + 2).move_to([1.2, -1.55, 0])
         sw = VGroup(tag("AUTO", FS_TAG + 2, GREY_INK), tag("→", FS_TAG + 2), tag("MAN", FS_TAG + 2, MOVE, weight=BOLD)) \
             .arrange(RIGHT, buff=0.15).next_to(cr, RIGHT, buff=0.3)
         self.play(FadeIn(cr), run_time=0.4)
         self.sync(self.c(7, "وَضَعِ الحَلْقَةَ"))
         self.play(FadeIn(sw, lag_ratio=0.3), run_time=0.6)
         self.sync(self.c(7, "وَتَجَاوَزِ"))
-        byp = tag("alarm bypass: approved, documented", FS_TAG + 1, GREY_INK).next_to(cr, DOWN, buff=0.2).align_to([-1.2, 0, 0], LEFT)
+        byp = tag("alarm bypass: approved, documented", FS_TAG + 1, GREY_INK).next_to(cr, DOWN, buff=0.2).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(byp), run_time=0.4)
         self.sync(self.c(7, "وَمُرْسِلُ نِظَامِ"))
         sis = VGroup(icon("shield-check", BAD, 0.45), tag("SIS: special procedure, higher authority", FS_TAG + 1, BAD)) \
-            .arrange(RIGHT, buff=0.12).next_to(byp, DOWN, buff=0.2).align_to([-1.2, 0, 0], LEFT)
+            .arrange(RIGHT, buff=0.12).next_to(byp, DOWN, buff=0.2).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(sis), run_time=0.5)
         self.sync(self.end(7) - 0.6)
         self.clear(self.sec)

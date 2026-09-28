@@ -83,21 +83,21 @@ class PtCalEp07(SyncedScene):
         # E = 0.48 %, U = 0.10 %: the true error may pass the limit
         self.sync(self.c(1, "وَالفَرْقُ"))
         ax, X = self.axis(y=-1.3)
-        tol = DashedLine([X(D.TOL_PCT), -2.0, 0], [X(D.TOL_PCT), 0.3, 0], color=BAD, stroke_width=4)
+        tol = DashedLine([X(D.TOL_PCT), -1.3, 0], [X(D.TOL_PCT), 0.3, 0], color=BAD, stroke_width=4)
         tl = tag(f"tolerance {fmt(D.TOL_PCT, 2)} %", FS_TAG + 1, BAD).next_to(tol, UP, buff=0.1)
         dot = Dot([X(D.DEMO_E), -1.3, 0], radius=0.11, color=FLUID)
         dl = tag(f"E = {fmt(D.DEMO_E, 2)} %: looks like a PASS", FS_TAG + 1, FLUID).next_to(dot, UP, buff=0.55) \
-            .shift(LEFT * 1.6)
+            .align_to([X(D.TOL_PCT) - 0.3, 0, 0], RIGHT)
         self.play(Create(ax), Create(tol), FadeIn(tl), run_time=0.6)
         self.play(FadeIn(dot, scale=1.5), FadeIn(dl), run_time=0.5)
         self.sync(self.c(1, "لٰكِنْ بِعَدَمِ"))
-        band = Rectangle(width=X(D.DEMO_HI) - X(D.DEMO_LO), height=0.34, stroke_width=0).set_fill(MOVE, 0.45) \
+        band = Rectangle(width=X(D.DEMO_HI) - X(D.DEMO_LO), height=0.24, stroke_width=0).set_fill(MOVE, 0.45) \
             .move_to([(X(D.DEMO_LO) + X(D.DEMO_HI)) / 2, -1.3, 0])
         bl = tag(f"U = ±{fmt(D.DEMO_U, 2)} % → true error {fmt(D.DEMO_LO, 2)} … {fmt(D.DEMO_HI, 2)} %", FS_TAG + 1, MOVE) \
             .next_to(ax, DOWN, buff=0.1).shift(LEFT * 1.2)
         self.play(GrowFromCenter(band), FadeIn(bl), run_time=0.8)
         self.sync(self.c(1, "فَقَدْ يَكُونُ"))
-        maybe = tag("may be a FAIL", FS_TAG + 2, BAD, weight=BOLD).next_to(tol, RIGHT, buff=0.25).shift(DOWN * 0.8)
+        maybe = tag("may be a FAIL", FS_TAG + 2, BAD, weight=BOLD).next_to(tol, RIGHT, buff=0.25).set_y(dl.get_y())
         self.play(FadeIn(maybe), Indicate(band, color=BAD), run_time=0.7)
         self.sync(self.end(1) - 0.6)
         self.clear(self.sec)
@@ -113,9 +113,9 @@ class PtCalEp07(SyncedScene):
         l1 = tag("% of span: the refinery usual", FS_TAG + 1, FLUID).move_to([4.2, 1.6, 0]).align_to([1.4, 0, 0], LEFT)
         l2 = tag("% of reading: narrows at small values\n(common in reference specs)", FS_TAG + 1, MOVE) \
             .next_to(l1, DOWN, buff=0.3).align_to(l1, LEFT)
-        l3 = tag("% of URV: equals % of span only if LRV = 0", FS_TAG + 1, GREY_INK).next_to(l2, DOWN, buff=0.3) \
+        l3 = tag("% of URV: equals % of span\nonly if LRV = 0", FS_TAG + 1, GREY_INK).next_to(l2, DOWN, buff=0.3) \
             .align_to(l1, LEFT)
-        fit(VGroup(l1, l2, l3), 5.4)
+        fit(VGroup(l1, l2, l3), 5.4).align_to([1.4, 0, 0], LEFT)
         self.play(Create(span_b), FadeIn(l1), run_time=0.6)
         self.sync(self.c(2, "أَوْ مِنَ القِرَاءَةِ"))
         self.play(Create(rdg), FadeIn(l2), run_time=0.8)
@@ -124,8 +124,9 @@ class PtCalEp07(SyncedScene):
         self.sync(self.c(2, "وَالفَخُّ"))
         g = DashedLine(ch.p(10, 0), ch.p(10, D.RDG_SPEC_PCT), color=BAD, stroke_width=3)
         d = Dot(ch.p(10, D.RDG_AS_SPAN_PCT), radius=0.09, color=BAD)
-        t = tag(f"{fmt(D.RDG_SPEC_PCT, 1)} % of reading at {D.RDG_AT_PCT_SPAN} % = {fmt(D.RDG_AS_SPAN_PCT, 2)} % of span:\n"
-                "ten times smaller", FS_TAG + 1, BAD).next_to(l3, DOWN, buff=0.45).align_to(l1, LEFT)
+        t = tag(f"{fmt(D.RDG_SPEC_PCT, 1)} % of reading at {D.RDG_AT_PCT_SPAN} %\n"
+                f"= {fmt(D.RDG_AS_SPAN_PCT, 2)} % of span: ten times smaller", FS_TAG + 1, BAD)
+        fit(t, 5.4).next_to(l3, DOWN, buff=0.45).align_to(l1, LEFT)
         self.play(Create(g), FadeIn(d, scale=1.5), FadeIn(t), run_time=0.8)
         self.sync(self.end(2) - 0.5)
         self.clear(self.sec, run_time=0.5)
@@ -144,7 +145,7 @@ class PtCalEp07(SyncedScene):
             r = Rectangle(width=X(hi) - X(lo), height=0.5, stroke_width=0).set_fill(col, 0.55) \
                 .move_to([(X(lo) + X(hi)) / 2, 0.4, 0])
             bars.add(r)
-            labs.add(tag(txt, FS_TAG, col).next_to(r, DOWN, buff=0.35))
+            labs.add(tag(txt, FS_TAG, col).next_to(r, DOWN, buff=1.1 if lo == 0 else 0.35))
         ticks = VGroup(*[tag(str(v), FS_TAG).next_to([X(v), 0.65, 0], UP, buff=0.08) for v in (0, 2, 4, 10)])
         minl = tag(f"industrial minimum {D.TUR_MIN} : 1", FS_TAG + 2, INK, weight=BOLD).move_to([0, -1.9, 0])
         self.sync(self.c(3, "وَالحَدُّ الأَدْنَى"))
@@ -161,7 +162,7 @@ class PtCalEp07(SyncedScene):
     def seg4_budget(self):
         section_title(self, "The uncertainty budget", prev=self.sec)
         names = ["pressure module", "current measurement", "display resolution", "repeatability", "temperature",
-                 "pressure stability at capture", "reference drift since its calibration"]
+                 "pressure stability at capture", "reference drift since cal."]
         cues = ["دِقَّةُ وَحْدَةِ", "وَقِيَاسُ التَّيَّارِ", "وَتَمْيِيزُ", "وَالتَّكْرَارِيَّةُ", "وَأَثَرُ",
                 "وَاسْتِقْرَارُ", "وَانْحِرَافُ"]
         chips = VGroup(*[card(n, "", MOVE if k == 5 else INK, 4.0, FS_TAG) for k, n in enumerate(names)]) \
@@ -197,7 +198,7 @@ class PtCalEp07(SyncedScene):
                          cues=[self.c(5, "المَرْجِعُ")] + [self.c(5, "وَهٰكَذَا")] * 5, pos=[-2.2, 0.55, 0],
                          size=FS_TAG + 1, width=8.6)
         self.sync(self.c(5, "وَانْحِرَافُ"))
-        drift = tag("reference drift: inside its row\n(1-year spec includes stability)", FS_TAG, GREY_INK) \
+        drift = tag("reference drift:\ninside its row\n(1-year spec\nincludes stability)", FS_TAG, GREY_INK) \
             .next_to(tbl, RIGHT, buff=0.4).align_to(tbl, UP)
         self.play(FadeIn(drift), run_time=0.5)
         res = VGroup(tag(f"u_c = {fmt(D.U_C, 5)}", FS_TAG + 2, FLUID),
@@ -223,20 +224,20 @@ class PtCalEp07(SyncedScene):
             b = Rectangle(width=0.4, height=max(ch.p(0, u)[1] - ch.y0, 0.02), stroke_width=0).set_fill(col, 0.85)
             b.move_to([ch.p(i + 0.6, 0)[0], ch.y0 + b.height / 2, 0])
             bars.add(b)
-        top3 = tag("top 3: reference, repeatability, current", FS_TAG, FLUID).next_to(ch.axes, UP, buff=0.12) \
+        top3 = tag("top 3: reference,\nrepeatability, current", FS_TAG, FLUID).next_to(ch.axes, UP, buff=0.12) \
             .align_to(ch.axes, LEFT)
         self.play(FadeOut(drift), Create(ch.axes), LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.15),
                   FadeIn(top3), run_time=1.2)
         self.sync(self.c(5, "أَمَّا اسْتِقْرَارُ"))
         k = [i for i, b in enumerate(rank) if b[0] == "Pressure stability"][0]
-        free = tag("stability: yours to control, free", FS_TAG, MOVE).next_to(top3, UP, buff=0.12).align_to(top3, LEFT)
+        free = tag("stability: yours\nto control, free", FS_TAG, MOVE).next_to(top3, UP, buff=0.12).align_to(top3, LEFT)
         self.play(Indicate(bars[k], color=MOVE, scale_factor=1.3), FadeIn(free), run_time=0.7)
         self.sync(self.c(5, "فَإِنْ نَصَّفْتَهُ"))
         half = D.A_STAB_HALF / np.sqrt(3)
         self.play(bars[k].animate.stretch_to_fit_height(max(ch.p(0, half)[1] - ch.y0, 0.02), about_edge=DOWN),
                   run_time=0.7)
-        tur2 = tag(f"TUR {fmt(D.TUR, 2)} → {fmt(D.TUR_HALF, 2)}, nothing bought", FS_TAG + 1, GOOD, weight=BOLD) \
-            .next_to(res, RIGHT, buff=0.5).align_to(res, DOWN)
+        tur2 = tag(f"TUR {fmt(D.TUR, 2)} → {fmt(D.TUR_HALF, 2)}\nnothing bought", FS_TAG + 1, GOOD, weight=BOLD) \
+            .next_to(free, UP, buff=0.3).align_to(free, LEFT)
         self.play(FadeIn(tur2), run_time=0.5)
         self.sync(self.end(5) - 0.6)
         self.clear(self.sec)
@@ -292,7 +293,7 @@ class PtCalEp07(SyncedScene):
     # ---------------- Segment 7: the certificate; end of part 1 ----------------
     def seg7_certificate(self):
         section_title(self, "On the certificate", prev=self.sec)
-        paper = Rectangle(width=5.0, height=3.2, color=INK, stroke_width=3).move_to([-3.2, 0.2, 0])
+        paper = Rectangle(width=6.2, height=3.2, color=INK, stroke_width=3).move_to([-3.0, 0.2, 0])
         lines = VGroup(tag("verdict: PASS", FS_TAG + 2),
                        tag(f"U = ±{fmt(D.U_EXP_PCT, 3)} % (k = 2)", FS_TAG + 2, MOVE, weight=BOLD),
                        tag("decision rule: guard band = U", FS_TAG + 2, MOVE, weight=BOLD)) \

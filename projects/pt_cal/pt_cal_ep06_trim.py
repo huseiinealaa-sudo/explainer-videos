@@ -54,7 +54,7 @@ class PtCalEp06(SyncedScene):
             card("Configuration", "unit, damping,\ntransfer function,\nalarm direction", INK, 3.1),
             card("Re-ranging", "LRV / URV only:\nsensor untouched", GREY_INK, 3.1),
         ).arrange(RIGHT, buff=0.2)
-        fit(cards, 13.0).move_to([0, 2.15, 0])
+        fit(cards, 13.0).move_to([0, 1.95, 0])
         for k, ph in enumerate(["المُعَايَرَةُ مُقَارَنَةٌ", "وَالضَّبْطُ", "وَالتَّهْيِئَةُ", "وَتَغْيِيرُ المَدَى"]):
             self.sync(self.c(1, ph))
             self.play(FadeIn(cards[k], shift=DOWN * 0.15), run_time=0.5)
@@ -130,7 +130,7 @@ class PtCalEp06(SyncedScene):
         l1 = Line(boxes[0].get_bottom(), z.get_top() + UP * 0.1, stroke_width=2, color=MOVE)
         l1b = DashedLine(z.get_bottom() + DOWN * 0.05, s.get_top() + UP * 0.08, stroke_width=2, color=MOVE)
         l2 = Line(boxes[2].get_bottom(), d.get_top() + UP * 0.1, stroke_width=2, color=MOVE)
-        rr = tag("re-range acts here:\nLRV / URV only", FS_TAG - 1, GREY_INK).next_to(boxes[1], DOWN, buff=0.35)
+        rr = tag("re-range: LRV / URV only", FS_TAG - 2, GREY_INK).next_to(boxes[1], DOWN, buff=0.12)
         self.sync(self.c(2, "ضَبْطُ الصِّفْرِ"))
         self.play(Create(l1), FadeIn(z), Indicate(boxes[0], color=MOVE), run_time=0.7)
         self.sync(self.c(2, "وَضَبْطُ الحَسَّاسِ"))
@@ -165,7 +165,7 @@ class PtCalEp06(SyncedScene):
         self.sync(self.c(2, "يَقْفِزُ"))
         tr = Chart(-6.3, -3.3, 2.6, 1.3, (0, 10), (0, 10))
         trace = tr.line([(0, 3), (4, 3), (4.05, 8), (10, 8)], MOVE, 4)
-        tl = tag("output jumps", FS_TAG, MOVE).next_to(tr.axes, RIGHT, buff=0.15).align_to(tr.axes, UP)
+        tl = tag("output jumps", FS_TAG, MOVE).next_to(tr.axes, UP, buff=0.12).align_to(tr.axes, LEFT)
         valve = control_valve(size=0.9).move_to([-2.2, -2.6, 0])
         vl = tag("a valve may move", FS_TAG, BAD).next_to(valve, RIGHT, buff=0.25)
         self.play(Create(tr.axes), FadeIn(tl), run_time=0.3)
@@ -192,7 +192,7 @@ class PtCalEp06(SyncedScene):
         items = VGroup()
         gauges = VGroup()
         for k, (t, col, _, pos) in enumerate(outs):
-            txt = tag(t, FS_TAG + 2, col)
+            txt = fit(tag(t, FS_TAG + 1, col), 6.9)
             fr = RoundedRectangle(width=7.4, height=0.72, corner_radius=0.12, color=col, stroke_width=3)
             items.add(VGroup(fr, txt.move_to(fr)))
         items.arrange(DOWN, buff=0.28).move_to([2.95, -0.1, 0])
@@ -241,8 +241,8 @@ class PtCalEp06(SyncedScene):
                              ch.line(list(zip(xs, P["hysteresis_down"])), MOVE, 3),
                              ch.dots(list(zip(xs, P["hysteresis_up"])), FLUID),
                              ch.dots(list(zip(xs, P["hysteresis_down"])), MOVE),
-                             tag("up", FS_TAG - 4, FLUID).next_to(ch.p(100, P["hysteresis_up"][-1]), DOWN, buff=0.08).shift(LEFT * 0.2),
-                             tag("down", FS_TAG - 4, MOVE).next_to(ch.p(100, P["hysteresis_down"][-1]), UP, buff=0.08).shift(LEFT * 0.3))
+                             tag("up", FS_TAG - 4, FLUID).next_to(ch.p(100, P["hysteresis_up"][-1]), DOWN, buff=0.16).shift(LEFT * 0.2),
+                             tag("down", FS_TAG - 4, MOVE).next_to(ch.p(100, P["hysteresis_down"][-1]), UP, buff=0.16).shift(LEFT * 0.3))
             elif name == "Repeatability":
                 pts = VGroup(*[ch.dots([(xx, v) for v in vs], BAD, 0.055) for xx, vs in zip(xs, P["repeatability"])])
             else:
@@ -263,7 +263,7 @@ class PtCalEp06(SyncedScene):
         vals = VGroup(*[tag(sfmt(e), FS_TAG, MOVE).move_to([ex.p(x_, 0)[0], -1.2, 0])
                         for x_, e in zip(D.PATTERN_X, D.PATTERN_E)])
         self.play(FadeIn(band), Create(ex.axes), FadeIn(ex.ticks), Create(zero), run_time=0.6)
-        tband = tag(f"tolerance ±{fmt(D.TOL_PCT, 2)} %", FS_TAG - 2, GOOD).move_to(ex.p(88, 0.42))
+        tband = tag(f"tolerance ±{fmt(D.TOL_PCT, 2)} %", FS_TAG - 2, GOOD).next_to(band, RIGHT, buff=0.15).align_to(band, DOWN)
         self.play(LaggedStart(*[FadeIn(dt, scale=1.5) for dt in dots], lag_ratio=0.25), FadeIn(vals), FadeIn(tband),
                   run_time=1.2)
         self.sync(self.c(4, "زَائِدِ"))
@@ -283,7 +283,7 @@ class PtCalEp06(SyncedScene):
         verdict = VGroup(tag("PASS: do not touch", FS_LABEL, GOOD, weight=BOLD),
                          tag("note it · shorten the interval", FS_TAG + 2, GOOD)) \
             .arrange(DOWN, aligned_edge=LEFT, buff=0.12).next_to(info, DOWN, buff=0.35).align_to(info, LEFT)
-        self.play(FadeIn(verdict[0]), Indicate(band, color=GOOD), run_time=0.7)
+        self.play(FadeOut(tband), FadeIn(verdict[0]), Indicate(band, color=GOOD), run_time=0.7)
         self.sync(self.c(4, "تُسَجَّلُ"))
         self.play(FadeIn(verdict[1]), run_time=0.5)
         self.sync(self.end(4) + 1.0)
