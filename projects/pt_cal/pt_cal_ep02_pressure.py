@@ -374,7 +374,7 @@ class PtCalEp02(SyncedScene):
         callouts = [("Reservoir\n200 ml", pm.res, LEFT),
                     ("Handles +\npump piston", pm.lever_end(), LEFT),
                     ("Stroke selector\nPrime / High", P(-3.37, -0.9), LEFT),
-                    ("Vent\nvalve", pm.vent.get_left() + UP * 0.12, UP),
+                    ("Vent\nvalve", pm.vent.get_left() + LEFT * 0.2 + UP * 0.12, UP),
                     ("Fine\nadjust", P(2.7, -0.9), RIGHT),
                     ("Side port:\nhose", P(2.45, 0.05), RIGHT),
                     ("Top port:\nEXT", pm.ext, RIGHT)]
@@ -411,7 +411,7 @@ class PtCalEp02(SyncedScene):
         cv1_lab = tag("inlet check valve", FS_TAG, GOOD)
         cv2_lab = tag("outlet check valve", FS_TAG, GOOD)
         cv1_lab.move_to([-4.6, 1.0, 0])
-        cv2_lab.move_to([4.6, 0.95, 0])
+        cv2_lab.move_to([5.0, 1.15, 0])
         cv1_link = Arrow(cv1_lab.get_right(), pm.cv1.get_top(), buff=0.1, stroke_width=3,
                          color=GOOD, max_tip_length_to_length_ratio=0.12)
         cv2_link = Arrow(cv2_lab.get_left(), pm.cv2.get_top(), buff=0.1, stroke_width=3,
@@ -575,7 +575,7 @@ class PtCalEp02(SyncedScene):
         yl = tag("pressure", FS_AXIS).next_to(ax[1], RIGHT, buff=0.15).align_to(ax[1], UP)
         ty = oy + 3.4
         target = DashedLine([ox, ty, 0], [ox + w - 0.3, ty, 0], color=INK, stroke_width=2)
-        t_lab = tag("calibration point", FS_TAG).next_to(target, UP, buff=0.08).align_to(target, RIGHT)
+        t_lab = tag("calibration point", FS_TAG).next_to(target, DOWN, buff=0.12).align_to(target, RIGHT)
         self.play(Create(ax), FadeIn(xl), FadeIn(yl), Create(target), FadeIn(t_lab), run_time=0.8)
 
         def steps(x0, y0, n, dx, dy):
@@ -771,7 +771,7 @@ class PtCalEp02(SyncedScene):
         push_lab = tag("hand force", FS_TAG, BAD).next_to(push, RIGHT, buff=0.2)
         stop = VGroup(icon("alert-triangle", BAD, 0.6),
                       tag("strong resistance, no pressure rise:\nstop and find the fault", FS_TAG, BAD)) \
-            .arrange(RIGHT, buff=0.2).move_to([2.4, -2.5, 0])
+            .arrange(RIGHT, buff=0.2).move_to([3.3, -2.5, 0])
         self.play(Create(gauge), FadeIn(g_txt), GrowArrow(push), run_time=0.4)
         self.play(push.animate.put_start_and_end_on([-2.2, -3.1, 0], [-2.2, -1.9, 0]), FadeIn(push_lab),
                   Indicate(g_txt, color=BAD), run_time=1.0)
