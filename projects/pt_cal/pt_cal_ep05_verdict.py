@@ -306,10 +306,10 @@ class PtCalEp05(SyncedScene):
         # the interval is a decision
         self.sync(self.c(5, "وَالفَتْرَةُ"))
         self.play(FadeOut(VGroup(void, cal)), alert.animate.next_to(chain, DOWN, buff=0.3), run_time=0.4)
-        yb = -1.0
+        yb = -0.8
         MX = lambda m: -1.2 + 7.6 * m / 12                            # noqa: E731
         base = Line([MX(0), yb, 0], [MX(12), yb, 0], stroke_width=3, color=INK)
-        bl = tag("calibration interval", FS_TAG, GREY_INK).next_to(base, UP, buff=0.12).align_to(base, LEFT)
+        bl = tag("calibration interval", FS_TAG, GREY_INK).next_to(base, UP, buff=0.2).align_to(base, LEFT)
         mt = VGroup(*[VGroup(Line([MX(m), yb - 0.1, 0], [MX(m), yb + 0.1, 0], stroke_width=2, color=INK),
                              tag(f"{m} mo" if m else "0", FS_TAG - 2, GREY_INK).next_to([MX(m), yb - 0.1, 0], DOWN, buff=0.08))
                       for m in (0, 3, 6, 12)])
@@ -322,7 +322,10 @@ class PtCalEp05(SyncedScene):
                    f"{D.INTERVAL_CRITICAL_MONTHS[1]} months", FS_TAG).next_to(mt, DOWN, buff=0.25) \
             .align_to(base, LEFT)
         self.sync(self.c(5, "الحَلَقَاتُ الحَرِجَةُ"))
-        self.play(FadeIn(crit), cur.animate.set_value(D.INTERVAL_CRITICAL_MONTHS[0]), run_time=0.7)
+        lo_, hi_ = D.INTERVAL_CRITICAL_MONTHS
+        crange = Rectangle(width=MX(hi_) - MX(lo_), height=0.12, stroke_width=0).set_fill(FLUID, 0.2) \
+            .move_to([(MX(lo_) + MX(hi_)) / 2, yb, 0])
+        self.play(FadeIn(crit), FadeIn(crange), cur.animate.set_value(lo_), run_time=0.7)
         self.sync(self.c(5, "وَتَارِيخُ آزْ فَاوْنْد"))
         self.play(Indicate(rows[6], color=MOVE), run_time=0.6)
         self.sync(self.c(5, "فَمَنْ يَعُودُ"))
