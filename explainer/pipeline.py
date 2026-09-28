@@ -1,6 +1,8 @@
 """Production pipeline: project settings -> narration audio (+ word timings) -> render -> mp4.
 
     1. synthesize(NARRATION, audio_dir)        -> seg1.mp3 + seg1.json ... segN
+       (a NARRATION entry that is a number is a silent segment of that many seconds:
+       a video without narration, e.g. a catalogue, passes only numbers)
     2. render(__file__, "SceneName", preview)  -> silent Manim video
     3. merge_audio_video(video, audio_dir, n, out_path)
 build() runs all three; main() adds the command-line switches:
@@ -49,23 +51,41 @@ def project_settings(script):
 # ---------------- Narration (edge-tts) ----------------
 def synthesize(segments, audio_dir, voice=VOICE, force=False, rate="+0%"):
     """Write each narration segment to audio_dir/seg{i}.mp3, and its word timings
-    (edge-tts WordBoundary events) to audio_dir/seg{i}.json.
+    (edge-tts WordBoundary events) to audio_dir/seg{i}.json. A segment given as a
+    number is silence of that many seconds (no edge-tts call; its timing file has no words,
+    so scenes place it with at(), not cue()).
 
     Existing segments are kept unless force=True, so re-renders reuse the approved
     audio; a segment whose timing file is missing is synthesized again so the audio
     and its timings always come from the same run. edge-tts hardcodes certifi, which
     fails behind the session proxy, so its SSL context is patched to the proxy CA bundle.
     """
+    audio_dir = Path(audio_dir)
+    audio_dir.mkdir(parents=True, exist_ok=True)
+
+    def silent(i, seconds):
+        """Silent segment: kept while its length is unchanged."""
+        mp3, js = audio_dir / f"seg{i}.mp3", timing_path(audio_dir, i)
+        if force or not (mp3.exists() and js.exists()
+                         and json.loads(js.read_text()).get("text") == seconds):
+            silence(seconds, mp3)
+            js.write_text(json.dumps({"voice": None, "rate": None, "text": seconds,
+                                      "words": []}))
+
+    if all(isinstance(t, (int, float)) for t in segments):     # silent video: no edge-tts
+        for i, seconds in enumerate(segments, 1):
+            silent(i, seconds)
+        return
+
     import edge_tts
     import edge_tts.communicate as communicate
 
     if Path(PROXY_CA_BUNDLE).exists():
         communicate._SSL_CTX = ssl.create_default_context(cafile=PROXY_CA_BUNDLE)
 
-    audio_dir = Path(audio_dir)
-    audio_dir.mkdir(parents=True, exist_ok=True)
-
     async def one(i, text):
+        if isinstance(text, (int, float)):
+            return silent(i, text)
         mp3, js = audio_dir / f"seg{i}.mp3", timing_path(audio_dir, i)
         if not force and mp3.exists() and js.exists():
             return
@@ -87,6 +107,14 @@ def synthesize(segments, audio_dir, voice=VOICE, force=False, rate="+0%"):
             await one(i, text)
 
     asyncio.run(run())
+
+
+def silence(seconds, path):
+    """A silent mp3 of `seconds` (a segment of a video without narration)."""
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+                    "anullsrc=r=24000:cl=mono", "-t", f"{float(seconds):.3f}",
+                    "-c:a", "libmp3lame", "-b:a", "48k", str(path)], check=True)
+    return path
 
 
 # ---------------- Render & merge ----------------

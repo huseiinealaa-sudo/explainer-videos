@@ -10,4 +10,7 @@ requires-python = ">=3.11"
 dependencies = ["manim", "edge-tts>=7.2", "shapely>=2.0", "pillow"]
 
 [tool.setuptools]
-packages = ["explainer", "explainer.qa"]
+packages = ["explainer", "explainer.qa", "explainer.symbols"]
+
+[tool.setuptools.package-data]
+explainer = ["assets/tabler/LICENSE", "assets/tabler/outline/*.svg"]

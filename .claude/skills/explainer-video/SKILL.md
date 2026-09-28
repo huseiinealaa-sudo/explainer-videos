@@ -39,7 +39,10 @@ Run the session setup of the root `CLAUDE.md` (manim, `pip install -e .`, checks
 Write `projects/<name>/storyboard/<name>_<video>.md` for every video or episode, using
 `storyboard_template.md`: per segment the idea, what is drawn, what moves, the worked
 example, the scene (library function or custom drawing) and the duration. Mechanisms and
-motions are custom drawings; the library is for titles, equations, tables. Keep text and
+motions are custom drawings; the library is for titles, equations, tables. For process
+and instrument drawings, build from `explainer.symbols` (ISA valves, pumps, flow elements,
+bubbles, joined by `connect()` with the right line type) and add `icon()` pictograms where a
+label needs one (root `CLAUDE.md`, Scene library: Icons and engineering symbols). Keep text and
 table scenes at about one third of each episode or less. The storyboard is shown with the
 narration (step c), never approved on its own.
 
