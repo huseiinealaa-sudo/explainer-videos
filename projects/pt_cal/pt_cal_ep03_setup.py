@@ -50,9 +50,6 @@ def cell_drawing(kind, w=2.6, h=1.7):
          box.get_bottom() + UP * 0.02]))
     port = Line(box.get_left(), box.get_left() + LEFT * 0.45, stroke_width=8, color=INK)
     g = VGroup(box, port)
-    ref = {"gauge": "atmosphere", "absolute": "vacuum", "dp": "LP", "sealed": "sealed"}[kind]
-    rtxt = tag(ref, FS_TAG - 2, GREY_INK).move_to(box.get_center() + RIGHT * w / 4)
-    g.add(rtxt)
     if kind == "gauge":
         vent = Line(box.get_right(), box.get_right() + RIGHT * 0.35, stroke_width=4, color=INK)
         g.add(vent)
@@ -169,37 +166,42 @@ class PtCalEp03(SyncedScene):
         self.sync(self.c(1, "قَبْلَ التَّوْصِيلِ") - 0.6)
         self.clear()
         self.sec = section_title(self, "Four transmitter types: what is the reference?")
-        kinds = [("Gauge", "gauge", "النِّسْبِيُّ مَرْجِعُهُ"), ("Absolute", "absolute", "وَالمُطْلَقُ"),
-                 ("Differential (DP)", "dp", "وَالتَّفَاضُلِيُّ"), ("Sealed gauge", "sealed", "وَالنِّسْبِيُّ المَخْتُومُ")]
-        cells = VGroup(*[cell_drawing(k, 2.4, 1.6) for _, k, _ in kinds]).arrange(RIGHT, buff=0.95)
-        cells.move_to([0.25, 1.0, 0])
-        names = VGroup(*[tag(n, FS_TAG + 2, weight=BOLD).next_to(c.box, UP, buff=0.25) for (n, _, _), c in zip(kinds, cells)])
-        notes = [tag("vented: reads 0\navoid gusty wind", FS_TAG),
-                 tag("vented: still reads\natmospheric pressure\n→ BARO or absolute ref.", FS_TAG),
-                 tag("HP − LP\nmost fragile", FS_TAG),
-                 tag("like gauge, but a fixed\nzero offset that\nventing does not remove", FS_TAG)]
+        kinds = [("Gauge\nref: atmosphere", "gauge", "النِّسْبِيُّ مَرْجِعُهُ"),
+                 ("Absolute\nref: vacuum", "absolute", "وَالمُطْلَقُ"),
+                 ("Differential\nHP − LP", "dp", "وَالتَّفَاضُلِيُّ"),
+                 ("Sealed gauge\nref: sealed", "sealed", "وَالنِّسْبِيُّ المَخْتُومُ")]
+        cells = VGroup(*[cell_drawing(k, 2.0, 1.5) for _, k, _ in kinds]).arrange(RIGHT, buff=1.05)
+        cells.move_to([0.2, 0.7, 0])
+        names = VGroup(*[tag(n, FS_TAG + 1, weight=BOLD).next_to(c.box, UP, buff=0.25) for (n, _, _), c in zip(kinds, cells)])
+        notes = [tag("vented: reads 0\navoid gusty wind", FS_TAG - 1),
+                 tag("vented: reads\natmospheric\n→ BARO or\nabsolute ref.", FS_TAG - 1),
+                 tag("most fragile", FS_TAG - 1, BAD),
+                 tag("fixed zero offset\nthat venting\ndoes not remove", FS_TAG - 1)]
         for n_, c in zip(notes, cells):
             n_.next_to(c.box, DOWN, buff=0.35)
         for k, ((n, kind, ph), c) in enumerate(zip(kinds, cells)):
             self.sync(self.c(1, ph))
             self.play(Create(c[:2]), FadeIn(c[2:]), FadeIn(c.dia), FadeIn(names[k]), run_time=0.6)
-            push = Arrow(c.box.get_left() + LEFT * 1.0, c.box.get_left() + LEFT * 0.05, buff=0, stroke_width=5,
-                         color=FLUID, max_tip_length_to_length_ratio=0.3)
+            push = Arrow(c.box.get_left() + LEFT * 0.75, c.box.get_left() + LEFT * 0.05, buff=0, stroke_width=5,
+                         color=FLUID, max_tip_length_to_length_ratio=0.35).shift(DOWN * 0.45)
             self.play(GrowArrow(push), c.bow.animate.set_value(0.35), run_time=0.6)
             if kind == "dp":
-                back = Arrow(c.box.get_right() + RIGHT * 1.0, c.box.get_right() + RIGHT * 0.05, buff=0, stroke_width=3,
-                             color=FLUID, max_tip_length_to_length_ratio=0.3)
+                back = Arrow(c.box.get_right() + RIGHT * 0.75, c.box.get_right() + RIGHT * 0.05, buff=0, stroke_width=3,
+                             color=FLUID, max_tip_length_to_length_ratio=0.35).shift(DOWN * 0.45)
                 self.play(GrowArrow(back), c.bow.animate.set_value(0.15), run_time=0.5)
                 self.play(FadeOut(back), run_time=0.2)
             self.play(FadeOut(push), c.bow.animate.set_value(0.0 if kind != "sealed" else 0.08),
                       FadeIn(notes[k]), run_time=0.6)
-        self.sync(self.c(1, "رِيحٍ"))
-        wind = icon("wind", GREY_INK, 0.5).next_to(cells[0].box, LEFT, buff=0.2).shift(UP * 0.55)
-        self.play(FadeIn(wind), cells[0].bow.animate.set_value(0.12), run_time=0.4)
-        self.play(cells[0].bow.animate.set_value(-0.1), run_time=0.3)
-        self.play(cells[0].bow.animate.set_value(0.0), run_time=0.3)
-        self.sync(self.c(1, "الأَخْطَرُ"))
-        self.play(Indicate(cells[2].box, color=BAD), run_time=0.6)
+            if kind == "gauge":
+                self.sync(self.c(1, "رِيحٍ"))
+                wind = icon("wind", GREY_INK, 0.45).next_to(c.box, DOWN, buff=0.12).align_to(c.box, RIGHT)
+                notes[0].next_to(wind, DOWN, buff=0.1).align_to(c.box, LEFT)
+                self.play(FadeIn(wind), c.bow.animate.set_value(0.12), run_time=0.4)
+                self.play(c.bow.animate.set_value(-0.1), run_time=0.3)
+                self.play(c.bow.animate.set_value(0.0), run_time=0.3)
+            if kind == "dp":
+                self.sync(self.c(1, "الأَخْطَرُ"))
+                self.play(Indicate(c.box, color=BAD), run_time=0.6)
         self.sync(self.end(1) - 0.6)
         self.clear(self.sec)
 
@@ -252,7 +254,7 @@ class PtCalEp03(SyncedScene):
         la = pipe(xa_t.body.get_right() + UP * 0.1, ma.box.get_left() + UP * 0.1, width=3)
         la2 = pipe(xa_t.body.get_bottom(), [xa_t.body.get_bottom()[0], -0.3, 0], [ma.box.get_bottom()[0], -0.3, 0],
                    ma.box.get_bottom(), width=3)
-        ha = tag("HART available", FS_TAG, GOOD).move_to([xa, -0.05, 0])
+        ha = tag("HART available", FS_TAG, GOOD).move_to([xa, -0.62, 0])
         # B: DCS supplies, MC6 in series measures
         xb_t = transmitter(bubble=False).scale(0.55).move_to([xb - 1.2, 0.7, 0])
         dcs = device("DCS\nsupply", 1.3, 0.85, FS_TAG).move_to([xb + 1.3, 0.8, 0])
@@ -283,7 +285,7 @@ class PtCalEp03(SyncedScene):
         self.play(FadeIn(mc), Create(par), run_time=0.6)
         self.sync(self.c(3, "لٰكِنَّ تَسَرُّبَ"))
         heat = VGroup(icon("temperature", BAD, 0.4), tag("hot: diode leakage\n→ reading shifts", FS_TAG, BAD)) \
-            .arrange(RIGHT, buff=0.1).move_to([xc, -0.85, 0])
+            .arrange(RIGHT, buff=0.1).move_to([xc, -1.2, 0])
         self.play(FadeIn(heat), run_time=0.6)
         # HART: 250 Ω, not a second one; modem in parallel
         self.sync(self.c(3, "وَهَارْت يَحْتَاجُ"))
@@ -310,14 +312,14 @@ class PtCalEp03(SyncedScene):
         self.play(Create(mf.static()), FadeIn(mf.moving()), run_time=1.2)
         self.sync(self.c(4, "غِشَاؤُهُ"))
         self.play(Indicate(mf.dia, color=MOVE), run_time=0.6)
-        line = tag(f"line pressure {D.LINE_PRESSURE_BAR} bar on both sides", FS_TAG + 2, FLUID) \
-            .move_to([3.6, 2.4, 0])
+        line = tag(f"line pressure {D.LINE_PRESSURE_BAR} bar on both sides", FS_TAG + 1, FLUID) \
+            .move_to([3.6, 2.4, 0]).align_to([0.9, 0, 0], LEFT)
         self.sync(self.c(4, "وَضَغْطُ الخَطِّ"))
         self.play(FadeIn(line), run_time=0.5)
         # the danger: one side vented while the other holds line pressure
         self.sync(self.c(4, "فَالخَطَرُ"))
-        danger = tag("one side vented, the other at line pressure:\nfull pressure across the diaphragm",
-                     FS_TAG + 1, BAD).next_to(line, DOWN, buff=0.3)
+        danger = tag("one side vented, the other at line\npressure: full pressure across\nthe diaphragm",
+                     FS_TAG + 1, BAD).next_to(line, DOWN, buff=0.3).align_to(line, LEFT)
         self.play(mf.lp.animate.set_value(0), run_time=0.4)
         self.play(mf.vent.animate.set_value(1), FadeIn(danger), run_time=0.8)
         self.sync(self.c(4, "فَيَتَمَدَّدُ"))
@@ -325,10 +327,10 @@ class PtCalEp03(SyncedScene):
         self.play(mf.vent.animate.set_value(0), mf.lp.animate.set_value(1), FadeOut(danger), run_time=0.6)
         # the reference-manual sequence
         steps = ["1  close LP isolate", "2  open equalize", "3  close HP isolate",
-                 "4  open vent slowly, away from the face", "5  check: zero pressure"]
-        lst = VGroup(*[tag(s, FS_TAG + 2) for s in steps]).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
+                 "4  open vent slowly, face away", "5  check: zero pressure"]
+        lst = VGroup(*[tag(s, FS_TAG + 1) for s in steps]).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
         lst.next_to(line, DOWN, buff=0.45).align_to(line, LEFT)
-        src = tag("sequence: smart-transmitter reference manual", FS_TAG - 2, GREY_INK).next_to(lst, DOWN, buff=0.25) \
+        src = tag("per the transmitter reference manual", FS_TAG - 2, GREY_INK).next_to(lst, DOWN, buff=0.25) \
             .align_to(lst, LEFT)
         acts = [("أَغْلِقْ عَزْلَ المُنْخَفِضِ", mf.lp, 0), ("ثُمَّ افْتَحِ المُعَادَلَةَ", mf.eq, 1),
                 ("ثُمَّ أَغْلِقْ عَزْلَ العَالِي", mf.hp, 0), ("ثُمَّ افْتَحِ التَّنْفِيسَ", mf.vent, 1)]
@@ -375,11 +377,11 @@ class PtCalEp03(SyncedScene):
     # ---------------- Segment 6: before starting; H2S ----------------
     def seg6_safety(self):
         section_title(self, "Before starting", prev=self.sec)
-        items = ["valid work permit: equipment, scope, time", "gas test before and during the job",
+        items = ["valid permit: equipment, scope, time", "gas test before and during",
                  "PPE + personal gas detector", "exits, muster point, eyewash", "never alone in a classified area"]
         checklist(self, items, cues=[self.c(6, "تَصْرِيحُ"), self.c(6, "وَفَحْصُ"), self.c(6, "وَمُعِدَّاتُ"),
                                      self.c(6, "وَمَعْرِفَةُ"), self.c(6, "وَلَا عَمَلَ")],
-                  pos=[-3.3, 0.6, 0], size=FS_TAG + 2)
+                  pos=[-3.4, 0.6, 0], size=FS_TAG + 1)
         # H2S: heavier than air, collects low
         self.sync(self.c(6, "وَكِبْرِيتِيدُ"))
         ground = pipe([0.8, -1.9, 0], [2.6, -1.9, 0], [2.9, -2.9, 0], [4.3, -2.9, 0], [4.6, -1.9, 0], [6.7, -1.9, 0],
@@ -387,24 +389,24 @@ class PtCalEp03(SyncedScene):
         src = Dot([1.4, -1.6, 0], radius=0.1, color=GREY_INK)
         gas = VGroup(*[Circle(radius=0.12, color=GREY_INK, stroke_width=2).set_fill(GREY_INK, 0.45)
                        .move_to([1.4, -1.6, 0]) for _ in range(6)])
-        hl = tag("H₂S: heavier than air → collects in pits and low points", FS_TAG + 1, BAD) \
-            .move_to([3.7, -0.1, 0])
+        hl = tag("H₂S: heavier than air →\ncollects in pits and low points", FS_TAG + 1, BAD) \
+            .move_to([3.0, 2.2, 0]).align_to([0.6, 0, 0], LEFT)
         self.play(Create(ground), FadeIn(src), FadeIn(hl), run_time=0.6)
         self.play(*[g.animate.move_to([3.0 + 0.25 * k, -2.7 + 0.12 * (k % 2), 0]) for k, g in enumerate(gas)],
                   run_time=1.6)
         self.sync(self.c(6, "وَيَشُلُّ"))
         smell = tag("smell disappears at high concentration:\nno smell ≠ safe", FS_TAG + 1, BAD) \
-            .next_to(hl, DOWN, buff=0.25)
+            .next_to(hl, DOWN, buff=0.3).align_to(hl, LEFT)
         self.play(FadeIn(smell), run_time=0.6)
         self.sync(self.c(6, "وَالمَشْعَبُ"))
-        person = icon("user", INK, 0.8).move_to([5.8, -1.3, 0])
-        wind = Arrow([6.8, -0.9, 0], [5.3, -0.9, 0], buff=0, stroke_width=4, color=FLUID,
+        person = icon("user", INK, 0.8).move_to([5.8, -1.45, 0])
+        wind = Arrow([6.8, -0.55, 0], [5.3, -0.55, 0], buff=0, stroke_width=4, color=FLUID,
                      max_tip_length_to_length_ratio=0.2)
         wl = tag("wind", FS_TAG, FLUID).next_to(wind, UP, buff=0.08)
         self.play(FadeIn(person), GrowArrow(wind), FadeIn(wl), run_time=0.6)
         self.sync(self.c(6, "صَرِّفْ"))
-        tip = tag("drain to a closed system · stand with the wind at your back", FS_TAG + 1, GOOD) \
-            .next_to(ground, DOWN, buff=0.35).align_to([0.8, 0, 0], LEFT)
+        tip = tag("drain to a closed system\nstand with the wind at your back", FS_TAG + 1, GOOD) \
+            .next_to(ground, DOWN, buff=0.35).align_to([0.8, 0, 0], LEFT).shift(DOWN * 0.35)
         self.play(FadeIn(tip), run_time=0.6)
         self.sync(self.end(6) - 0.6)
         self.clear(self.sec)
@@ -412,15 +414,14 @@ class PtCalEp03(SyncedScene):
     # ---------------- Segment 7: zones; process and loop isolation ----------------
     def seg7_zones(self):
         section_title(self, "Hazardous zones · isolation", prev=self.sec)
-        vessel = tank(size=0.9).move_to([-4.3, -0.4, 0])
-        z0 = Ellipse(width=1.6, height=2.0, color=BAD, stroke_width=4).move_to(vessel)
-        z1 = Ellipse(width=3.2, height=3.4, color=MOVE, stroke_width=4).move_to(vessel)
-        z2 = DashedVMobject(Ellipse(width=4.6, height=4.8, color=GREY_INK, stroke_width=3), num_dashes=40).move_to(vessel)
-        labels = [tag("Zone 0: always", FS_TAG, BAD), tag("Zone 1: likely in\nnormal operation", FS_TAG, MOVE),
-                  tag("Zone 2: not expected,\nshort if it occurs", FS_TAG, GREY_INK)]
-        labels[0].next_to(z0, UP, buff=0.08)
-        labels[1].move_to(z1.get_top() + DOWN * 0.1 + UP * 0.45)
-        labels[2].next_to(z2, DOWN, buff=0.1)
+        vessel = tank(size=0.75).move_to([-4.6, 0.5, 0])
+        z0 = Ellipse(width=1.4, height=1.7, color=BAD, stroke_width=4).move_to(vessel)
+        z1 = Ellipse(width=2.7, height=2.8, color=MOVE, stroke_width=4).move_to(vessel)
+        z2 = DashedVMobject(Ellipse(width=4.0, height=3.7, color=GREY_INK, stroke_width=3), num_dashes=40).move_to(vessel)
+        labels = [tag("Zone 0: flammable mixture always", FS_TAG, BAD),
+                  tag("Zone 1: likely in normal operation", FS_TAG, MOVE),
+                  tag("Zone 2: not expected, short if it occurs", FS_TAG, GREY_INK)]
+        VGroup(*labels).arrange(DOWN, aligned_edge=LEFT, buff=0.15).next_to(z2, DOWN, buff=0.2).align_to([-6.6, 0, 0], LEFT)
         self.play(FadeIn(vessel), run_time=0.4)
         for z, l, ph in zip([z0, z1, z2], labels, ["صِفْر", "وَوَاحِد", "وَاثْنَان"]):
             self.sync(self.c(7, ph))
@@ -431,16 +432,16 @@ class PtCalEp03(SyncedScene):
         # process isolation: double block and bleed, lock and tag
         self.sync(self.c(7, "وَلِعَزْلِ العَمَلِيَّةِ"))
         sds = VGroup(icon("file-text", INK, 0.45), tag("process fluid from the safety data sheet", FS_TAG + 1)) \
-            .arrange(RIGHT, buff=0.15).move_to([2.8, 2.5, 0]).align_to([-0.4, 0, 0], LEFT)
+            .arrange(RIGHT, buff=0.15).move_to([2.8, 2.5, 0]).align_to([-1.2, 0, 0], LEFT)
         self.play(FadeIn(sds), run_time=0.5)
         self.sync(self.c(7, "وَاعْزِلْ"))
-        v1 = gate_valve(size=0.6).move_to([0.6, 1.3, 0])
-        v2 = gate_valve(size=0.6).move_to([2.4, 1.3, 0])
-        run = VGroup(pipe([-0.4, 1.3, 0], v1.port("in"), width=6), pipe(v1.port("out"), v2.port("in"), width=6),
-                     pipe(v2.port("out"), [3.4, 1.3, 0], width=6))
-        bleed = gate_valve(size=0.45).rotate(PI / 2).move_to([1.5, 0.55, 0])
-        bl = pipe([1.5, 1.3, 0], bleed.get_top(), width=4)
-        dbb = tag("double block and bleed", FS_TAG + 1, GOOD).next_to(v2, RIGHT, buff=0.9)
+        v1 = gate_valve(size=0.6).move_to([-0.3, 1.5, 0])
+        v2 = gate_valve(size=0.6).move_to([1.5, 1.5, 0])
+        run = VGroup(pipe([-1.2, 1.5, 0], v1.port("in"), width=6), pipe(v1.port("out"), v2.port("in"), width=6),
+                     pipe(v2.port("out"), [2.4, 1.5, 0], width=6))
+        bleed = gate_valve(size=0.45).rotate(PI / 2).move_to([0.6, 0.75, 0])
+        bl = pipe([0.6, 1.5, 0], bleed.get_top(), width=4)
+        dbb = tag("double block and bleed", FS_TAG + 1, GOOD).move_to([4.2, 1.6, 0]).align_to([2.7, 0, 0], LEFT)
         self.play(Create(run), FadeIn(v1), FadeIn(v2), Create(bl), FadeIn(bleed), run_time=0.7)
         self.play(*[v.animate.set_fill(INK, 1) for v in (v1, v2)], bleed.animate.set_color(GOOD), FadeIn(dbb),
                   run_time=0.6)
@@ -449,7 +450,7 @@ class PtCalEp03(SyncedScene):
         self.play(FadeIn(one), run_time=0.4)
         self.sync(self.c(7, "وَضَعْ قُفْلًا"))
         lock = VGroup(icon("lock", MOVE, 0.5), tag("lock + tag with your name", FS_TAG + 1, MOVE)) \
-            .arrange(RIGHT, buff=0.12).next_to(v1, DOWN, buff=0.9).align_to([-0.4, 0, 0], LEFT)
+            .arrange(RIGHT, buff=0.12).move_to([0, -0.05, 0]).align_to([-1.2, 0, 0], LEFT)
         self.play(FadeIn(lock), run_time=0.5)
         self.sync(self.c(7, "وَافْتَرِضْ"))
         trapped = tag("assume trapped pressure until proven otherwise", FS_TAG + 1, BAD).next_to(lock, DOWN, buff=0.2) \
@@ -457,18 +458,18 @@ class PtCalEp03(SyncedScene):
         self.play(FadeIn(trapped), run_time=0.5)
         # loop isolation
         self.sync(self.c(7, "وَلِعَزْلِ الحَلْقَةِ"))
-        cr = device("control room", 2.4, 0.8, FS_TAG + 2).move_to([0.9, -2.3, 0])
+        cr = device("control room", 2.4, 0.8, FS_TAG + 2).move_to([0.0, -1.55, 0])
         sw = VGroup(tag("AUTO", FS_TAG + 2, GREY_INK), tag("→", FS_TAG + 2), tag("MAN", FS_TAG + 2, MOVE, weight=BOLD)) \
             .arrange(RIGHT, buff=0.15).next_to(cr, RIGHT, buff=0.3)
         self.play(FadeIn(cr), run_time=0.4)
         self.sync(self.c(7, "وَضَعِ الحَلْقَةَ"))
         self.play(FadeIn(sw, lag_ratio=0.3), run_time=0.6)
         self.sync(self.c(7, "وَتَجَاوَزِ"))
-        byp = tag("alarm bypass: approved, documented", FS_TAG, GREY_INK).next_to(cr, DOWN, buff=0.15).align_to(cr, LEFT)
+        byp = tag("alarm bypass: approved, documented", FS_TAG + 1, GREY_INK).next_to(cr, DOWN, buff=0.2).align_to([-1.2, 0, 0], LEFT)
         self.play(FadeIn(byp), run_time=0.4)
         self.sync(self.c(7, "وَمُرْسِلُ نِظَامِ"))
-        sis = VGroup(icon("shield-check", BAD, 0.45), tag("SIS: special procedure,\nhigher authority", FS_TAG, BAD)) \
-            .arrange(RIGHT, buff=0.12).next_to(sw, DOWN, buff=0.35).align_to(sw, LEFT)
+        sis = VGroup(icon("shield-check", BAD, 0.45), tag("SIS: special procedure, higher authority", FS_TAG + 1, BAD)) \
+            .arrange(RIGHT, buff=0.12).next_to(byp, DOWN, buff=0.2).align_to([-1.2, 0, 0], LEFT)
         self.play(FadeIn(sis), run_time=0.5)
         self.sync(self.end(7) - 0.6)
         self.clear(self.sec)

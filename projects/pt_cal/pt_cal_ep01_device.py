@@ -366,7 +366,7 @@ class PtCalEp01(SyncedScene):
         spark = VGroup(*[Line(ORIGIN, 0.35 * np.array([np.cos(a), np.sin(a), 0]), stroke_width=4, color=BAD)
                          for a in np.linspace(0, TAU, 9)[:-1]]).move_to(mc6.box.get_corner(UR))
         self.play(GrowFromCenter(spark), mc6.box.animate.set_stroke(BAD), run_time=0.5)
-        nis = tag("not intrinsically safe", FS_TAG + 1, BAD).next_to(mc6, DOWN, buff=0.2)
+        nis = tag("not intrinsically\nsafe", FS_TAG + 1, BAD).next_to(mc6, DOWN, buff=0.2)
         self.play(FadeIn(nis), run_time=0.4)
         self.sync(self.c(8, "جِهَازٌ مُعْتَمَدٌ"))
         ex = device("MC6-Ex", 1.9, 1.2, FS_LABEL).move_to([-4.6, -2.0, 0])
