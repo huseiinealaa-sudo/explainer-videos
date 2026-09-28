@@ -25,7 +25,7 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-from manim import DOWN, RIGHT, SVGMobject, VGroup
+from manim import DOWN, UP, SVGMobject, VGroup
 from manim.constants import CapStyleType, LineJointType
 
 from .style import FS_TAG, GREY_INK, INK, label
@@ -92,15 +92,18 @@ def icon(name, color=INK, size=1.0, stroke_width=4):
     return mob
 
 
-def icon_grid(names, cols=6, size=0.9, color=INK, cell=(2.1, 1.7), name_size=FS_TAG,
+def icon_grid(names, cols=6, size=0.9, color=INK, cell=(2.1, 1.7), name_size=FS_TAG - 4,
               name_color=GREY_INK):
-    """Icons in a grid, each with its name below; returns VGroup of VGroup(icon, name)."""
+    """Icons in a grid, each with its name below; returns VGroup of VGroup(icon, name).
+
+    cell = (width, height) of one grid cell: icon + name + the gap to the next cell."""
     cells = VGroup(*[VGroup(icon(n, color, size), label(n, name_size, name_color))
                      for n in names])
     for c in cells:
         c[1].next_to(c[0], DOWN, 0.15)
-    cells.arrange_in_grid(cols=cols, buff=(cell[0] - size, cell[1] - size - 0.4),
-                          cell_alignment=RIGHT * 0)
+    cells.arrange_in_grid(cols=cols, col_widths=[cell[0]] * cols,
+                          row_heights=[cell[1]] * -(-len(cells) // cols), buff=0,
+                          cell_alignment=UP)
     return cells
 
 

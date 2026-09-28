@@ -14,7 +14,7 @@ in `explainer/symbols/SOURCES.md`. Durations come from `symbol_gallery_data.DURA
 | 6 | ISA flow measurement | orifice plate, turbine, magnetic, Coriolis, vortex (in-line, flow left→right) + names | drawn in turn; ports flash | — | custom | 0:10 |
 | 7 | Instrument bubbles by location | field FT-101, panel PIC-102, behind panel PY-103, DCS FIC-101, PLC LSH-104 + location names | drawn in turn | — | custom | 0:12 |
 | 8 | ISA line types | process, connection (impulse), pneumatic, electrical, capillary, data/software link + names | each line drawn left→right | — | custom | 0:11 |
-| 9 | A flow control loop joined with connect() | tank → pump → orifice plate (FE) → control valve FV-101 → out; FT-101 on the orifice taps; FIC-101 (DCS); FY-101 (I/P) on the valve; legend | process drawn in flow order; then FT, electrical FT→FIC, FIC→FY, pneumatic FY→actuator; legend | loop 101 (illustrative) | custom | 0:24 |
+| 9 | A flow control loop joined with connect() | tank → pump → orifice plate FE-101 → control valve FV-101 → out; FT-101 on the orifice taps; FIC-101 (DCS); FY-101 (I/P) on the valve; legend | process drawn in flow order; then FT, electrical FT→FIC, FIC→FY, pneumatic FY→actuator; legend | loop 101 (illustrative) | custom | 0:24 |
 | 10 | How to call the new functions | four code lines | lines fade in | — | text | 0:06 |
 
 Text-scene share: title 6 s + code lines 6 s = 12 s / 113 s ≈ 11 % (limit ~33 %)

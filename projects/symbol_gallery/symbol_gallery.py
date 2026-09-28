@@ -18,12 +18,15 @@ SEG = {name: k + 1 for k, name in enumerate(D.DURATIONS)}
 AUDIO_DIR = audio_dir_for(__file__)
 
 NAME_SIZE = FS_TAG                              # names under icons and symbols
-SYMBOL_SIZE = 1.25                              # ISA symbols in the group pages
+SYMBOL_SIZE = 1.4                               # ISA symbols in the group pages
 
 
 def stubs(sym, length=0.35):
-    """Short process pipes from a symbol's in/out ports, pointing away from its centre."""
+    """Short process pipes from a symbol's in/out ports, pointing away from its centre
+    (none for in-line flow elements: they carry their own pipe stubs)."""
     out = VGroup()
+    if "tap" in sym.port_names():
+        return out
     for p in ("in", "out"):
         if p not in sym.port_names():
             continue
@@ -55,8 +58,8 @@ class SymbolGallery(SyncedScene):
         for k, page in enumerate(D.ICON_PAGES):
             s = SEG[f"icons_{k + 1}"]
             self.heading(f"Tabler icons  ({k + 1}/{len(D.ICON_PAGES)})")
-            grid = icon_grid(page, cols=D.ICON_COLS, size=0.72, cell=(1.85, 1.5))
-            fit(grid).next_to(self.head, DOWN, 0.4).set_x(0)
+            grid = icon_grid(page, cols=D.ICON_COLS, size=0.75, cell=(1.88, 1.4), name_size=16)
+            fit(grid).move_to(DOWN * 0.2)
             self.play(LaggedStart(*[AnimationGroup(Create(c[0]), FadeIn(c[1]))
                                     for c in grid], lag_ratio=0.12), run_time=3.2)
             self.say(f"icon(name, color, size, stroke_width)  ·  Tabler {TABLER_VERSION}, MIT",
@@ -72,8 +75,11 @@ class SymbolGallery(SyncedScene):
             for fn, name in items:
                 sym = getattr(isa, fn)(size=SYMBOL_SIZE)
                 cells.add(named(VGroup(sym, stubs(sym)), name))
-            cols = 4 if len(cells) > 5 else len(cells)
-            cells.arrange_in_grid(cols=cols, buff=(0.8, 0.7), cell_alignment=DOWN)
+            if len(cells) > 5:                          # two rows: equal columns
+                cells.arrange_in_grid(cols=4, buff=(0.6, 0.7), cell_alignment=DOWN,
+                                      col_widths=[max(c.width for c in cells)] * 4)
+            else:
+                cells.arrange(RIGHT, buff=0.6, aligned_edge=DOWN)
             fit(cells).move_to(DOWN * 0.1)
             self.play(LaggedStart(*[AnimationGroup(Create(c[0]), FadeIn(c[1], shift=UP * 0.1))
                                     for c in cells], lag_ratio=0.35), run_time=4.0)
@@ -86,7 +92,7 @@ class SymbolGallery(SyncedScene):
         # ---------------- instrument bubbles ----------------
         s = SEG["bubbles"]
         self.heading("ISA-5.1  ·  Instrument bubbles")
-        cells = VGroup(*[named(instrument(f, n, loc, size=1.3), name)
+        cells = VGroup(*[named(instrument(f, n, loc, size=1.5), name)
                          for loc, f, n, name in D.BUBBLES])
         cells.arrange(RIGHT, buff=0.75, aligned_edge=UP)
         fit(cells).move_to(UP * 0.3)
@@ -180,7 +186,8 @@ class SymbolGallery(SyncedScene):
         names = VGroup(
             label("Tank", NAME_SIZE).next_to(tk, DOWN, 0.2),
             label("Pump", NAME_SIZE).next_to(pump, DOWN, 0.2),
-            label("Orifice plate (FE)", NAME_SIZE).next_to(fe, DOWN, 0.25),
+            label("Orifice plate FE-{}".format(D.LOOP_TAGS["FE"][1]), NAME_SIZE)
+            .next_to(fe, DOWN, 0.25),
             label("Control valve FV-101", NAME_SIZE).next_to(fv, DOWN, 0.25),
         )
         self.play(FadeIn(names), run_time=0.5)
@@ -200,10 +207,9 @@ class SymbolGallery(SyncedScene):
             label("I/P converter", NAME_SIZE).next_to(fy, RIGHT, 0.25),
         )
         self.play(Create(c1), Create(ft), FadeIn(tags[0]), run_time=1.0)
-        self.say("FT-101 measures the flow: 4–20 mA (electrical) to the controller", GREY_INK,
-                 size=FS_NOTE)
-        self.play(Create(c2), run_time=1.0)
-        self.play(Create(fic), FadeIn(tags[1]), run_time=0.8)
+        self.say(f"FT-101 measures the flow: {D.SIGNAL} (electrical) to the controller",
+                 GREY_INK, size=FS_NOTE)
+        self.play(Create(c2), Create(fic), FadeIn(tags[1]), run_time=1.2)
         self.sync(self.at(s, 0.55))
         self.say("FIC-101 in the DCS drives FY-101 (electrical), which moves FV-101 (pneumatic)",
                  GREY_INK, size=FS_NOTE)

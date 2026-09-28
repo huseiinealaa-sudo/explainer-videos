@@ -166,7 +166,7 @@ def centrifugal_pump(size=1.0, color=INK):
     discharge at the top to the right, and a base."""
     r = 0.4
     casing = Circle(radius=r, color=color, stroke_width=STROKE)
-    discharge = _line((0, r), (0.55, r))
+    discharge = _line((0, r), (0.55, r), width=PROCESS_STROKE)     # the discharge nozzle
     feet = _poly((-0.3, -0.5), (-0.2, -r * 0.8), color=color)
     feet2 = _poly((0.3, -0.5), (0.2, -r * 0.8), color=color)
     base = _line((-0.42, -0.5), (0.42, -0.5))
@@ -179,8 +179,8 @@ def pd_pump(size=1.0, color=INK):
     """Positive displacement pump: stepped casing with suction left and discharge right."""
     casing = _poly((-0.35, -0.25), (0.45, -0.25), (0.45, 0.05), (0.1, 0.05), (0.1, 0.4),
                    (-0.35, 0.4), color=color, close=True)
-    rotor = VGroup(Circle(radius=0.1, color=color, stroke_width=STROKE).move_to(_p(-0.2, 0.08)),
-                   Circle(radius=0.1, color=color, stroke_width=STROKE).move_to(_p(-0.0, 0.08)))
+    rotor = VGroup(Circle(radius=0.09, color=color, stroke_width=STROKE).move_to(_p(-0.23, 0.08)),
+                   Circle(radius=0.09, color=color, stroke_width=STROKE).move_to(_p(-0.05, 0.08)))
     s = Symbol(casing, rotor, name="positive displacement pump")
     s.add_port("in", _p(-0.35, -0.1)).add_port("out", _p(0.45, -0.1))
     return _finish(s, size, color)

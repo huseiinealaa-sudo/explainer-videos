@@ -45,4 +45,7 @@ LINES = [
 
 # The example control loop: tank -> pump -> flow element + FT -> FIC (DCS) -> FY (I/P) -> FV.
 LOOP = "101"
-LOOP_TAGS = {"FT": ("FT", LOOP), "FIC": ("FIC", LOOP), "FY": ("FY", LOOP), "FV": ("FV", LOOP)}
+LOOP_TAGS = {"FE": ("FE", LOOP), "FT": ("FT", LOOP), "FIC": ("FIC", LOOP), "FY": ("FY", LOOP), "FV": ("FV", LOOP)}
+
+# Analog signal of the transmitter and controller output (standard current loop).
+SIGNAL = "4–20 mA"
