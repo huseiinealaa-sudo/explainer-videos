@@ -24,6 +24,14 @@ venting/fluids, safety/hoses, pneumatic, automatic). Worked examples: **2** (the
 PUMPS values; the P–t chart approach and wait).
 Left out: nothing (PGHS described as a bench screw pump, see the conflicts).
 
+## QA record (preview QA, 2026-09-28)
+- Automatic overlap loop before the critic: 3 full iterations, critical findings 35 → 1 → 0.
+- Critic round 1: FIX (4 critical, 3 important, 16 improvements) → all fixed; automatic loop: full 5 → 0 (segments 3–4, 6, 8), full 0.
+- Critic round 2: FIX (1 important, 11 improvements) → all fixed; automatic loop: full 1 → 0 (segments 3–4), full 0.
+- Critic round 3: **PASS** (0 critical, 0 important, 8 improvements). Improvements 1, 2, 3, 5, 6 applied (automatic loop: segments 3, 7–8, 10 and a final full run, 0 findings).
+- Still open (improvements, not blocking): seg 9 4:30 C2–D2 the pressure/vacuum pill shows no switch state; seg 3 1:03–1:22 A6 the "Handles + pump piston" callout points at the handle tip (the piston is highlighted at its word); seg 9 4:51 E5 "wait 30–60 s" sits above the chart rather than on the settling part of the air curve.
+- Final: output/pt_cal_ep02_pressure.mp4, 1080p30, 5:30, 12.2 MB.
+
 ## Narration (fully diacritized)
 1. هٰذِهِ مَادَّةٌ تَعْلِيمِيَّةٌ؛ وَالمَرْجِعُ المُلْزِمُ أَدِلَّةُ الصَّانِعِ وَإِجْرَاءَاتُ مُنْشَأَتِكَ. الحَلْقَةُ الثَّانِيَةُ: تَوْلِيدُ الضَّغْطِ. المُعَايِرُ يَقِيسُ الضَّغْطَ وَلَا يَصْنَعُهُ؛ فَالمِضَخَّةُ تَرْفَعُهُ إِلَى كُلِّ نُقْطَةٍ وَتُثَبِّتُهُ، وَتُوصَلُ بِوَصْلَةٍ ثُلَاثِيَّةٍ إِلَى الوَحْدَةِ المَرْجِعِيَّةِ وَالمُرْسِلِ مَعًا، فَيَرَيَانِ الضَّغْطَ نَفْسَهُ.
 2. وَمِضَخَّاتُ بِيمِكْس اليَدَوِيَّةُ نَوْعَانِ. هَوَائِيَّةٌ: بِي جِي إِلْ لِلضُّغُوطِ الصَّغِيرَةِ حَوْلَ الصِّفْرِ، وَبِي جِي فِي لِلتَّفْرِيغِ، وَبِي جِي إِمْ حَتَّى عِشْرِينَ بَار، وَبِي جِي سِي حَتَّى خَمْسَةٍ وَثَلَاثِينَ، وَبِي جِي بِي إِتْش المِنْضَدِيَّةُ حَتَّى مِئَةٍ وَأَرْبَعِينَ. وَهَيْدْرُولِيكِيَّةٌ بِالسَّائِلِ: بِي جِي إِتْش إِتْش وَبِي جِي إِكْس إِتْش حَتَّى سَبْعِمِئَةِ بَار، وَبِي جِي إِتْش إِس المِنْضَدِيَّةُ، بِمِقْبَضٍ لَوْلَبِيٍّ، حَتَّى أَلْفٍ.
