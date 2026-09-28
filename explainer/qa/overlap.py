@@ -4,13 +4,18 @@ SyncedScene creates an OverlapChecker when the pipeline runs in QA mode (EXPLAIN
 and calls check() after every animation. It records:
     text_overlap        two texts or labels overlap
     text_over_shape     a line, arrow or drawing runs through a text
+    text_near_shape     a text closer than CLEARANCE to a line, arrow or drawing outside
+                        its frame (touching included: contacts too small for text_over_shape)
     text_touches_frame  a text inside its frame touches or crosses the frame's outline
     out_of_frame        a text or a shape leaves the 16:9 frame
     in_safe_margin      a text inside the frame but closer than SAFE_MARGIN to its edge
     text_too_small      a text whose size after fit()/scale is below MIN_FONT_SIZE
 Intended overlaps are not errors: a text inside a closed shape (its box, badge, table
 row, panel or emphasis frame) that keeps clear of the outline, single-symbol marks
-(✓ ✗ • ...) placed on a drawing on purpose, and lines that cross out a whole text.
+(✓ ✗ • ...) placed on a drawing on purpose, lines that cross out a whole text, and a
+text's own leader (a path that starts at the text, an arrow whose tip points at it, or a
+line joining it to another text). CLEARANCE was calibrated on the RT pilot and the prover
+series (PR notes): real touches measured 0.00-0.056, intended placements 0.06 and more.
 
 Each finding is an interval on the narration clock: first seen (time) -> gone (until).
 write() saves them raw; report_by_segment() (run by the pipeline) writes one JSON report
@@ -27,17 +32,22 @@ from manim import (DL, UR, Group, ImageMobject, MarkupText, Mobject, Paragraph, 
 from shapely import STRtree
 from shapely.affinity import translate
 from shapely.geometry import LinearRing, LineString, MultiPoint, Point, Polygon, box
-from shapely.ops import unary_union
+from shapely.ops import nearest_points, unary_union
 
 from ..style import MIN_FONT_SIZE, SAFE_MARGIN, SAFE_WIDTH
 
 MIN_AREA = 0.002            # scene units² (about 36 px² at 1080p): smaller contacts are noise
 ATTACHED = 0.35             # parts of the same on-screen group this close move with a text
+CLEARANCE = 0.06            # scene units (about 8 px at 1080p) between a text's glyphs and the
+                            # ink (stroke width included) of any shape outside its frame
+LEADER_REACH = 0.3          # a path starting this close to a text is that text's leader
+ARROWS = ("Arrow", "DoubleArrow", "Vector", "CurvedArrow", "CurvedDoubleArrow")
 TEXT_TYPES = (Text, MarkupText, Paragraph)
 MARKS = set("✓✗✔✘×•·○●◦▪■□▲▼►◄★")
 # Same classes as the critic: overlap, off-frame and unreadable text are critical; a text
 # inside the safe margin is an improvement (it never blocks PASS).
 SEVERITY = {"text_overlap": "critical", "text_over_shape": "critical", "out_of_frame": "critical",
+            "text_near_shape": "critical",
             "text_touches_frame": "critical", "text_too_small": "critical",
             "in_safe_margin": "improvement"}
 DIRECTIONS = {"RIGHT": (1, 0), "LEFT": (-1, 0), "UP": (0, 1), "DOWN": (0, -1)}
@@ -64,9 +74,11 @@ def cells(bounds):
 class Item:
     """A visible element: a text (its box) or a shape (its ink, closed region and outline)."""
 
-    def __init__(self, kind, mob, ink, region=None, outline=None, text="", font=None, core=None):
+    def __init__(self, kind, mob, ink, region=None, outline=None, text="", font=None, core=None,
+                 glyphs=None):
         self.kind, self.mob, self.ink = kind, mob, ink
         self.core = ink if core is None else core      # text: hull of its glyphs; shape: its ink
+        self.glyphs = self.core if glyphs is None else glyphs   # text: each glyph's hull
         self.region, self.outline = region, outline
         self.text, self.font = text, font
         self.cls = type(mob).__name__
@@ -157,7 +169,10 @@ def _text_item(m):
     # the box catches a line through a label, even through the gap between two words;
     # the hull of the glyphs decides whether the text sits inside a (round) frame
     hull = MultiPoint(np.vstack([g.points[:, :2] for g in glyphs])).convex_hull
-    return Item("text", m, box(x0, y0, x1, y1), text=text, font=_font_size(m), core=hull)
+    # the clearance is measured to the letters themselves, not to the box or the hull
+    ink = unary_union([MultiPoint(g.points[:, :2]).convex_hull for g in glyphs])
+    return Item("text", m, box(x0, y0, x1, y1), text=text, font=_font_size(m), core=hull,
+                glyphs=ink)
 
 
 def collect(mobjects):
@@ -218,6 +233,25 @@ def struck_through(text, shape, tol=0.15):
     sx0, sy0, sx1, sy1 = shape.ink.bounds
     return (abs(sx0 - tx0) <= tol and abs(sx1 - tx1) <= tol
             and sy0 >= ty0 - tol and sy1 <= ty1 + tol)
+
+
+def leader_of(text, shape, texts=(), reach=LEADER_REACH):
+    """The text's own leader: a path that starts at the text (a callout arrow drawn from
+    its label), an arrow whose tip points at it, or a line joining it to another text (a
+    tick from a note to a term of a formula). A plain line that only ends near a text,
+    its other end on a drawing (a ray of a burst, a guide, a link to an inset), is not."""
+    if not shape.open_path:
+        return False
+    try:
+        p0, p1 = (Point(p[:2]) for p in (shape.mob.get_start(), shape.mob.get_end()))
+    except Exception:
+        return False
+    if text.ink.distance(p0) < reach:
+        return True
+    if text.ink.distance(p1) >= reach:
+        return False
+    return shape.cls in ARROWS or any(t is not text and t.ink.distance(p0) < reach
+                                      for t in texts)
 
 
 # ---------------- naming (for the report) ----------------
@@ -298,7 +332,8 @@ class Finding:
         return self.geom.area if self.geom is not None else self.extra.get("amount", 0)
 
 
-def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA):
+def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA,
+            clearance=CLEARANCE):
     """Every fault on screen now, as Findings."""
     texts = [i for i in items if i.kind == "text"]
     shapes = [i for i in items if i.kind != "text"]
@@ -314,7 +349,7 @@ def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA
     if texts and shapes:
         tree = STRtree([s.ink for s in shapes])
         for a in texts:
-            for j in tree.query(a.ink, predicate="intersects"):
+            for j in tree.query(a.ink, predicate="dwithin", distance=max(clearance, 1e-9)):
                 s = shapes[j]
                 if inside(a, s.region, min_area):
                     if s.outline is not None:           # inside its frame: fine unless it touches
@@ -327,6 +362,14 @@ def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA
                 ov = a.ink.intersection(s.ink)
                 if ov.area >= min_area:
                     found.append(Finding("text_over_shape", a, s, ov))
+                    continue
+                # touching or too close: no overlap area, so measured as a distance between
+                # the letters and the shape's ink (which already includes its stroke width)
+                gap = a.glyphs.distance(s.ink)
+                if gap < clearance and not leader_of(a, s, texts):
+                    p = nearest_points(a.glyphs, s.ink)[0]
+                    found.append(Finding("text_near_shape", a, s, amount=clearance - gap,
+                                         gap=gap, clearance=clearance, at=(p.x, p.y)))
     fw, fh = config.frame_width / 2, config.frame_height / 2
     for it in items:
         x0, y0, x1, y1 = it.ink.bounds
@@ -342,7 +385,7 @@ def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA
 
 
 # ---------------- fix suggestions ----------------
-def _free_moves(it, items, offenders, margin, step=0.05, reach=2.5):
+def _free_moves(it, items, offenders, margin, step=0.05, reach=2.5, pad=0.0):
     """Shortest moves [(distance, direction), ...] that clear `it` of every obstacle and
     keep it in the safe area. A text moves together with its small label group (e.g. the
     badge of a callout); its own leader arrow and a frame that contains it move with it,
@@ -352,7 +395,7 @@ def _free_moves(it, items, offenders, margin, step=0.05, reach=2.5):
     if any(o.ink.intersects(off.ink) for o in group if o is not it for off in offenders):
         group = [it]
     body = unary_union([o.ink for o in group])
-    obstacles = [o.ink for o in offenders]
+    obstacles = [o.ink.buffer(pad) if pad else o.ink for o in offenders]
     for o in items:
         if o in group or o in offenders:
             continue
@@ -403,6 +446,11 @@ def suggest(f, items, texts, margin):
             return s + f"; or re-route {describe(b, texts, items)} (another callout direction or " \
                        "end point) so it does not cross the text"
         return s + " — keep labels off the drawing, placed with next_to()"
+    if f.kind == "text_near_shape":
+        pad = f.extra["clearance"] + 0.05
+        s = _move_text(name_a, _free_moves(a, items, [b], margin, pad=pad))
+        return s + (f" to keep ≥ {pad:.2f} from {describe(b, texts, items)} "
+                    f"(gap now {f.extra['gap']:.3f}) — place it with next_to(..., buff ≥ 0.15)")
     if f.kind == "text_touches_frame":
         return (f"Keep {name_a} clear of the outline of {describe(b, texts, items)}: shrink the text "
                 "(scale_to_fit_width(frame width − 0.3)) or enlarge the frame")
@@ -424,8 +472,10 @@ def suggest(f, items, texts, margin):
 class OverlapChecker:
     """Called by SyncedScene after every animation in QA mode; findings become intervals."""
 
-    def __init__(self, safe_margin=SAFE_MARGIN, min_font_size=MIN_FONT_SIZE, min_area=MIN_AREA):
+    def __init__(self, safe_margin=SAFE_MARGIN, min_font_size=MIN_FONT_SIZE, min_area=MIN_AREA,
+                 clearance=CLEARANCE):
         self.margin, self.min_font, self.min_area = safe_margin, min_font_size, min_area
+        self.clearance = clearance
         self.open, self.done = {}, []
         self.checks, self.last_time = 0, 0.0
 
@@ -435,7 +485,7 @@ class OverlapChecker:
         items = collect(scene.mobjects)
         texts = [i for i in items if i.kind == "text"]
         now = {}
-        for f in analyse(items, self.margin, self.min_font, self.min_area):
+        for f in analyse(items, self.margin, self.min_font, self.min_area, self.clearance):
             now.setdefault(f.key, f)
         for key, f in now.items():
             rec = self.open.get(key)
@@ -463,6 +513,10 @@ class OverlapChecker:
             return out
         if f.kind == "text_too_small":
             return {"font_size": round(f.extra["amount"], 1), "minimum": self.min_font}
+        if f.kind == "text_near_shape":
+            x, y = f.extra["at"]
+            return {"gap": round(f.extra["gap"], 3), "clearance": f.extra["clearance"],
+                    "at": [round(x, 3), round(y, 3)], "cell": cell(x, y)}
         return {"distance": round(f.extra["amount"], 3), "side": f.extra["side"],
                 "limit": "frame edge" if f.kind == "out_of_frame"
                 else f"safe margin {self.margin}"}
@@ -490,7 +544,7 @@ class OverlapChecker:
 
     def settings(self):
         return {"safe_margin": self.margin, "min_font_size": self.min_font,
-                "min_area": self.min_area,
+                "min_area": self.min_area, "clearance": self.clearance,
                 "frame": [round(config.frame_width, 3), round(config.frame_height, 3)],
                 "grid": "6x6: columns A-F left to right, rows 1-6 top to bottom"}
 

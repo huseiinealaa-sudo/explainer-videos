@@ -1,4 +1,10 @@
-# Preview QA loop (at most 3 rounds per video or episode)
+# Preview QA: two loops per video or episode, counted separately
+
+1. **Automatic loop** (steps 1, 2, 4a): preview with `--qa` → overlap reports → fix every
+   critical finding → again, until **zero critical findings**; at most **5 iterations**.
+   It spends no critic round.
+2. **Critic loop** (steps 3, 4b): the `video-critic` reviews, the fixes are made, the
+   automatic loop runs again on the changed segments, next round; at most **3 rounds**.
 
 ## 1. Preview in QA mode
 ```bash
@@ -14,16 +20,23 @@ Outputs in `tmp/<script>/qa/<run>/`: `overlap/segNN.json` (one overlap report pe
 clock), `frames/*.png` (full-size frames), `index.json`, `qa_summary.json`. The console prints
 the finding counts per segment.
 
-Round 1 runs on the whole video. Later rounds may run only the segments that changed
-(`--segments`), but the last round before the 1080p render covers the whole video.
+Iteration 1 runs on the whole video. Later iterations may run only the segments that
+changed (`--segments`), but the last run before a critic round and the last run before the
+1080p render cover the whole video.
 
 ## 2. Read the overlap reports
 Each finding has `time` / `until` (narration clock, s), `video_time` (in the preview file),
 the two elements (`a`, `b`: name, text, bbox, cells), the amount (`area`, `share_of_text` or
-`distance`, `font_size`), the grid `cell` and a `suggestion`. Severity: `critical` (texts
-overlapping, a line through a text, a text touching its frame, anything off the frame, text
-below the minimum size) or `improvement` (text inside the safe margin). A text inside its own
-frame, a badge number or a ✓/✗ mark on its box is not a finding.
+`distance`, `gap`, `font_size`), the grid `cell` and a `suggestion`. Severity: `critical`
+(texts overlapping, a line through a text, a text closer than `CLEARANCE` to a line, arrow
+or shape outside its frame — `text_near_shape`, touching included —, a text touching its
+frame, anything off the frame, text below the minimum size) or `improvement` (text inside
+the safe margin). A text inside its own frame, a label's own leader arrow, a badge number or
+a ✓/✗ mark on its box is not a finding.
+
+Count the critical findings of all segments (the console prints them per segment). If it
+is not zero, fix them (step 4a) and run step 1 again; after the 5th iteration go on to the
+critic whatever the count.
 
 ## 3. Call the critic
 Use the Agent tool with `subagent_type: "video-critic"` (read-only, keeps its memory in
@@ -35,19 +48,30 @@ QA folder: tmp/<script>/qa/<run>/   Script (narration): projects/<name>/<script>
 Storyboard: projects/<name>/storyboard/<script>.md   Data: projects/<name>/<name>_data.py
 Word timings: tmp/<script>/audio/seg{k}.json
 Changes since the last round: <none | list of fixes>
+Automatic loop: <k> iterations, critical findings now <0 | n: time, elements, why they stayed>
 ```
+The critic updates its memory file itself (Write/Edit, limited to
+`.claude/agent-memory/video-critic/` by the hook `.claude/hooks/critic_memory_guard.py`) and
+ends its report with a `Memory:` line; check the file changed as that line says.
 If the `video-critic` agent type is not available in the session (agent files are loaded
 when the session starts, so a newly created `.claude/agents/` folder needs a new session),
 call a `general-purpose` agent with: "Act exactly as the agent defined in
 .claude/agents/video-critic.md (read it first, including its memory file); read-only except
-.claude/agent-memory/video-critic/", followed by the prompt above.
+.claude/agent-memory/video-critic/", followed by the prompt above. That fallback has no
+hook, so check with `git status` that it changed no other file.
 
 ## 4. Fix and repeat
-- Fix every critical and important issue of the critic and every critical overlap finding;
-  take the cheap improvements too (improvements never block PASS). Fix layout by relative
-  placement (`next_to`, `arrange`, `align_to`), not by nudging fixed coordinates.
-- Record per round: counts before and after, what changed.
-- PASS = no critical and no important issue. Stop at PASS, or after round 3: production
-  then goes on, and whatever is still open goes to the PR description (skill step f).
+a. **Automatic loop:** fix every critical overlap finding, then step 1 again (at most 5
+   iterations). Fix layout by relative placement (`next_to`, `arrange`, `align_to`, buff ≥
+   0.15), not by nudging fixed coordinates; check the moved element against every text or
+   shape added later in the segment (a fix often creates the next finding).
+b. **Critic loop:** fix every critical and important issue of the critic; take the cheap
+   improvements too (improvements never block PASS). Then the automatic loop again on the
+   changed segments, then the next critic round.
+- Record per video: automatic iterations (critical count after each) and critic rounds
+  (counts before and after, what changed).
+- PASS = no critical and no important issue. Stop at PASS, or after critic round 3:
+  production then goes on, and whatever is still open goes to the PR description (skill
+  step f).
 - Commit `.claude/agent-memory/video-critic/MEMORY.md` with the video: the container is
   temporary, so the critic's memory survives only through the repository.

@@ -1,10 +1,12 @@
 """Self-test of the overlap check on small layouts (no rendering): `python -m explainer.qa.selftest`.
 
 Each case lists the findings it must give; the intended overlaps (a text inside its frame,
-a badge number, a ✓ on its box, a label on a panel, a text crossed out) must give none.
+a badge number, a ✓ on its box, a label on a panel, a text crossed out, a label's leader
+arrow, a tick joining two labels) must give none. The two touches missed in the RT pilot
+are rebuilt exactly in tests/test_overlap.py.
 """
-from manim import (BOLD, DL, DOWN, DR, LEFT, PI, RIGHT, UL, UP, UR, Arrow, Circle, DashedLine,
-                   Dot, Line, Rectangle, Square, SurroundingRectangle, VGroup)
+from manim import (BOLD, DL, DOWN, DR, LEFT, ORIGIN, PI, RIGHT, UL, UP, UR, Arrow, Circle,
+                   DashedLine, Dot, Line, Rectangle, Square, SurroundingRectangle, VGroup)
 
 from ..scenes import badge
 from ..style import BG, FS_AXIS, FS_BODY, FS_TAG, PANEL_FILL, label
@@ -46,6 +48,19 @@ def cases():
                                           Line(x.get_corner(DL), x.get_corner(UR))], []
     yield "dashed line through a text", [DashedLine(LEFT * 2, RIGHT * 2), label("dashed")], \
         ["text_over_shape"]
+    # clearance (text_near_shape): contacts with no overlap area, lines included
+    r = label("Near a ray")
+    yield "ray ending at a text", [r, Line(r.get_right() + RIGHT * 0.8, r.get_right() + RIGHT * 0.02,
+                                           stroke_width=3)], ["text_near_shape"]
+    plate = Rectangle(width=3, height=0.6)
+    yield "label touching a plate edge", [plate, label("d", weight=BOLD).next_to(plate, LEFT, 0.03)], \
+        ["text_near_shape"]
+    yield "label beside a plate", [plate, label("d", weight=BOLD).next_to(plate, LEFT, 0.15)], []
+    c1 = label("Callout").move_to(UP + RIGHT * 2)
+    yield "callout with its leader arrow", [c1, Arrow(c1.get_left(), ORIGIN, buff=0.08)], []
+    n1, n2 = label("note").move_to(UP), label("term").move_to(DOWN * 0.2)
+    yield "tick joining two labels", [n1, n2, Line(n1.get_bottom() + DOWN * 0.05,
+                                                   n2.get_top() + UP * 0.02)], []
 
 
 def main():
