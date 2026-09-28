@@ -402,6 +402,8 @@ class PtCalEp02(SyncedScene):
         self.play(pm.high.animate.set_value(1), run_time=0.5)
         self.play(pm.high.animate.set_value(0), run_time=0.5)
         n3 = labeled_diagram(self, ghost, callouts[3:], cues=cues[3:], draw_time=0.01, start=4)[1]
+        self.sync(self.c(3, "وَعُلْوِيٌّ") + 0.7)
+        self.play(Indicate(pm.top, color=FLUID, scale_factor=1.2), run_time=0.6)
         self.labels3 = VGroup(n1, no_p, n2, n2b, n3)
         self.sync(self.end(3) - 0.5)
         self.play(FadeOut(self.labels3), pm.lever.animate.set_value(1), run_time=0.5)
@@ -647,7 +649,7 @@ class PtCalEp02(SyncedScene):
             m.update()
         self.play(FadeIn(pm.static()), FadeIn(pm.moving()), run_time=0.6)
         self.sync(self.c(7, "اسْتَعْمِلْ"))
-        l1 = tag("1  fine adjust out", FS_TAG + 2, GOOD).move_to([4.6, -1.15, 0]).align_to([3.4, 0, 0], LEFT)
+        l1 = tag("1  fine adjust out", FS_TAG + 2, GOOD).move_to([4.6, -1.35, 0]).align_to([3.4, 0, 0], LEFT)
         self.play(FadeIn(l1), run_time=0.4)
         self.play(pm.fine.animate.set_value(0.1), pm.press.animate.set_value(D.STROKE_DEMO_BAR[-1]
                                                                              - 2 * D.FINE_STEP_BAR),
@@ -753,7 +755,7 @@ class PtCalEp02(SyncedScene):
         self.sync(self.c(8, "وَلَا تُضِفْ"))
         self.play(FadeIn(add), lvl.animate.set_value(0.8), run_time=0.9)
         self.sync(self.c(8, "فَعِنْدَ التَّنْفِيسِ"))
-        spill = VGroup(*[Dot(res.get_corner(UR) + np.array([0.12, -0.05 - 0.28 * k, 0]), radius=0.06,
+        spill = VGroup(*[Dot(res.get_corner(UR) + np.array([0.05 - 0.2 * k, 0.1, 0]), radius=0.06,
                              color=BAD) for k in range(4)])
         back = tag("vent → all liquid returns → overflow, may break", FS_TAG, BAD) \
             .next_to(add, DOWN, buff=0.35).align_to(add, LEFT)
@@ -762,7 +764,7 @@ class PtCalEp02(SyncedScene):
         self.play(FadeIn(vent), Create(vl), run_time=0.3)
         self.play(vent.animate.set_color(MOVE), lvl.animate.set_value(1.0), res.animate.set_color(BAD),
                   FadeIn(back), run_time=0.8)
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(d), d.animate.shift(DOWN * 0.6)) for d in spill],
+        self.play(LaggedStart(*[AnimationGroup(FadeIn(d), d.animate.shift(RIGHT * (0.3 + 0.2 * k) + DOWN * 0.6)) for k, d in enumerate(spill)],
                               lag_ratio=0.3), run_time=1.0)
         # strong counterforce without a pressure rise: stop
         self.sync(self.c(8, "وَمُقَاوَمَةٌ"))
@@ -936,7 +938,7 @@ class PtCalEp02(SyncedScene):
             .next_to(poc, RIGHT, buff=0.4).shift(UP * 0.25)
         self.play(Create(poc), FadeIn(p_lab), FadeIn(p_rng), run_time=0.8)
         self.sync(self.c(10, "مِنْضَدِيٌّ"))
-        p_where = VGroup(icon("building-factory", INK, 0.45), tag("bench, or built into a CENTRiCAL workshop bench",
+        p_where = VGroup(icon("building-factory", INK, 0.45), tag("bench, or built into a\nCENTRiCAL workshop bench",
                                                                   FS_TAG)).arrange(RIGHT, buff=0.15) \
             .next_to(p_rng, DOWN, buff=0.25).align_to(p_rng, LEFT)
         self.play(FadeIn(p_where), run_time=0.6)
@@ -944,8 +946,8 @@ class PtCalEp02(SyncedScene):
         self.clear(self.sec)
         self.sec = section_title(self, "Recap", prev=self.sec)
         steps = ["choose medium\nand range", "fill, bleed:\nliquid only", "approach\nfrom below",
-                 "fine adjust", "wait, then\nre-trim"]
-        process_flow(self, steps, size=FS_TAG + 2, width=12.4)
+                 "fine\nadjust", "wait, then\nre-trim"]
+        process_flow(self, steps, size=FS_LABEL, width=12.8)
         self.wait(3.2)
 
 
