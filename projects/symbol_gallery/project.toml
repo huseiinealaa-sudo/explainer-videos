@@ -1,0 +1,6 @@
+# symbol_gallery is a silent catalogue: NARRATION in the script holds segment durations
+# (seconds), so no voice is used. The keys stay for the pipeline's defaults.
+[narration]
+language = "en"
+voice = "en-US-GuyNeural"
+rate = "+0%"

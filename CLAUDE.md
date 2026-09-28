@@ -103,6 +103,22 @@ The Fast workflow is subject to the Quality standard above; the step-by-step pro
 
 Helpers: `emphasize(scene, mob)` frames any part; `badge(n)` is a numbered circle. In `SyncedScene`: `self.say(text)` is the bottom caption line and `self.clear(*keep)` fades the screen.
 
+**Icons and engineering symbols** (also from `from explainer import *`; catalogue: `output/symbol_gallery.mp4`, project `projects/symbol_gallery/`). They return mobjects without animating them, so the scene draws them (`Create`, `FadeIn`) and places them with `next_to` / `arrange` like any drawing.
+
+| Function | Use it when | Main inputs |
+|---|---|---|
+| `icon` (`explainer/icons.py`) | a small pictogram next to a label, point or step (alarm, time, file, tool ...) | `name, color, size` (units, the icon's 24×24 box), `stroke_width`; returns an `SVGMobject` exactly `size` × `size`, centred |
+| `icon_grid` | several icons with their names | `names, cols, size, cell` |
+| `gate_valve` `globe_valve` `ball_valve` `butterfly_valve` `check_valve` `control_valve` `relief_valve` | valves on a P&ID or process drawing | `size, color`; ports `in`, `out` (+ `actuator` on `control_valve`) |
+| `centrifugal_pump` `pd_pump` `compressor` `tank` `heat_exchanger` | pumps, machines, vessels | ports `in`/`out`; tank `top`/`inlet`/`outlet`/`bottom`; exchanger `tube_in`/`tube_out`/`shell_in`/`shell_out` |
+| `orifice_plate` `turbine_meter` `magnetic_flowmeter` `coriolis_meter` `vortex_meter` | in-line flow elements (flow left → right) | ports `in`, `out`, `tap` (to the transmitter) |
+| `instrument` | an ISA instrument bubble with tag | `function` ("FT"), `loop` ("101"), `location` = `field` / `panel` / `behind_panel` / `dcs` / `plc`; ports `top`/`bottom`/`left`/`right` |
+| `connect` (+ `signal_line`) | a line between two ports | `connect(a, "out", b, "in", kind, route)`; `kind` = `process` / `connection` / `pneumatic` / `electrical` / `capillary` / `data`; `route` = `straight` / `hv` / `vh` / `hvh` / `vhv` or `via=[points]`; `arrow=True` |
+
+- Icons: Tabler outline icons (MIT), version `TABLER_VERSION`, vendored in `explainer/assets/tabler/outline/` with its `LICENSE`. Only the icons in that folder load (list: `python -m explainer.icons list`); add more of the same version with `python -m explainer.icons add <name> ...` and commit them.
+- ISA symbols (`explainer/symbols/isa.py`) are drawn in code: every symbol is a `Symbol` (a `VGroup`) with the same stroke and unit size, and `sym.port(name)` gives a point that moves with it. The free references behind each drawing are in `explainer/symbols/SOURCES.md`; `ISA_GROUPS` lists them for catalogues. Tags and loop numbers in videos stay illustrative.
+- A video without narration passes segment lengths (seconds) as `NARRATION`: the pipeline writes silent audio, and the scene places items with `self.at(seg, frac)`.
+
 **Rule:** the library is for the general structure (titles, equations, tables); mechanisms and motions are drawn custom. The storyboard names, for each segment, what comes from the library and what is drawn custom. A custom block that proves reusable goes into the library (with a clip in the catalogue) rather than staying in one project.
 
 **Layout rule:** place texts and labels relative to each other and to what they name (`next_to`, `arrange`, `align_to`), not at fixed coordinates, and keep them at least `SAFE_MARGIN` (0.25 units) inside the frame; `fit()` keeps a group within `SAFE_WIDTH`. Text stays at `MIN_FONT_SIZE` (14) or larger after any scaling. Both limits are set so that the prover series passes them.
