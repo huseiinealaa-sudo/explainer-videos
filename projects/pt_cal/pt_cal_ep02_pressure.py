@@ -122,9 +122,9 @@ class Pump:
         self.cv2 = check_valve(size=0.42).move_to(P(0.35, 0.05))
         self.ret = pipe(P(0.95, 0.05), P(0.95, 0.4), P(-1.5, 0.4), P(-1.5, 0.9))
         self.vent = gate_valve(size=0.38).move_to(P(0.15, 0.4))
-        self.top = pipe(P(1.95, 0.05), P(1.95, 1.12))
+        self.top = pipe(P(2.1, 0.05), P(2.1, 1.12))
         self.ext = Rectangle(width=1.8, height=0.75, color=INK, stroke_width=4) \
-            .set_fill(WHITE, 1).move_to(P(1.95, 1.5))
+            .set_fill(WHITE, 1).move_to(P(2.1, 1.5))
         self.readout = always_redraw(self._readout)
         self.fine_line = pipe(P(1.35, 0.05), P(1.35, -0.9))
         self.fine_cyl = VGroup(Line(P(1.35, -0.72), P(2.2, -0.72)), Line(P(1.35, -1.08), P(2.2, -1.08))) \
@@ -379,7 +379,7 @@ class PtCalEp02(SyncedScene):
                     ("Vent\nvalve", pm.vent, UP),
                     ("Fine\nadjust", P(2.7, -0.9), RIGHT),
                     ("Side port:\nhose", P(2.45, 0.05), RIGHT),
-                    ("Top port:\nEXT", pm.ext, RIGHT)]
+                    ("Top port: EXT", pm.ext.get_top() + RIGHT * 0.5, UP)]
         cues = [self.c(3, "خَزَّانٌ"), self.c(3, "وَمِقْبَضَانِ"), self.c(3, "وَمُحَدِّدُ"),
                 self.c(3, "وَصِمَامُ"), self.c(3, "وَمُعَدِّلُ"), self.c(3, "جَانِبِيٌّ"),
                 self.c(3, "وَعُلْوِيٌّ")]
