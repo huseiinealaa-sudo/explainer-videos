@@ -648,10 +648,10 @@ class PtCalEp02(SyncedScene):
         stem = VGroup(Line(ORIGIN, UP * 0.7, stroke_width=6, color=INK),
                       RoundedRectangle(width=0.5, height=0.2, corner_radius=0.05, color=INK,
                                        stroke_width=3).set_fill(INK, 1).shift(UP * 0.8),
-                      Dot(DOWN * 0.15, radius=0.08, color=INK)).move_to([6.1, -3.0, 0])
+                      Dot(DOWN * 0.15, radius=0.08, color=INK)).move_to([6.1, -3.3, 0])
         x = cross(stem)
         self.play(FadeIn(l3), FadeIn(stem), run_time=0.5)
-        self.play(stem[:2].animate.shift(UP * 0.2), stem[2].animate.shift(DOWN * 0.15), Create(x),
+        self.play(stem[:2].animate.shift(UP * 0.15), stem[2].animate.shift(DOWN * 0.1), Create(x),
                   run_time=0.8)
         self.sync(self.c(7, "وَالسَّوَائِلُ") - 0.5)
         self.clear(self.sec)
