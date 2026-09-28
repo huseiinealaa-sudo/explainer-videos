@@ -8,15 +8,15 @@ Timing: start 17:50:19 UTC; narration done 18:19:26; model episode 19:03 → 20:
 
 ## Done
 - ep02 `pt_cal_ep02_pressure` — 5:30, 12.2 MB, critic PASS (round 3), owner approved the level.
+- ep06 `pt_cal_ep06_trim` — 3:01, 7.8 MB, critic PASS (round 2); open: text-scene share ≈ 40 %, save-note placement, valve stem motion, out-of-band dot style (improvements).
 
 ## In progress
-- ep06 `pt_cal_ep06_trim` — automatic loop to 0 critical; critic round 1 = FIX (3 critical, 14 improvements); fixes committed. Next: full QA (it5) → critic round 2.
-- ep05 `pt_cal_ep05_verdict` — automatic loop at 0 critical (seg 5 re-run it4 = 0). Next: full run, then critic round 1.
-- ep01 `pt_cal_ep01_device` — automatic loop at 0 critical (seg 8 re-run it3 = 0). Next: full run, then critic.
-- ep03 `pt_cal_ep03_setup` — it2: 8 critical (segs 1, 3, 6, 7) → fixing.
-- ep04 `pt_cal_ep04_procedure` — it1 stopped on a cue assertion in seg 5 ('وَخُرْطُومٌ أَقْصَرُ') → fixing.
-- ep07 `pt_cal_ep07_uncertainty` — it1: 25 critical (segs 1, 2, 3, 4, 5, 7) → fixing.
-- QA helper used: scratchpad `qarun.sh <script> <tag> --preview|--segments N` (prints the critical findings).
+- ep05 `pt_cal_ep05_verdict` — automatic loop at 0 critical (full it5); critic round 1 running.
+- ep01 `pt_cal_ep01_device` — automatic loop at 0 critical (full it4); critic round 1 running.
+- ep03 `pt_cal_ep03_setup` — fixes applied; full QA it5 running.
+- ep04 `pt_cal_ep04_procedure` — fixes applied (leak chain vertical); full QA it7 running.
+- ep07 `pt_cal_ep07_uncertainty` — automatic loop at 0 critical (full it2); critic after ep04.
+- Series script written: `pt_cal_full_series.py` (run after all 7 are rendered).
 
 ## Next step
-- ep06 full QA it5 → video-critic round 2; in parallel fix ep03/ep04/ep07 automatic-loop findings.
+- Fix ep05/ep01 critic findings → next rounds → 1080p; then ep03, ep04, ep07 critic rounds; then the series file and the PR.
