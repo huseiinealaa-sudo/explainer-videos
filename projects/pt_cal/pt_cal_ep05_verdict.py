@@ -120,16 +120,17 @@ class PtCalEp05(SyncedScene):
             .next_to(hand, DOWN, buff=0.45).align_to([1.8, 0, 0], LEFT)
         self.play(FadeIn(eq), run_time=0.5)
         self.sync(self.c(2, "وَشَهَادَةٌ"))
-        cert = VGroup(Rectangle(width=2.6, height=1.6, color=INK, stroke_width=3),
+        cert = VGroup(Rectangle(width=3.4, height=1.6, color=INK, stroke_width=3),
                       tag("As-Found", FS_TAG, GREY_INK), tag("As-Left", FS_TAG))
-        cert[1].move_to(cert[0].get_center() + LEFT * 0.62 + UP * 0.45)
-        cert[2].move_to(cert[0].get_center() + RIGHT * 0.62 + UP * 0.45)
+        VGroup(cert[1], cert[2]).arrange(RIGHT, buff=0.5).move_to(cert[0].get_top() + DOWN * 0.35)
         vals = VGroup(*[Line(ORIGIN, RIGHT * 0.8, stroke_width=3, color=INK) for _ in range(3)]) \
-            .arrange(DOWN, buff=0.2).move_to(cert[0].get_center() + RIGHT * 0.62 + DOWN * 0.2)
-        cert.add(vals)
-        cert.move_to([4.6, -1.3, 0])
+            .arrange(DOWN, buff=0.2).next_to(cert[2], DOWN, buff=0.2)
+        gaps = VGroup(*[DashedLine(ORIGIN, RIGHT * 0.8, stroke_width=2, color=LIGHT_INK) for _ in range(3)]) \
+            .arrange(DOWN, buff=0.2).next_to(cert[1], DOWN, buff=0.2)
+        cert.add(vals, gaps)
+        cert.move_to([4.3, -1.3, 0])
         empty = cross(VGroup(cert[1]), BAD, 4, pad=0.05)
-        ct = tag("custody transfer: past\ninvoices cannot be defended", FS_TAG, BAD).next_to(cert, DOWN, buff=0.25)
+        ct = tag("custody transfer:\npast invoices\ncannot be defended", FS_TAG, BAD).next_to(cert, DOWN, buff=0.25)
         self.play(FadeIn(cert), run_time=0.5)
         self.play(Create(empty), run_time=0.4)
         self.sync(self.c(2, "وَفِي النَّقْلِ"))
@@ -153,10 +154,13 @@ class PtCalEp05(SyncedScene):
         nom = VGroup(Line([X(D.PV_NOMINAL), 0.62, 0], [X(D.PV_NOMINAL), 0.98, 0], stroke_width=4, color=INK),
                      tag(f"nominal {fmt(D.PV_NOMINAL, 3)}", FS_TAG).next_to([X(D.PV_NOMINAL), 0.98, 0], UP,
                                                                            buff=0.08))
+        ticks = VGroup(*[VGroup(Line([X(v), 0.7, 0], [X(v), 0.9, 0], stroke_width=2, color=INK),
+                                tag(fmt(v, 2), FS_TAG - 2, GREY_INK).next_to([X(v), 0.7, 0], DOWN, buff=0.08))
+                         for v in (41.90, 41.95)])
         act = Triangle(color=FLUID, stroke_width=3).set_fill(FLUID, 1).scale(0.13).rotate(PI) \
-            .move_to([X(D.PV_NOMINAL) - 0.8, 0.98, 0])
+            .move_to([X(41.86), 0.98, 0])
         al = tag(f"pump stopped at {fmt(D.PV_ACTUAL, 3)} {D.UNIT}", FS_TAG, FLUID).next_to(act, UP, buff=0.1)
-        self.play(Create(scale), FadeIn(nom), run_time=0.5)
+        self.play(Create(scale), FadeIn(nom), FadeIn(ticks), run_time=0.5)
         self.sync(self.c(3, "وَقَفَتْ"))
         self.play(FadeIn(act), act.animate.move_to([X(D.PV_ACTUAL), 0.98, 0]), run_time=0.9)
         al.next_to(act, UP, buff=0.1)
@@ -165,10 +169,10 @@ class PtCalEp05(SyncedScene):
         meas = tag(f"measured: {fmt(D.I_MEASURED, 4)} mA", FS_TAG + 2, MOVE).move_to([0, 0.05, 0])
         self.play(FadeIn(meas), run_time=0.5)
         left = card("Excel: fixed 20 mA",
-                    f"I_expected = {fmt(D.I_EXP_NOMINAL, 4)} mA\nerror = {fmt(D.ERR_PCT_WRONG, 3)} %",
+                    f"4 + {fmt(D.PV_NOMINAL, 3)}/{fmt(D.SPAN, 0)} × 16 = {fmt(D.I_EXP_NOMINAL, 4)} mA\nerror = {fmt(D.ERR_PCT_WRONG, 3)} %",
                     BAD, 5.6).move_to([-3.2, -1.35, 0])
         right = card("actual input",
-                     f"I_expected = {fmt(D.I_EXP_ACTUAL, 4)} mA\nerror = {fmt(D.ERR_PCT_RIGHT, 3)} %",
+                     f"4 + {fmt(D.PV_ACTUAL, 3)}/{fmt(D.SPAN, 0)} × 16 = {fmt(D.I_EXP_ACTUAL, 4)} mA\nerror = {fmt(D.ERR_PCT_RIGHT, 3)} %",
                      GOOD, 5.6).move_to([3.2, -1.35, 0])
         self.sync(self.c(3, "نَمُوذَجُ"))
         self.play(FadeIn(left, shift=UP * 0.1), run_time=0.6)
@@ -201,7 +205,8 @@ class PtCalEp05(SyncedScene):
         ch = Chart(-5.6, -3.2, 5.2, 4.6, (0, 100), (4, 20), xticks=[(0, "0"), (50, "50"), (100, "100 %")],
                    yticks=[(4, "4"), (12, "12"), (20, "20")], ylabel="mA")
         lin = ch.line([(0, 4), (100, 20)], GREY_INK, 3)
-        sq = ch.line([(p, s) for p, _, s in D.SQRT_TABLE], MOVE, 4, smooth=True)
+        sq = ch.line([(p, D.i_sqrt(D.LRV + p / 100 * D.SPAN)) for p in [q / 4 for q in range(0, 81)] + list(range(21, 101))],
+                     MOVE, 4)
         ll = tag("linear", FS_TAG, GREY_INK).next_to(ch.p(85, 4 + 0.16 * 85), DR, buff=0.08)
         sl = tag("square root", FS_TAG, MOVE).move_to(ch.p(40, 17.6))
         self.play(Create(ch.axes), FadeIn(ch.ticks), FadeIn(ch.yl), Create(lin), FadeIn(ll), run_time=0.7)
@@ -261,7 +266,7 @@ class PtCalEp05(SyncedScene):
                  ("reference + cert. expiry", "وَهُوِيَّةُ"), ("environment", "وَالظُّرُوفُ"),
                  ("As-Found and As-Left", "وَآزْ فَاوْنْد"), ("uncertainty, k = 2", "وَعَدَمُ التَّأَكُّدِ"),
                  ("verdict + decision rule", "وَالحُكْمُ"), ("dates, signatures", "وَالتَّوَارِيخُ")]
-        paper = Rectangle(width=4.6, height=6.2, color=INK, stroke_width=3).move_to([-4.3, -0.45, 0])
+        paper = Rectangle(width=5.0, height=6.2, color=INK, stroke_width=3).move_to([-4.1, -0.45, 0])
         head = tag("Certificate", FS_LABEL, weight=BOLD).next_to(paper.get_top(), DOWN, buff=0.25)
         rows = VGroup(*[tag("✓  " + t, FS_TAG + 1) for t, _ in items]).arrange(DOWN, aligned_edge=LEFT, buff=0.18)
         rows.next_to(head, DOWN, buff=0.3).align_to(paper, LEFT).shift(RIGHT * 0.3)
@@ -272,15 +277,26 @@ class PtCalEp05(SyncedScene):
         # traceability chain, broken by an expired reference
         self.sync(self.c(5, "وَالمَرْجِعُ المُنْتَهِي"))
         names = ["national\nstandard", "accredited\nlab", "your\nreference", "PT-101"]
-        chain = VGroup(*[card(n, "", INK, 1.75, FS_TAG) for n in names]).arrange(RIGHT, buff=0.4) \
-            .move_to([2.6, 2.1, 0])
+        chain = VGroup(*[VGroup(RoundedRectangle(width=1.6, height=0.9, corner_radius=0.12, color=INK, stroke_width=3),
+                                tag(n, FS_TAG - 2)) for n in names]).arrange(RIGHT, buff=0.3).move_to([3.1, 2.0, 0])
+        for c in chain:
+            c[1].move_to(c[0])
+        trace = tag("traceability", FS_TAG, GREY_INK).next_to(chain, UP, buff=0.12).align_to(chain, RIGHT)
         links = VGroup(*[Line(chain[i].get_right(), chain[i + 1].get_left(), stroke_width=4, color=GOOD)
                          for i in range(3)])
-        self.play(FadeIn(chain), Create(links), run_time=0.8)
+        self.play(FadeIn(chain), Create(links), FadeIn(trace), run_time=0.8)
         cal = VGroup(icon("calendar", BAD, 0.45), tag("reference certificate expired", FS_TAG, BAD)) \
             .arrange(RIGHT, buff=0.15).next_to(chain, DOWN, buff=0.3)
         self.play(links[1].animate.set_color(BAD), FadeIn(cal), run_time=0.6)
-        self.play(links[1].animate.scale(0.01), run_time=0.4)
+        a_, b_ = links[1].get_start(), links[1].get_end()
+        m_ = (a_ + b_) / 2
+        stubs = VGroup(Line(a_, m_ + LEFT * 0.08, stroke_width=4, color=BAD), Line(m_ + RIGHT * 0.08, b_, stroke_width=4, color=BAD))
+        brk = cross(Dot(m_, radius=0.06), BAD, 3, pad=0.04)
+        self.remove(links[1])
+        self.add(stubs)
+        self.play(stubs[0].animate.shift(LEFT * 0.03), stubs[1].animate.shift(RIGHT * 0.03), Create(brk),
+                  links[2].animate.set_color(BAD), chain[2][0].animate.set_stroke(BAD), chain[3][0].animate.set_stroke(BAD),
+                  run_time=0.5)
         void = tag("every certificate issued with it is void", FS_TAG + 2, BAD).next_to(cal, DOWN, buff=0.2)
         self.play(FadeIn(void), paper.animate.set_stroke(BAD, 6), head.animate.set_color(BAD), run_time=0.6)
         self.sync(self.c(5, "فَنَبِّهْ"))
@@ -289,29 +305,43 @@ class PtCalEp05(SyncedScene):
         self.play(FadeIn(alert), run_time=0.5)
         # the interval is a decision
         self.sync(self.c(5, "وَالفَتْرَةُ"))
-        self.play(FadeOut(VGroup(void, alert, cal)), run_time=0.3)
-        base = Line([-1.2, -1.6, 0], [6.4, -1.6, 0], stroke_width=3, color=INK)
+        self.play(FadeOut(VGroup(void, cal)), alert.animate.next_to(chain, DOWN, buff=0.3), run_time=0.4)
+        yb = -1.0
+        MX = lambda m: -1.2 + 7.6 * m / 12                            # noqa: E731
+        base = Line([MX(0), yb, 0], [MX(12), yb, 0], stroke_width=3, color=INK)
         bl = tag("calibration interval", FS_TAG, GREY_INK).next_to(base, UP, buff=0.12).align_to(base, LEFT)
-        cur = ValueTracker(3.2)
-        seg = always_redraw(lambda: Line([-1.2, -1.6, 0], [cur.get_value(), -1.6, 0], stroke_width=10,
-                                         color=MOVE))
-        self.play(Create(base), FadeIn(bl), FadeIn(seg), run_time=0.5)
-        crit = tag(f"critical loops (safety, custody transfer): {D.INTERVAL_CRITICAL_MONTHS[0]}–"
-                   f"{D.INTERVAL_CRITICAL_MONTHS[1]} months", FS_TAG).next_to(base, DOWN, buff=0.25) \
+        mt = VGroup(*[VGroup(Line([MX(m), yb - 0.1, 0], [MX(m), yb + 0.1, 0], stroke_width=2, color=INK),
+                             tag(f"{m} mo" if m else "0", FS_TAG - 2, GREY_INK).next_to([MX(m), yb - 0.1, 0], DOWN, buff=0.08))
+                      for m in (0, 3, 6, 12)])
+        cur = ValueTracker(6)
+        col = {"c": MOVE}
+        seg = always_redraw(lambda: Line([MX(0), yb, 0], [MX(cur.get_value()), yb, 0], stroke_width=10,
+                                         color=col["c"]))
+        self.play(Create(base), FadeIn(bl), FadeIn(mt), FadeIn(seg), run_time=0.5)
+        crit = tag(f"critical loops: {D.INTERVAL_CRITICAL_MONTHS[0]}–"
+                   f"{D.INTERVAL_CRITICAL_MONTHS[1]} months", FS_TAG).next_to(mt, DOWN, buff=0.25) \
             .align_to(base, LEFT)
         self.sync(self.c(5, "الحَلَقَاتُ الحَرِجَةُ"))
-        self.play(FadeIn(crit), cur.animate.set_value(0.8), run_time=0.7)
+        self.play(FadeIn(crit), cur.animate.set_value(D.INTERVAL_CRITICAL_MONTHS[0]), run_time=0.7)
+        self.sync(self.c(5, "وَتَارِيخُ آزْ فَاوْنْد"))
+        self.play(Indicate(rows[6], color=MOVE), run_time=0.6)
         self.sync(self.c(5, "فَمَنْ يَعُودُ"))
         longer = tag(f"As-Found always within {D.EXTEND_WITHIN_PCT_OF_TOL} % of tolerance → longer",
                      FS_TAG, GOOD).next_to(crit, DOWN, buff=0.15).align_to(base, LEFT)
-        self.play(FadeIn(longer), cur.animate.set_value(5.4), seg.animate.set_color(GOOD), run_time=0.9)
+        col["c"] = GOOD
+        self.play(FadeIn(longer), cur.animate.set_value(12), run_time=0.9)
         self.sync(self.c(5, "وَالمُقْتَرِبُ"))
         shorter = tag("near the limit → shorter", FS_TAG, BAD).next_to(longer, DOWN, buff=0.15).align_to(base, LEFT)
-        self.play(FadeIn(shorter), cur.animate.set_value(1.6), run_time=0.8)
+        col["c"] = BAD
+        self.play(FadeIn(shorter), cur.animate.set_value(D.INTERVAL_CRITICAL_MONTHS[0]), run_time=0.8)
+        self.sync(self.c(5, "مَعَ قَسْوَةِ"))
+        also = tag("also: conditions · maker's advice · regulation", FS_TAG, GREY_INK) \
+            .next_to(shorter, DOWN, buff=0.15).align_to(base, LEFT)
+        self.play(FadeIn(also), run_time=0.5)
         self.sync(self.c(5, "وَالنَّتَائِجُ"))
         elec = VGroup(icon("database", FLUID, 0.45), tag("electronic transfer to CMX / LOGiCAL — not by pen",
                                                          FS_TAG, FLUID)).arrange(RIGHT, buff=0.15)
-        fit(elec, 7.4).next_to(shorter, DOWN, buff=0.3).align_to(base, LEFT)
+        fit(elec, 7.4).next_to(also, DOWN, buff=0.3).align_to(base, LEFT)
         self.play(FadeIn(elec), run_time=0.6)
         self.sync(self.end(5) + 1.0)
 

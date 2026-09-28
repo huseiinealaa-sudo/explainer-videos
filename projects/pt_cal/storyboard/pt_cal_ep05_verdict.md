@@ -13,7 +13,7 @@ ACCENT_4 red = error / wrong method.
 | 4 | Square-root transfer and the trap | I vs % chart: linear line and sqrt curve; 13-row table (selected rows highlighted) | curve draws; at 10 % and 50 % vertical guides show 9.060 vs 5.600 and 15.314 vs 12.000; trap: As-Found dots at 0 % and 100 % green, middle dots red with large regular errors | 10 %: 9.060 mA; 50 %: 15.314 mA | line_chart + data_table | 0:40 |
 | 5 | Certificate, expired reference, interval, electronic transfer | certificate outline with its fields; a traceability chain (national standard → lab → your reference → transmitter) with one link broken by a date; interval dial | fields tick; the chain link breaks red when the date passes; the interval dial shortens/lengthens with As-Found history | intervals 3–6 months for critical loops | document_panel + custom chain | 0:50 |
 
-Text-scene share: form + certificate ≈ 50 s / ≈ 220 s ≈ **23 %**. Custom drawings: **4**. Worked examples: **2** (41.928; square root).
+Text-scene share: ≈ **40 %** (critic round 1 measured ≈ 45 %; substitution lines, number-line ticks and the month-scaled interval bar added since). Custom drawings: **4**. Worked examples: **2** (41.928; square root).
 Left out: nothing (owner decision 2026-09-28: split of the former episode 5).
 
 ## Narration (fully diacritized)
