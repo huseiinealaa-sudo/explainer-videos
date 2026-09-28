@@ -554,6 +554,9 @@ class PtCalEp02(SyncedScene):
         liq = Rectangle(width=1.4, height=0.6, stroke_width=0).set_fill(FLUID_FILL, 1).move_to(ring)
         bub = Circle(radius=0.26, color=AIR, stroke_width=3).set_fill(WHITE, 1).move_to(ring)
         link = DashedLine(ring.get_top(), hose.point_from_proportion(0.6), color=GREY_INK, stroke_width=2)
+        b_note = tag("gas bubble compresses:\nslow settling, looks like a leak", FS_TAG, BAD) \
+            .next_to(rule, UP, buff=0.25)
+        b_note.align_to([6.6, 0, 0], RIGHT)
         self.play(FadeIn(ring), FadeIn(liq), Create(sect), FadeIn(bub), Create(link), run_time=0.6)
         self.play(bub.animate.scale(D.BUBBLE_SHRINK), pm.press.animate.set_value(D.PGHH_BLEED_BAR * 0.6),
                   pm.lever.animate.set_value(1), FadeIn(b_note), run_time=1.4)
