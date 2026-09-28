@@ -61,7 +61,7 @@ class PtCalEp05(SyncedScene):
                 ("Output", f"{fmt(D.I_LO, 0)} … {fmt(D.I_HI, 0)} mA", "وَالخَرْجُ"),
                 ("Transfer function", "linear  |  square root", "وَدَالَّةُ النَّقْلِ"),
                 ("Points", f"{len(D.CAL_POINTS_PCT)} up + {len(D.CAL_POINTS_PCT)} down", "وَخَمْسُ"),
-                ("Tolerance", f"±{fmt(D.TOL_PCT, 2)} % of span (work order)", "وَالتَّفَاوُتُ"),
+                ("Tolerance", f"±{fmt(D.TOL_PCT, 2)} % of span · work order", "وَالتَّفَاوُتُ"),
                 ("Point acceptance", "auto / manual", "وَقَبُولُ"),
                 ("Repeats", "n → repeatability", "وَعَدَدُ")]
         lines = VGroup()
@@ -71,8 +71,8 @@ class PtCalEp05(SyncedScene):
             lines.add(VGroup(kk, vv))
         for i, ln in enumerate(lines):
             ln[0].move_to([-5.7, 1.65 - 0.62 * i, 0], aligned_edge=LEFT)
-            ln[1].move_to([-2.2, 1.65 - 0.62 * i, 0], aligned_edge=LEFT)
-        xm = transmitter().scale(0.9).move_to([4.8, 0.6, 0])
+            ln[1].move_to([-2.7, 1.65 - 0.62 * i, 0], aligned_edge=LEFT)
+        xm = transmitter().scale(0.9).move_to([4.8, 1.9, 0])
         self.play(Create(screen), FadeIn(xm), run_time=0.7)
         for ln, (_, _, ph) in zip(lines, rows):
             self.sync(self.c(1, ph))
@@ -93,19 +93,19 @@ class PtCalEp05(SyncedScene):
                    xticks=[(k, f"year {k}") for k in range(1, n + 1)],
                    yticks=[(0, "0"), (D.TOL_PCT, fmt(D.TOL_PCT, 2))], ylabel="largest error, % of span")
         tol = ch.hline(D.TOL_PCT, BAD, dashed=True, width=3)
-        tl = tag("tolerance", FS_TAG, BAD).next_to(tol, UP, buff=0.08).align_to(tol, RIGHT)
+        tl = tag("tolerance", FS_TAG, BAD).next_to(tol, UP, buff=0.08).align_to(tol, LEFT).shift(RIGHT * 0.25)
         hand = VGroup(icon("lock", MOVE, 0.5), tag("no trim, no zero,\nno configuration", FS_TAG, MOVE)) \
             .arrange(RIGHT, buff=0.15).move_to([4.6, 2.3, 0])
         self.play(Create(ch.axes), FadeIn(ch.ticks), FadeIn(ch.yl), Create(tol), FadeIn(tl), run_time=0.8)
         self.sync(self.c(2, "لَا ضَبْطَ"))
         self.play(FadeIn(hand), run_time=0.5)
         dots = ch.dots([(k + 1, v) for k, v in enumerate(D.AF_HISTORY)], FLUID, 0.09)
-        af = tag("As-Found", FS_TAG + 2, FLUID).next_to(dots[0], UP, buff=0.2)
+        af = tag("As-Found", FS_TAG + 2, FLUID).next_to(dots[0], RIGHT, buff=0.2)
         self.sync(self.c(2, "عَلَيْهَا وَحْدَهَا"))
         self.play(FadeIn(af), LaggedStart(*[FadeIn(d, scale=1.5) for d in dots], lag_ratio=0.3), run_time=1.8)
         drift = Arrow(dots[0].get_center() + UP * 0.35, dots[-2].get_center() + UP * 0.35, buff=0.1,
                       stroke_width=3, color=GREY_INK, max_tip_length_to_length_ratio=0.08)
-        dl = tag("drift over the years", FS_TAG, GREY_INK).next_to(drift.get_center(), UL, buff=0.1)
+        dl = tag("drift over the years", FS_TAG, GREY_INK).next_to(drift, UP, buff=0.1).shift(LEFT * 0.6)
         self.sync(self.c(2, "وَرَصْدُ"))
         self.play(GrowArrow(drift), FadeIn(dl), run_time=0.7)
         self.sync(self.c(2, "وَآزْ لِفْت"))
@@ -117,7 +117,7 @@ class PtCalEp05(SyncedScene):
         self.play(GrowArrow(trim), FadeIn(al), FadeIn(all_), run_time=0.8)
         self.sync(self.c(2, "وَإِنْ نَجَحَ"))
         eq = tag("untouched: As-Found = As-Left\n'no adjustment required'", FS_TAG, GOOD) \
-            .next_to(hand, DOWN, buff=0.45).align_to(hand, LEFT)
+            .next_to(hand, DOWN, buff=0.45).align_to([1.8, 0, 0], LEFT)
         self.play(FadeIn(eq), run_time=0.5)
         self.sync(self.c(2, "وَشَهَادَةٌ"))
         cert = VGroup(Rectangle(width=2.6, height=1.6, color=INK, stroke_width=3),
@@ -198,13 +198,13 @@ class PtCalEp05(SyncedScene):
         section_title(self, "Square-root transmitters", prev=self.sec)
         eq = equation(self, ["I", "=", "4", "+", "16", "×", "√( (PV − LRV) / (URV − LRV) )"],
                       colors={6: MOVE}, size=FS_LABEL, pos=[0, 2.75, 0], run_time=0.9)
-        ch = Chart(-6.2, -3.2, 5.6, 4.6, (0, 100), (4, 20), xticks=[(0, "0"), (50, "50"), (100, "100 %")],
-                   yticks=[(4, "4"), (12, "12"), (20, "20 mA")])
+        ch = Chart(-5.6, -3.2, 5.2, 4.6, (0, 100), (4, 20), xticks=[(0, "0"), (50, "50"), (100, "100 %")],
+                   yticks=[(4, "4"), (12, "12"), (20, "20")], ylabel="mA")
         lin = ch.line([(0, 4), (100, 20)], GREY_INK, 3)
         sq = ch.line([(p, s) for p, _, s in D.SQRT_TABLE], MOVE, 4, smooth=True)
         ll = tag("linear", FS_TAG, GREY_INK).next_to(ch.p(85, 4 + 0.16 * 85), DR, buff=0.08)
-        sl = tag("square root", FS_TAG, MOVE).next_to(ch.p(20, D.SQRT_TABLE[2][2]), UL, buff=0.08)
-        self.play(Create(ch.axes), FadeIn(ch.ticks), Create(lin), FadeIn(ll), run_time=0.7)
+        sl = tag("square root", FS_TAG, MOVE).move_to(ch.p(40, 17.6))
+        self.play(Create(ch.axes), FadeIn(ch.ticks), FadeIn(ch.yl), Create(lin), FadeIn(ll), run_time=0.7)
         self.play(Create(sq), FadeIn(sl), run_time=1.0)
         rows = [[f"{p} %", fmt(l, 3), fmt(s, 3)] for p, l, s in D.SQRT_TABLE if p in D.SQRT_SHOW]
         tbl = data_table(self, ["input", "linear mA", "√ mA"], rows, pos=[3.7, -0.35, 0], size=FS_TAG + 2)
@@ -282,7 +282,8 @@ class PtCalEp05(SyncedScene):
         self.play(links[1].animate.set_color(BAD), FadeIn(cal), run_time=0.6)
         self.play(links[1].animate.scale(0.01), run_time=0.4)
         void = tag("every certificate issued with it is void", FS_TAG + 2, BAD).next_to(cal, DOWN, buff=0.2)
-        self.play(FadeIn(void), Create(cross(rows, BAD, 4, pad=0.05)), run_time=0.6)
+        stamp = tag("VOID", FS_BODY, BAD, weight=BOLD).rotate(0.3).next_to(head, RIGHT, buff=0.3)
+        self.play(FadeIn(void), paper.animate.set_stroke(BAD, 5), FadeIn(stamp, scale=1.4), run_time=0.6)
         self.sync(self.c(5, "فَنَبِّهْ"))
         alert = VGroup(icon("bell", MOVE, 0.4), tag(f"alert {D.REF_ALERT_MONTHS} month before expiry", FS_TAG, MOVE)) \
             .arrange(RIGHT, buff=0.15).next_to(void, DOWN, buff=0.2)

@@ -376,3 +376,10 @@ def _self_test_ep5():
 
 
 _self_test_ep5()
+
+
+# =====================================================================
+# Ep 1 — illustrative on-screen values
+# =====================================================================
+ZERO_OFFSET_DEMO_BAR = 0.012        # a module that does not read zero when vented (illustrative)
+LOOP_DEMO_MA = 12.0                 # current generated in the open-loop demonstration (illustrative)

@@ -247,7 +247,7 @@ class PtCalEp06(SyncedScene):
         self.play(LaggedStart(*[FadeIn(dt, scale=1.5) for dt in dots], lag_ratio=0.25), FadeIn(vals), run_time=1.2)
         self.sync(self.c(4, "عَلَى خَطٍّ"))
         fitl = ex.line([(0, D.PATTERN_INTERCEPT), (100, D.PATTERN_INTERCEPT + D.PATTERN_SLOPE * 100)], MOVE, 3)
-        info = VGroup(tag(f"errors in % of span; slope {fmt(D.PATTERN_SLOPE * 100, 2)} % over the span", FS_TAG + 1),
+        info = VGroup(tag(f"errors in % of span\nslope {fmt(D.PATTERN_SLOPE * 100, 2)} % over the span", FS_TAG + 1),
                       tag(f"residuals ≤ {fmt(D.PATTERN_MAX_RESID, 3)} %: a straight line", FS_TAG + 1)) \
             .arrange(DOWN, aligned_edge=LEFT, buff=0.15).move_to([4.2, -1.6, 0]).align_to([0.8, 0, 0], LEFT)
         self.play(Create(fitl), FadeIn(info[0]), run_time=0.9)
