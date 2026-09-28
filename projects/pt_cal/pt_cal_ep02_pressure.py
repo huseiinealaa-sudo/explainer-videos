@@ -122,9 +122,9 @@ class Pump:
         self.cv2 = check_valve(size=0.42).move_to(P(0.35, 0.05))
         self.ret = pipe(P(0.95, 0.05), P(0.95, 0.4), P(-1.5, 0.4), P(-1.5, 0.9))
         self.vent = gate_valve(size=0.38).move_to(P(0.15, 0.4))
-        self.top = pipe(P(1.75, 0.05), P(1.75, 1.12))
+        self.top = pipe(P(1.95, 0.05), P(1.95, 1.12))
         self.ext = Rectangle(width=1.8, height=0.75, color=INK, stroke_width=4) \
-            .set_fill(WHITE, 1).move_to(P(1.75, 1.5))
+            .set_fill(WHITE, 1).move_to(P(1.95, 1.5))
         self.readout = always_redraw(self._readout)
         self.fine_line = pipe(P(1.35, 0.05), P(1.35, -0.9))
         self.fine_cyl = VGroup(Line(P(1.35, -0.72), P(2.2, -0.72)), Line(P(1.35, -1.08), P(2.2, -1.08))) \
@@ -292,7 +292,7 @@ class PtCalEp02(SyncedScene):
         cable = DashedLine(ext.get_right(), cal.get_left(), color=GREY_INK, stroke_width=3)
         wire = pipe(xm.body.get_right(), [4.9, -0.8 + 0.2, 0], cal.get_bottom(), color=MOVE, width=3)
         pv = ValueTracker(0.0)
-        read_p = always_redraw(lambda: tag(f"{fmt(pv.get_value(), 2)} {D.UNIT}", FS_TAG)
+        read_p = always_redraw(lambda: tag(f"{fmt(pv.get_value() * D.KGF_CM2_TO_BAR, 2)} bar", FS_TAG + 2)
                                .move_to(ext))
         read_i = always_redraw(lambda: tag(f"{fmt(D.i_linear(pv.get_value()), 2)} mA", FS_TAG + 2)
                                .move_to(cal))
@@ -361,6 +361,8 @@ class PtCalEp02(SyncedScene):
                 self.play(FadeIn(legend[1]), run_time=0.4)
             self.sync(self.c(2, cues[model]))
             self.play(FadeIn(text, shift=RIGHT * 0.1), GrowFromEdge(bar, LEFT), run_time=0.6)
+            if model == "PGPH":
+                self.play(FadeIn(tag("bench", FS_TAG, AIR).next_to(bar, RIGHT, buff=0.1)), run_time=0.3)
         bench = tag("bench · screw handle", FS_TAG, FLUID).next_to(rows[-1][2], DOWN, buff=0.1) \
             .align_to(rows[-1][2], RIGHT)
         self.sync(self.c(2, "بِمِقْبَضٍ"))
@@ -374,7 +376,7 @@ class PtCalEp02(SyncedScene):
         callouts = [("Reservoir\n200 ml", pm.res, LEFT),
                     ("Handles +\npump piston", pm.lever_end(), LEFT),
                     ("Stroke selector\nPrime / High", P(-3.37, -0.9), LEFT),
-                    ("Vent\nvalve", pm.vent.get_left() + LEFT * 0.2 + UP * 0.12, UP),
+                    ("Vent\nvalve", pm.vent, UP),
                     ("Fine\nadjust", P(2.7, -0.9), RIGHT),
                     ("Side port:\nhose", P(2.45, 0.05), RIGHT),
                     ("Top port:\nEXT", pm.ext, RIGHT)]
@@ -536,7 +538,7 @@ class PtCalEp02(SyncedScene):
         for k in range(2):
             self.play(pm.lever.animate.set_value(1), pm.press.animate.set_value(D.PGHH_BLEED_BAR),
                       run_time=0.9)
-            self.play(pm.vent.animate.set_color(BAD), flow(pm.paths()[2]),
+            self.play(pm.vent.animate.set_color(MOVE), flow(pm.paths()[2]),
                       pm.press.animate.set_value(0), pm.lever.animate.set_value(0), run_time=0.8)
             self.play(pm.vent.animate.set_color(GOOD), run_time=0.2)
             if k == 0:
@@ -553,7 +555,7 @@ class PtCalEp02(SyncedScene):
             .set_stroke(INK, 4)
         liq = Rectangle(width=1.4, height=0.6, stroke_width=0).set_fill(FLUID_FILL, 1).move_to(ring)
         bub = Circle(radius=0.26, color=AIR, stroke_width=3).set_fill(WHITE, 1).move_to(ring)
-        link = DashedLine(ring.get_top(), hose.point_from_proportion(0.6), color=GREY_INK, stroke_width=2)
+        link = DashedLine(ring.point_at_angle(3 * PI / 4), hose.point_from_proportion(0.3), color=GREY_INK, stroke_width=2)
         b_note = tag("gas bubble compresses:\nslow settling, looks like a leak", FS_TAG, BAD) \
             .next_to(rule, UP, buff=0.25)
         b_note.align_to([6.6, 0, 0], RIGHT)
@@ -619,7 +621,7 @@ class PtCalEp02(SyncedScene):
         x2 = sag[-1][0]
         retrim = VMobject(color=GOOD, stroke_width=5).set_points_as_corners(
             [np.array(p) for p in [[x2, ty - 0.31, 0], [x2 + 0.25, ty, 0], [x2 + 1.3, ty, 0]]])
-        wait.move_to([0, ty + 0.95, 0]).align_to([x2 - 0.3, 0, 0], LEFT)
+        wait.next_to(retrim, DOWN, buff=0.15).align_to(retrim, LEFT)
         self.sync(self.c(6, "فَانْتَظِرْ"))
         self.play(FadeIn(wait), run_time=0.5)
         self.play(Create(retrim), run_time=0.8)
@@ -719,7 +721,7 @@ class PtCalEp02(SyncedScene):
             .next_to(rule, RIGHT, buff=0.5)
         ok = tag("✓", FS_BODY, GOOD).next_to(two, RIGHT, buff=0.15)
         self.play(Create(h_air), Create(h_liq), FadeIn(i_air), FadeIn(i_liq), run_time=0.5)
-        self.play(Create(cross(VGroup(h_air, h_liq), width=5).scale(1.1)), FadeIn(rule), run_time=0.6)
+        self.play(Create(cross(SurroundingRectangle(one, buff=0.15), width=5)), FadeIn(rule), run_time=0.6)
         self.play(Create(two), FadeIn(ok), run_time=0.5)
         self.sync(self.end(7) - 0.6)
         self.clear(self.sec)
@@ -766,15 +768,13 @@ class PtCalEp02(SyncedScene):
         self.sync(self.c(8, "وَمُقَاوَمَةٌ"))
         gauge = Rectangle(width=1.6, height=0.6, color=INK, stroke_width=3).move_to([-4.2, -2.6, 0])
         g_txt = tag(f"{fmt(D.STROKE_DEMO_BAR[1])} bar", FS_TAG + 2).move_to(gauge)
-        push = Arrow([-2.2, -2.6, 0], [-2.2, -2.6, 0] + UP * 0.1, buff=0, stroke_width=8, color=BAD,
-                     max_tip_length_to_length_ratio=0.35)
+        push = Arrow([-2.2, -3.1, 0], [-2.2, -1.9, 0], buff=0, stroke_width=8, color=BAD, tip_length=0.3)
         push_lab = tag("hand force", FS_TAG, BAD).next_to(push, RIGHT, buff=0.2)
         stop = VGroup(icon("alert-triangle", BAD, 0.6),
                       tag("strong resistance, no pressure rise:\nstop and find the fault", FS_TAG, BAD)) \
             .arrange(RIGHT, buff=0.2).move_to([3.3, -2.5, 0])
-        self.play(Create(gauge), FadeIn(g_txt), GrowArrow(push), run_time=0.4)
-        self.play(push.animate.put_start_and_end_on([-2.2, -3.1, 0], [-2.2, -1.9, 0]), FadeIn(push_lab),
-                  Indicate(g_txt, color=BAD), run_time=1.0)
+        self.play(Create(gauge), FadeIn(g_txt), run_time=0.4)
+        self.play(GrowArrow(push), FadeIn(push_lab), Indicate(g_txt, color=BAD), run_time=1.0)
         self.play(FadeIn(stop), run_time=0.5)
         self.sync(self.c(8, "وَلِكُلِّ مَدًى") - 0.4)
         self.play(FadeOut(VGroup(res, maxl, max_lab, liq, r_lab, add, spill, back, stop, top, vent, vl,
@@ -785,9 +785,9 @@ class PtCalEp02(SyncedScene):
                 [np.array(p) for p in [[-5.6, y, 0], [-4.2, y + 0.25, 0], [-2.8, y - 0.2, 0], [-1.6, y, 0]]])
         hl = hose(1.5, INK, 6)
         hh = hose(0.1, INK, 10)
-        tl = tag(f"{D.HOSE_LOW_BAR} bar hose · {D.HOSE_LOW_FITTING} fittings\nlow and medium ranges", FS_TAG) \
+        tl = tag(f"{D.HOSE_LOW_BAR} bar hose · {D.HOSE_LOW_FITTING} fittings\nlow and medium ranges", FS_TAG, line_spacing=1.1) \
             .next_to(hl, RIGHT, buff=0.3)
-        th = tag(f"{D.PGHH_HOSE_BAR} bar hose · {D.HOSE_HIGH_FITTING} fittings\nhigh range", FS_TAG) \
+        th = tag(f"{D.PGHH_HOSE_BAR} bar hose · {D.HOSE_HIGH_FITTING} fittings\nhigh range", FS_TAG, line_spacing=1.1) \
             .next_to(hh, RIGHT, buff=0.3)
         self.play(Create(hl), FadeIn(tl), run_time=0.7)
         self.sync(self.c(8, "وَسِتُّمِئَةٍ"))
@@ -795,7 +795,7 @@ class PtCalEp02(SyncedScene):
         self.sync(self.c(8, "وَخُرْطُومُ عِشْرِينَ"))
         bad = hose(-1.3, INK, 6)
         bulge = Ellipse(width=0.7, height=0.45, color=BAD, stroke_width=5).move_to(bad.point_from_proportion(0.5))
-        tb = tag(f"{D.BAD_HOSE_BAR} bar hose on a {D.HOSE_LOW_BAR} bar system:\na time bomb", FS_TAG, BAD) \
+        tb = tag(f"{D.BAD_HOSE_BAR} bar hose on a {D.HOSE_LOW_BAR} bar system:\na time bomb", FS_TAG, BAD, line_spacing=1.1) \
             .next_to(bad, RIGHT, buff=0.3)
         self.play(Create(bad), FadeIn(tb), run_time=0.6)
         self.play(GrowFromCenter(bulge), bad.animate.set_color(BAD), run_time=0.7)
@@ -838,13 +838,13 @@ class PtCalEp02(SyncedScene):
         self.play(px.animate.set_value(-4.3), flow(out2, AIR), run_time=0.8)
         # PGC: pressure / vacuum selector; pump to ~20–25 bar, then fine adjust
         self.sync(self.c(9, "فِي بِي جِي سِي"))
-        words = VGroup(tag("pressure", FS_TAG), tag("vacuum", FS_TAG)).arrange(RIGHT, buff=0.35)
-        pill = SurroundingRectangle(words, buff=0.15, corner_radius=0.25, color=INK, stroke_width=3)
+        words = VGroup(tag("pressure", FS_TAG), tag("vacuum", FS_TAG)).arrange(RIGHT, buff=0.35, aligned_edge=UP)
+        pill = SurroundingRectangle(words, buff=0.18, corner_radius=0.25, color=INK, stroke_width=3)
         sel = VGroup(pill, words)
         pgc = tag("PGC", FS_LABEL, AIR, weight=BOLD).next_to(sel, LEFT, buff=0.3)
         lock = VGroup(icon("lock", BAD, 0.4), tag("never switch under pressure", FS_TAG, BAD)) \
             .arrange(RIGHT, buff=0.15).next_to(sel, RIGHT, buff=0.3)
-        fit(VGroup(pgc, sel, lock), 9.0).move_to([2.4, 2.45, 0])
+        fit(VGroup(pgc, sel, lock), 8.6).move_to([2.2, 2.45, 0])
         self.play(FadeIn(pgc), FadeIn(sel), run_time=0.5)
         self.sync(self.c(9, "لَا يُغَيَّرُ"))
         self.play(FadeIn(lock), run_time=0.4)
@@ -942,6 +942,7 @@ class PtCalEp02(SyncedScene):
         self.play(FadeIn(p_where), run_time=0.6)
         self.sync(self.end(10) - 0.2)
         self.clear(self.sec)
+        self.sec = section_title(self, "Recap", prev=self.sec)
         steps = ["choose medium\nand range", "fill, bleed:\nliquid only", "approach\nfrom below",
                  "fine adjust", "wait, then\nre-trim"]
         process_flow(self, steps, size=FS_TAG + 2, width=12.4)
