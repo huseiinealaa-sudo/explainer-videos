@@ -6,6 +6,14 @@
 2. **Critic loop** (steps 3, 4b): the `video-critic` reviews, the fixes are made, the
    automatic loop runs again on the changed segments, next round; at most **3 rounds**.
 
+Who runs what (root `CLAUDE.md`, Delegation): the per-segment automatic loop (steps 1, 2,
+4a on `--segments`) runs inside the `scene-builder` agent, one call per segment, prompt =
+project path, episode, segment id (+ the critic's issues for that segment in step 4b). The
+whole-video QA run and the critic call (step 3) are the manager's; the manager reads the
+agents' summaries, the counts and the reports, not the render logs. Segments of one script
+run one after the other (they share `tmp/<script>/render.json` and the manim output file);
+different scripts may run in parallel. The limits below are the same whoever runs them.
+
 ## 1. Preview in QA mode
 ```bash
 # scripts that end with main(__file__, ...):
@@ -20,7 +28,8 @@ Outputs in `tmp/<script>/qa/<run>/`: `overlap/segNN.json` (one overlap report pe
 clock), `frames/*.png` (full-size frames), `index.json`, `qa_summary.json`. The console prints
 the finding counts per segment.
 
-Iteration 1 runs on the whole video. Later iterations may run only the segments that
+Iteration 1 runs on the whole video (or, when segments are built by `scene-builder`, on
+each segment as it is built, then once on the whole video by the manager). Later iterations may run only the segments that
 changed (`--segments`), but the last run before a critic round and the last run before the
 1080p render cover the whole video.
 
@@ -64,14 +73,19 @@ hook, so check with `git status` that it changed no other file.
 
 ## 4. Fix and repeat
 a. **Automatic loop:** fix every critical overlap finding, then step 1 again (at most 5
-   iterations). Fix layout by relative placement (`next_to`, `arrange`, `align_to`, buff ≥
+   iterations; per segment, inside `scene-builder`; if it fails twice on the same segment
+   the manager takes it over). Fix layout by relative placement (`next_to`, `arrange`, `align_to`, buff ≥
    0.15), not by nudging fixed coordinates; check the moved element against every text or
    shape added later in the segment (a fix often creates the next finding).
 b. **Critic loop:** fix every critical and important issue of the critic; take the cheap
-   improvements too (improvements never block PASS). Then the automatic loop again on the
+   improvements too (improvements never block PASS). The manager sorts the issues by
+   segment and sends each segment's issues to `scene-builder`. Then the automatic loop again on the
    changed segments, then the next critic round.
 - Record per video: automatic iterations (critical count after each) and critic rounds
-  (counts before and after, what changed).
+  (counts before and after, what changed); per segment in `projects/<name>/PROGRESS.md`:
+  the agent that built it and its number of calls.
+- After the last round, the 1080p render, the size table and the commit of `output/` go
+  to `render-runner` (SKILL.md step d.3).
 - PASS = no critical and no important issue. Stop at PASS, or after critic round 3:
   production then goes on, and whatever is still open goes to the PR description (skill
   step f).

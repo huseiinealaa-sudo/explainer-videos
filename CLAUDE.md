@@ -47,6 +47,17 @@ The Fast workflow is subject to the Quality standard above; the step-by-step pro
    - Whatever is still open after critic round 3 (critic or overlap report) is listed in the pull request, never hidden.
 6. Reply to the owner in Arabic.
 
+## Delegation
+Subject to the Quality standard: delegation changes who does the work, never the checks or their limits. The main session is the manager; the agents are defined in `.claude/agents/`.
+- **The manager does itself:** reading the source, the material inventory, the storyboard, all narration, the data module and its `self_test`, source verification, reading the critic reports and the fix report, and the PR description.
+- **Delegated:** each segment to `scene-builder` (code, `--segments --qa` loop to zero critical, sheets, commit, push); the final render, `concat_series`, the duration/size tables and PROGRESS.md to `render-runner`; searches of the repository to `Explore`; reviews to `video-critic` as before.
+- **Parallel:** independent segments run in parallel only when they are in different scripts (episodes). Segments of the same script run one after the other: previews of one script share `tmp/<script>/render.json` and the manim output file (`explainer/pipeline.py`). Before parallel work the manager makes sure `tmp/<script>/audio/` holds every segment's audio and timings, so no two agents synthesize at once.
+- **Delegation messages carry paths, not content:** project path, episode, segment id, and the critic's fixes when there are some; never paste a file the agent can read.
+- **The manager reads summaries, not full render logs;** it opens contact sheets when needed.
+- **Fallback:** if `scene-builder` fails twice on the same segment, the manager takes that segment over.
+- **Record:** `projects/<name>/PROGRESS.md` lists for each segment the agent that built it and its number of calls.
+- Forked copies of the session are denied (`Agent(fork)` in `.claude/settings.json`), so no delegation runs on Opus with the full context.
+
 ## Narration
 - Default voice: `ar-SA-HamedNeural` (chosen by the owner), normal speed. Default language: Modern Standard Arabic.
 - Each project sets its language, voice and speed in `projects/<name>/project.toml` (`language`, `voice`, `rate` under `[narration]`); a missing file or key falls back to the defaults above, and a language without a voice gets that language's default voice (`explainer.pipeline.DEFAULT_VOICES`).
