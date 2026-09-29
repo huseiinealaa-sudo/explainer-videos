@@ -14,7 +14,7 @@ ACCENT_2 orange = uncertainty band, ACCENT_3 green = PASS zone, ACCENT_4 red = F
 | 6 | Guard band and the decision rule | tolerance axis with PASS (green, up to 0.50 − U), doubt (grey, ±U around the limit), FAIL (red); the 41.928 result with its U band | zones shade; the error dot 0.3714 with its band ends at 0.4452 inside PASS; margin 0.0548 % bracket (≈ 11 % of tolerance) | 0.3714 + 0.0738 = 0.4452 % ≤ 0.50 % | custom axis | 0:45 |
 | 7 | What the certificate must state; end of part 1 | certificate corner with "U (k = 2)" and "Decision rule" fields | the two fields light; series summary | — | summary_box | 0:20 |
 
-Text-scene share: table part of seg 5 + summary ≈ 40 s / ≈ 265 s ≈ **15 %**. Custom drawings: **5**. Worked examples: **4** (0.48 ± 0.10; % of reading; budget; guard band).
+Text-scene share: ≈ **35 %** (critic round 1 measured ≈ 45 %; seg 4 divisors and Σ, named bars, animated guard band added since). Custom drawings: **5**. Worked examples: **4** (0.48 ± 0.10; % of reading; budget; guard band).
 Left out: nothing. Correction: the third-largest term is the current measurement (see conflicts).
 
 ## Narration (fully diacritized)

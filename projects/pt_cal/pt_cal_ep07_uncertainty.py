@@ -92,7 +92,7 @@ class PtCalEp07(SyncedScene):
         self.play(FadeIn(dot, scale=1.5), FadeIn(dl), run_time=0.5)
         self.sync(self.c(1, "لٰكِنْ بِعَدَمِ"))
         band = Rectangle(width=X(D.DEMO_HI) - X(D.DEMO_LO), height=0.24, stroke_width=0).set_fill(MOVE, 0.45) \
-            .move_to([(X(D.DEMO_LO) + X(D.DEMO_HI)) / 2, -1.3, 0])
+            .move_to([(X(D.DEMO_LO) + X(D.DEMO_HI)) / 2, -1.3, 0]).set_z_index(-1)
         bl = tag(f"U = ±{fmt(D.DEMO_U, 2)} % → true error {fmt(D.DEMO_LO, 2)} … {fmt(D.DEMO_HI, 2)} %", FS_TAG + 1, MOVE) \
             .next_to(ax, DOWN, buff=0.1).shift(LEFT * 1.2)
         self.play(GrowFromCenter(band), FadeIn(bl), run_time=0.8)
@@ -105,7 +105,7 @@ class PtCalEp07(SyncedScene):
     # ---------------- Segment 2: % of span, % of reading, % of URV ----------------
     def seg2_expression(self):
         section_title(self, "Expressing the error", prev=self.sec)
-        ch = Chart(-6.0, -2.9, 7.0, 4.4, (0, 100), (0, 0.6), xticks=[(0, "0"), (10, "10"), (50, "50"), (100, "100 %")],
+        ch = Chart(-5.6, -2.9, 6.6, 4.4, (0, 100), (0, 0.6), xticks=[(0, "0"), (10, "10"), (50, "50"), (100, "100 %")],
                    yticks=[(0.5, "0.5 %")], xlabel="point, % of span", ylabel="allowed error, % of span")
         span_b = ch.line([(0, D.RDG_SPEC_PCT), (100, D.RDG_SPEC_PCT)], FLUID, 4)
         rdg = ch.line([(0, 0), (100, D.RDG_SPEC_PCT)], MOVE, 4)
@@ -169,7 +169,7 @@ class PtCalEp07(SyncedScene):
             .arrange(DOWN, buff=0.12).move_to([-4.2, -0.3, 0])
         for k, ph in enumerate(cues):
             self.sync(self.c(4, ph))
-            self.play(FadeIn(chips[k], shift=RIGHT * 0.1), run_time=0.35)
+            self.play(FadeIn(chips[k], shift=RIGHT * 0.1), run_time=0.25)
             if k == 5:
                 dn = tag("← the decay problem, in numbers", FS_TAG, MOVE).next_to(chips[5], RIGHT, buff=0.2)
                 self.play(FadeIn(dn), run_time=0.4)
@@ -181,12 +181,25 @@ class PtCalEp07(SyncedScene):
                       tag("repeatability:  u = standard deviation s", FS_TAG + 2),
                       tag("u_c = √( Σ uᵢ² )", FS_TAG + 2, FLUID),
                       tag("U = k · u_c,  k = 2  (about 95 %)", FS_TAG + 2, MOVE, weight=BOLD)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.22).move_to([3.0, -0.3, 0]).align_to([-1.4, 0, 0], LEFT)
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.22).move_to([3.0, -0.3, 0]).align_to([-0.8, 0, 0], LEFT)
         self.play(FadeIn(conv[0]), run_time=0.3)
-        for k, ph in zip(range(1, 6), ["المُوَاصَفَةُ", "وَتَمْيِيزُ الشَّاشَةِ عَلَى", "وَالتَّكْرَارِيَّةُ هِيَ",
-                                        "ثُمَّ تُجْمَعُ", "وَتُضْرَبُ"]):
+        div = {0: "÷√3", 1: "÷√3", 4: "÷√3", 5: "÷√3", 2: "÷2√3", 3: "= s", 6: "in row 1"}
+        divs = VGroup(*[tag(div[k], FS_TAG - 2, FLUID).next_to(chips[k], RIGHT, buff=0.1) for k in range(7)])
+        groups = {"المُوَاصَفَةُ": [0, 1, 4, 5, 6], "وَتَمْيِيزُ الشَّاشَةِ عَلَى": [2], "وَالتَّكْرَارِيَّةُ هِيَ": [3]}
+        for k, ph in zip(range(1, 4), groups):
             self.sync(self.c(4, ph))
-            self.play(FadeIn(conv[k], shift=RIGHT * 0.1), run_time=0.4)
+            idx = groups[ph]
+            self.play(FadeIn(conv[k], shift=RIGHT * 0.1), *[FadeIn(divs[i]) for i in idx],
+                      *[chips[i].frame.animate.set_stroke(FLUID) for i in idx], run_time=0.5)
+        self.sync(self.c(4, "ثُمَّ تُجْمَعُ"))
+        sq = VGroup(*[divs[i].copy() for i in range(6)])
+        self.add(sq)
+        self.play(FadeIn(conv[4], shift=RIGHT * 0.1),
+                  *[m.animate.move_to(conv[4].get_left() + RIGHT * 0.3).scale(0.4).set_opacity(0) for m in sq],
+                  run_time=0.9)
+        self.remove(sq)
+        self.sync(self.c(4, "وَتُضْرَبُ"))
+        self.play(FadeIn(conv[5], shift=RIGHT * 0.1), Indicate(conv[5], color=MOVE), run_time=0.6)
         self.sync(self.end(4) - 0.6)
         self.clear(self.sec)
 
@@ -204,7 +217,7 @@ class PtCalEp07(SyncedScene):
         res = VGroup(tag(f"u_c = {fmt(D.U_C, 5)}", FS_TAG + 2, FLUID),
                      tag(f"U = 2 × u_c = {fmt(D.U_EXP, 5)} {D.UNIT}", FS_TAG + 2, MOVE),
                      tag(f"= {fmt(D.U_EXP_PCT, 4)} % of span", FS_TAG + 2, MOVE),
-                     tag(f"TUR = {fmt(D.TOL_PCT, 2)} ÷ {fmt(D.U_EXP_PCT, 4)} ≈ {fmt(D.TUR, 2)}", FS_TAG + 2, INK, weight=BOLD)) \
+                     tag(f"TUR = {fmt(D.TOL_PCT, 2)} ÷ {fmt(D.U_EXP_PCT, 4)} ≈ {fmt(D.TUR, 1)}", FS_TAG + 2, INK, weight=BOLD)) \
             .arrange(DOWN, aligned_edge=LEFT, buff=0.15).next_to(tbl, DOWN, buff=0.35).align_to(tbl, LEFT)
         self.sync(self.c(5, "المَجْمُوعُ"))
         self.play(FadeIn(res[0]), run_time=0.4)
@@ -224,19 +237,30 @@ class PtCalEp07(SyncedScene):
             b = Rectangle(width=0.4, height=max(ch.p(0, u)[1] - ch.y0, 0.02), stroke_width=0).set_fill(col, 0.85)
             b.move_to([ch.p(i + 0.6, 0)[0], ch.y0 + b.height / 2, 0])
             bars.add(b)
+        short = {"Reference module": "ref", "Repeatability": "rep", "Current measurement": "I",
+                 "Pressure stability": "stab", "Temperature": "T", "Display resolution": "d"}
+        bnames = VGroup(*[tag(short[r[0]], FS_TAG - 4, GREY_INK).next_to([b.get_x(), ch.y0, 0], DOWN, buff=0.08)
+                          for r, b in zip(rank, bars)])
         top3 = tag("top 3: reference,\nrepeatability, current", FS_TAG, FLUID).next_to(ch.axes, UP, buff=0.12) \
             .align_to(ch.axes, LEFT)
         self.play(FadeOut(drift), Create(ch.axes), LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.15),
-                  FadeIn(top3), run_time=1.2)
+                  FadeIn(top3), FadeIn(bnames), run_time=1.2)
+        row_of = {n: i for i, (n, _, _, _) in enumerate(D.BUDGET)}
+        hls = []
+        for i, ph in enumerate([None, "ثُمَّ التَّكْرَارِيَّةُ", "ثُمَّ التَّيَّارُ"]):
+            if ph:
+                self.sync(self.c(5, ph))
+            self.play(Indicate(bars[i], color=FLUID, scale_factor=1.3), run_time=0.4)
+            hls.append(highlight_row(self, tbl, row_of[rank[i][0]], FLUID))
         self.sync(self.c(5, "أَمَّا اسْتِقْرَارُ"))
         k = [i for i, b in enumerate(rank) if b[0] == "Pressure stability"][0]
         free = tag("stability: yours\nto control, free", FS_TAG, MOVE).next_to(top3, UP, buff=0.12).align_to(top3, LEFT)
-        self.play(Indicate(bars[k], color=MOVE, scale_factor=1.3), FadeIn(free), run_time=0.7)
+        self.play(Indicate(bars[k], color=MOVE, scale_factor=1.3), FadeIn(free), FadeOut(VGroup(*hls)), run_time=0.7)
         self.sync(self.c(5, "فَإِنْ نَصَّفْتَهُ"))
         half = D.A_STAB_HALF / np.sqrt(3)
         self.play(bars[k].animate.stretch_to_fit_height(max(ch.p(0, half)[1] - ch.y0, 0.02), about_edge=DOWN),
                   run_time=0.7)
-        tur2 = tag(f"TUR {fmt(D.TUR, 2)} → {fmt(D.TUR_HALF, 2)}\nnothing bought", FS_TAG + 1, GOOD, weight=BOLD) \
+        tur2 = tag(f"TUR ≈ {fmt(D.TUR, 1)} → ≈ {fmt(D.TUR_HALF, 1)}\nnothing bought", FS_TAG + 1, GOOD, weight=BOLD) \
             .next_to(free, UP, buff=0.3).align_to(free, LEFT)
         self.play(FadeIn(tur2), run_time=0.5)
         self.sync(self.end(5) - 0.6)
@@ -253,37 +277,53 @@ class PtCalEp07(SyncedScene):
             .set_fill(GREY_INK, 0.25).move_to([(X(acc) + X(D.TOL_PCT + D.U_EXP_PCT)) / 2, 0.35, 0])
         z_fail = Rectangle(width=X(0.7) - X(D.TOL_PCT + D.U_EXP_PCT), height=0.9, stroke_width=0) \
             .set_fill(BAD, 0.25).move_to([(X(D.TOL_PCT + D.U_EXP_PCT) + X(0.7)) / 2, 0.35, 0])
-        tol = DashedLine([X(D.TOL_PCT), -0.3, 0], [X(D.TOL_PCT), 1.1, 0], color=BAD, stroke_width=4)
+        tol = DashedLine([X(D.TOL_PCT), -0.3, 0], [X(D.TOL_PCT), 1.35, 0], color=BAD, stroke_width=4)
         self.play(Create(ax), Create(tol), run_time=0.6)
+        # the guard band narrows the acceptance limit by U
+        ya = -1.35
+        end = ValueTracker(D.TOL_PCT)
+        accb = always_redraw(lambda: Line([X(0), ya, 0], [X(end.get_value()), ya, 0], stroke_width=10, color=GOOD))
+        accl = tag("acceptance", FS_TAG, GOOD).next_to([X(0), ya, 0], UP, buff=0.12).align_to([X(0), 0, 0], LEFT)
+        self.play(FadeIn(accb), FadeIn(accl), run_time=0.5)
+        self.sync(self.c(6, "يُضَيِّقُ"))
+        self.play(end.animate.set_value(acc), run_time=1.0)
+        gb = BraceBetweenPoints([X(acc), ya - 0.08, 0], [X(D.TOL_PCT), ya - 0.08, 0], direction=DOWN, color=MOVE)
+        gbl = tag("guard band = U", FS_TAG, MOVE).next_to(gb, DOWN, buff=0.05)
+        self.play(FadeIn(gb), FadeIn(gbl), run_time=0.5)
         rules = VGroup(tag("PASS if |E| + U ≤ tolerance", FS_TAG + 2, GOOD),
                        tag("FAIL if |E| − U > tolerance", FS_TAG + 2, BAD),
                        tag("between: zone of doubt → documented engineering decision", FS_TAG + 2, GREY_INK)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([0, 2.35, 0])
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([0, 2.5, 0])
+        zt = [tag(t, FS_TAG, c, weight=BOLD).move_to(z).align_to(z, UP).shift(DOWN * 0.08)
+              for t, c, z in (("PASS", GOOD, z_pass), ("FAIL", BAD, z_fail), ("doubt", GREY_INK, z_doubt))]
+        zt[2].align_to(z_doubt, LEFT).shift(RIGHT * 0.12)
         self.sync(self.c(6, "نَاجِحٌ إِذَا"))
-        self.play(FadeIn(z_pass), FadeIn(rules[0]), run_time=0.6)
+        self.play(FadeIn(z_pass), FadeIn(zt[0]), FadeIn(rules[0]), run_time=0.6)
         self.sync(self.c(6, "وَرَاسِبٌ"))
-        self.play(FadeIn(z_fail), FadeIn(rules[1]), run_time=0.6)
+        self.play(FadeIn(z_fail), FadeIn(zt[1]), FadeIn(rules[1]), run_time=0.6)
         self.sync(self.c(6, "وَمَا بَيْنَهُمَا"))
-        self.play(FadeIn(z_doubt), FadeIn(rules[2]), run_time=0.6)
+        self.play(FadeIn(z_doubt), FadeIn(zt[2]), FadeIn(rules[2]), run_time=0.6)
         # the 41.928 result
         self.sync(self.c(6, "فِي مِثَالِنَا"))
         e = Dot([X(D.ERR_PCT_RIGHT), 0.35, 0], radius=0.11, color=FLUID)
-        el = tag(f"E = {fmt(D.ERR_PCT_RIGHT, 4)} %", FS_TAG + 1, FLUID).next_to(ax, DOWN, buff=0.15) \
+        el = tag(f"E = {fmt(D.ERR_PCT_RIGHT, 4)} %", FS_TAG + 1, FLUID).move_to([0, -0.85, 0]) \
             .align_to([X(D.ERR_PCT_RIGHT) - 1.2, 0, 0], LEFT)
         self.play(FadeIn(e, scale=1.5), FadeIn(el), run_time=0.5)
         self.sync(self.c(6, "زَائِدَ صِفْرٍ"))
-        u = Arrow(e.get_center(), [X(D.GUARD_SUM), 0.35, 0], buff=0, stroke_width=5, color=MOVE,
-                  max_tip_length_to_length_ratio=0.2)
-        self.play(GrowArrow(u), run_time=0.6)
+        yr = 1.1
+        u = Rectangle(width=X(D.GUARD_SUM) - X(D.ERR_PCT_RIGHT), height=0.16, stroke_width=0).set_fill(MOVE, 0.9) \
+            .move_to([(X(D.ERR_PCT_RIGHT) + X(D.GUARD_SUM)) / 2, yr, 0])
+        ul = tag("E + U", FS_TAG, MOVE).next_to(u, LEFT, buff=0.15)
+        self.play(GrowFromEdge(u, LEFT), FadeIn(ul), run_time=0.6)
         self.sync(self.c(6, "يُسَاوِي"))
         s = tag(f"{fmt(D.ERR_PCT_RIGHT, 4)} + {fmt(D.U_EXP_PCT, 4)} = {fmt(D.GUARD_SUM, 4)} % ≤ {fmt(D.TOL_PCT, 2)} %",
-                FS_TAG + 2, INK, weight=BOLD).move_to([0, -2.2, 0])
+                FS_TAG + 2, INK, weight=BOLD).move_to([0, -2.5, 0])
         self.play(FadeIn(s), run_time=0.5)
         self.sync(self.c(6, "نَاجِحٌ مُؤَكَّدٌ"))
-        m = BraceBetweenPoints([X(D.GUARD_SUM), 0.85, 0], [X(D.TOL_PCT), 0.85, 0], direction=UP, color=GOOD)
+        m = BraceBetweenPoints([X(D.GUARD_SUM), yr + 0.1, 0], [X(D.TOL_PCT), yr + 0.1, 0], direction=UP, color=GOOD)
         ml = tag(f"margin {fmt(D.GUARD_MARGIN, 4)} % ≈ {round(D.GUARD_MARGIN_OF_TOL)} % of tolerance", FS_TAG + 1, GOOD) \
             .next_to(s, DOWN, buff=0.25)
-        self.play(FadeIn(m), FadeIn(ml), run_time=0.6)
+        self.play(FadeIn(m), FadeIn(ml), Indicate(e, color=GOOD, scale_factor=1.5), run_time=0.6)
         self.sync(self.c(6, "فَالتَّوْصِيَةُ"))
         rec = tag("→ shorten the interval, watch the trend", FS_TAG + 2, MOVE).next_to(ml, DOWN, buff=0.2)
         self.play(FadeIn(rec), run_time=0.5)
