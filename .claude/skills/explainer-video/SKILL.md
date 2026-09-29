@@ -10,6 +10,13 @@ library, Preview QA, Accuracy and privacy) and in `projects/<name>/CLAUDE.md`; t
 the order of work. Reply to the owner in Arabic. Record the start time with `date` when the
 work begins and the end time when the PR is opened; time is measured, not targeted.
 
+Roles (root `CLAUDE.md`, Delegation): the main session is the manager and does steps a–c,
+the data module, the critic calls and their reading, and the PR itself. Segment code and its
+automatic loop go to `scene-builder`, the 1080p render, `concat_series`, tables and
+PROGRESS.md go to `render-runner`, repository searches go to `Explore`. Delegation messages
+carry paths, not file contents. The checks and their limits below are the same whoever runs
+them.
+
 Reference files next to this one:
 - `storyboard_template.md`: the storyboard table and how to fill it.
 - `approval_message.md`: the one approval message (storyboard + narration + quality gate).
@@ -56,15 +63,25 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
 ### d. After approval: the first episode (or the single video)
 1. Write the script `projects/<name>/<name>_<video>.py` from the storyboard (`from explainer
    import *`, `SyncedScene`, cues from the word timings, numbers from the data module,
-   layout by `next_to` / `arrange` / `align_to` inside the safe margin).
+   layout by `next_to` / `arrange` / `align_to` inside the safe margin). The manager writes
+   the script's frame (imports, `NARRATION` copied from the approved text, the scene class,
+   `main(...)`) and makes sure the audio and timings of every segment exist; each segment's
+   code is then delegated to `scene-builder` (prompt: project path, episode, segment id).
+   Segments of one script run one after the other; different episodes may run in parallel
+   (root `CLAUDE.md`, Delegation). If `scene-builder` fails twice on a segment, the manager
+   takes it over. Record per segment in PROGRESS.md the agent and its number of calls.
 2. QA — two loops, counted separately (commands and critic call: `qa_loop.md`):
    - **Automatic loop, at most 5 iterations:** preview in QA mode (`--qa`) → overlap
      reports → fix every critical finding → again, until the reports show **zero critical
      findings**. Later iterations may run only the changed segments (`--segments`), the
-     last one covers the whole video. No critic round is spent here.
+     last one covers the whole video. No critic round is spent here. Per segment this loop
+     runs inside `scene-builder`; the whole-video run is made by the manager, who reads only
+     the printed counts and the reports, not the render log.
    - **Critic loop, at most 3 rounds:** contact sheets + overlap reports → `video-critic`
      → fix every critical and important issue (and the cheap improvements) → run the
-     automatic loop again on the changed segments → next critic round.
+     automatic loop again on the changed segments → next critic round. The manager calls
+     the critic and reads its report; the fixes go back to `scene-builder`, one call per
+     segment, with the critic's issues for that segment in the prompt.
    - If critical findings are still open after 5 automatic iterations, call the critic
      anyway and list them in its prompt (time, elements, why they stayed); they count as
      open issues of that round.
@@ -75,9 +92,12 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
    **PASS** = no critical and no important issue. Stop at PASS, or after critic round 3:
    then production goes on and what remains is listed in the PR (step f). Record per
    video the number of automatic iterations and critic rounds.
-3. Render 1080p (`python projects/<name>/<name>_<video>.py`), check the file size (< 100 MB),
-   commit the script, data, storyboard, sources, the video in `output/` and the critic's
-   memory (`.claude/agent-memory/video-critic/`), and push the branch.
+3. The manager commits the script, data, storyboard, sources and the critic's memory
+   (`.claude/agent-memory/video-critic/`); then `render-runner` renders 1080p
+   (`python projects/<name>/<name>_<video>.py`), checks the size (< 100 MB) in its ffprobe
+   table, updates PROGRESS.md, commits the video in `output/` and pushes the branch. It
+   returns only the table and the commit message; on an error it returns two lines and the
+   manager fixes the cause.
 4. **Series: stop here** and present the first episode to the owner (link, duration, the QA
    rounds and their result, anything left open). The other episodes are completed only after
    the owner approves this level. This is the only stop after the narration approval,
@@ -87,7 +107,8 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
 1. Produce every other episode with the same loop (step d.1–d.3) without stopping; fix
    layout and sync as part of production.
 2. Open ONE pull request for the whole work (series: also `concat_series` if the project
-   asks for a full-series file). Its description gives the start and end times, the videos
+   asks for a full-series file, run by `render-runner` with the table of all files).
+   The manager writes the PR. Its description gives the start and end times, the videos
    with durations, the QA result per episode, and step f.
 3. Run the privacy check of `privacy_check.md` over everything the PR contains; fix and push
    on the same PR if anything is found, and say so in the PR.

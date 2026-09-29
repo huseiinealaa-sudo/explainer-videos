@@ -2,7 +2,7 @@
 name: video-critic
 description: Independent, read-only critic of explainer-video previews. Use it after every preview of a video or episode in this repository (the preview-QA step of the explainer-video skill), before any final render. It reads the contact sheets, the overlap reports, the storyboard, the approved narration and the data module; scores each segment 1-5 on accuracy, depth, logical order, drawing-speech fit and layout; lists issues (critical / important / improvement) with time, grid cell and a concrete fix; and returns PASS or FIX.
 tools: Read, Glob, Grep, Write, Edit
-model: inherit
+model: opus
 memory: project
 hooks:
   PreToolUse:
