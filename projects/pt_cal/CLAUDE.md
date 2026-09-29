@@ -49,7 +49,7 @@ the root `CLAUDE.md` also apply, and where they differ this file wins for this p
 ## Videos
 | # | Script / output | Topic | Status |
 |---|---|---|---|
-| 1 | `pt_cal_ep01_device` | the MC6, electrical side, pressure modules, modes | narration approved |
+| 1 | `pt_cal_ep01_device` | the MC6, electrical side, pressure modules, modes | rendered 1080p (4:21, 9.0 MB), critic PASS round 2 |
 | 2 | `pt_cal_ep02_pressure` | generating pressure; hydraulic hand pump (model episode) | rendered 1080p (5:30), critic PASS round 3; level approved by the owner |
 | 3 | `pt_cal_ep03_setup` | transmitter types, connections, 3-valve manifold, safety | narration approved |
 | 4 | `pt_cal_ep04_procedure` | ten steps, approach rule, pressure decay | narration approved |

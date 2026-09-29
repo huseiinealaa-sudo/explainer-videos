@@ -8,15 +8,19 @@ Timing: start 17:50:19 UTC; narration done 18:19:26; model episode 19:03 → 20:
 
 ## Done
 - ep02 `pt_cal_ep02_pressure` — 5:30, 12.2 MB, critic PASS (round 3), owner approved the level.
-- ep06 `pt_cal_ep06_trim` — 3:01, 7.8 MB, critic PASS (round 2); open: text-scene share ≈ 40 %, save-note placement, valve stem motion, out-of-band dot style (improvements).
+- ep06 `pt_cal_ep06_trim` — 3:01, 7.8 MB, critic PASS (round 2).
+- ep05 `pt_cal_ep05_verdict` — 3:45, 9.0 MB, critic PASS (round 2).
+- ep01 `pt_cal_ep01_device` — 4:21, 9.0 MB, critic PASS (round 2).
+
+## Open items (owner decides after viewing)
+- Text-scene share above the ~33 % guideline: ep01 ≈ 38 %, ep05 ≈ 40 %, ep06 ≈ 40 % (critic measures). Not treated now, per the owner (2026-09-29).
 
 ## In progress
-- ep05 `pt_cal_ep05_verdict` — automatic loop at 0 critical (full it5); critic round 1 running.
-- ep01 `pt_cal_ep01_device` — automatic loop at 0 critical (full it4); critic round 1 running.
-- ep03 `pt_cal_ep03_setup` — fixes applied; full QA it5 running.
-- ep04 `pt_cal_ep04_procedure` — fixes applied (leak chain vertical); full QA it7 running.
-- ep07 `pt_cal_ep07_uncertainty` — automatic loop at 0 critical (full it2); critic after ep04.
+- ep07 `pt_cal_ep07_uncertainty` — critic round 1 = FIX (4 important: seg 6 E+U arrow in the doubt zone; guard band never narrowed / zones unnamed; seg 4 conversions only listed; seg 5 bars unnamed). Fixing.
+- ep04 `pt_cal_ep04_procedure` — critic round 1 = FIX (3 important: seg 2 hysteresis not drawn; seg 5 stability/delay text only; seg 6 fixes not animated). Fixing.
+- ep03 `pt_cal_ep03_setup` — critic round 1 interrupted by the usage limit; re-run.
 - Series script written: `pt_cal_full_series.py` (run after all 7 are rendered).
+- Usage-limit pause: 2026-09-28 23:59 → 2026-09-29 16:30 UTC (excluded from times).
 
 ## Next step
-- Fix ep05/ep01 critic findings → next rounds → 1080p; then ep03, ep04, ep07 critic rounds; then the series file and the PR.
+- ep03 critic round 1 (re-run); fix ep07 and ep04 findings → critic round 2 → 1080p; then series file, PR, privacy grep.
