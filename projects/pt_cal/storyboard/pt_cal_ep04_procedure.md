@@ -13,7 +13,7 @@ ACCENT_2 orange = thermal (heat), ACCENT_4 red = leak / error, ACCENT_3 green = 
 | 5 | Remedies; acceptance settings; why a wide window is fine | long vs short hose; acceptance window around a target on the P–t chart (Max. Point Deviation band, Stability check, Point Delay timer); input/output readings pair | hose shortens, adapters drop off; the live pressure enters the band, the stability tick lights, the timer counts, "Accept" captures input and output together (green); pen method: two readings at two moments on a falling curve (red gap) | window 2–3 % of span, 30–60 s | custom + worked annotation | 0:55 |
 | 6 | Other common mistakes | five small panels: tilted transmitter with shifted zero, damping slider with lagging trace, liquid slug in an impulse line, thermometer on a cold transmitter, gauge over its limit | each panel animates its fault then its fix | — | custom (5 mini drawings) + checklist marks | 0:35 |
 
-Text-scene share: ≈ 10 % (step labels only). Custom drawings: **6**. Worked examples: **2** (three decay curves; acceptance window).
+Text-scene share: ≈ **30 %** (critic round 1 measure; under the ~33 % limit). Custom drawings: **6**. Worked examples: **2** (three decay curves; acceptance window).
 Left out: nothing.
 
 ## Narration (fully diacritized)

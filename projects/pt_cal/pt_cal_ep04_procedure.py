@@ -167,10 +167,17 @@ class PtCalEp04(SyncedScene):
         self.play(Create(path_dn), FadeIn(l_dn), run_time=2.0, rate_func=linear)
         self.sync(self.c(2, "فَإِنْ تَجَاوَزْتَ"))
         over = ch.line([(4, 46), (4.5, 58), (5.2, 50)], BAD, 5)
-        ol = fit(tag("overshoot, then back:\nthe reading now carries hysteresis,\ntaken for linearity",
-                     FS_TAG + 1, BAD), 5.1).next_to(l_dn, DOWN, buff=0.4).align_to(l_up, LEFT)
-        self.play(Create(over), FadeIn(ol), run_time=1.2)
+        ol = tag("overshoot, then back:\nhysteresis read as linearity", FS_TAG + 1, BAD) \
+            .next_to(l_dn, DOWN, buff=0.4).align_to(l_up, LEFT)
+        self.play(Create(over), run_time=0.8)
+        self.sync(self.c(2, "دَخَلَ"))
+        d_bad = Dot(ch.p(5.2, 50), radius=0.09, color=BAD)
+        d_ok = Dot(ch.p(4.6, 50), radius=0.08, color=GREY_INK)
+        hy = DoubleArrow(ch.p(6.0, 50), ch.p(6.0, 58), buff=0, stroke_width=3, color=BAD, tip_length=0.12)
+        hyl = tag("hysteresis", FS_TAG - 2, BAD).next_to(hy, RIGHT, buff=0.1).shift(UP * 0.12)
+        self.play(FadeIn(d_bad), FadeIn(d_ok), GrowFromCenter(hy), FadeIn(hyl), FadeIn(ol), run_time=0.8)
         self.sync(self.c(2, "فَفَسَدَ"))
+        self.play(Indicate(d_bad, color=BAD, scale_factor=1.8), Indicate(d_ok, color=BAD, scale_factor=1.8), run_time=0.6)
         both = tag("both numbers spoiled", FS_TAG + 2, BAD, weight=BOLD).next_to(ol, DOWN, buff=0.25).align_to(ol, LEFT)
         self.play(FadeIn(both), Indicate(over, color=BAD), run_time=0.6)
         self.sync(self.end(2) - 0.5)
@@ -188,7 +195,7 @@ class PtCalEp04(SyncedScene):
         self.play(FadeIn(setup[1]), run_time=0.5)
         ch = Chart(-5.8, -3.1, 7.0, 4.6, (0, D.DECAY_T_END), (41.6, 42.05),
                    xticks=[(0, "0"), (60, "1"), (120, "2"), (180, "3 min")],
-                   yticks=[(42.0, fmt(D.DECAY_P0, 2)), (41.7, "41.70")], ylabel=D.UNIT)
+                   yticks=[(D.DECAY_P0, fmt(D.DECAY_P0, 2)), (D.DECAY_P0 - D.THERM_A, fmt(D.DECAY_P0 - D.THERM_A, 2))], ylabel=D.UNIT)
         self.play(Create(ch.axes), FadeIn(ch.ticks), FadeIn(ch.yl), run_time=0.6)
         ts = D.DECAY_T[::3]
         curves = [(D.p_thermal, MOVE, "thermal: fast, slows, settles", "هُبُوطٌ سَرِيعٌ يَتَبَاطَأُ"),
@@ -203,7 +210,7 @@ class PtCalEp04(SyncedScene):
             fit(lab, 5.0).move_to([4.2, 0.9 - 0.55 * k, 0]).align_to([1.6, 0, 0], LEFT)
             labs.add(lab)
             self.play(Create(cv), FadeIn(lab), run_time=2.2, rate_func=linear)
-        fixf = tag("fix the leak, then repeat the test", FS_TAG + 1, BAD).next_to(labs, DOWN, buff=0.3).align_to(labs, LEFT)
+        fixf = fit(tag("fix the leak, then repeat the test", FS_TAG + 1, BAD), 5.0).next_to(labs, DOWN, buff=0.3).align_to(labs, LEFT)
         self.sync(self.c(3, "أَصْلِحِ"))
         self.play(FadeIn(fixf), run_time=0.5)
         self.sync(self.c(3, "لَاحِظْ"))
@@ -225,7 +232,7 @@ class PtCalEp04(SyncedScene):
                                .move_to([px.get_value(), 1.7, 0]))
         dots = always_redraw(lambda: VGroup(*[
             Dot([px.get_value() + 0.25 + (k % 4) * (-4.1 - px.get_value() - 0.25) / 3.3, 1.45 + (k // 4) * 0.5, 0],
-                radius=0.06, color=interpolate_color(ManimColor(GREY_INK), ManimColor(BAD), heat.get_value()))
+                radius=0.06, color=interpolate_color(ManimColor(GREY_INK), ManimColor(MOVE), heat.get_value()))
             for k in range(8)]))
         h1 = tag("1  heat: compressed air\nwarms, then cools", FS_TAG + 1, MOVE).next_to(cyl, DOWN, buff=0.2) \
             .align_to(cyl, LEFT)
@@ -234,10 +241,10 @@ class PtCalEp04(SyncedScene):
         self.sync(self.c(4, "وَمَعَ تَبَرُّدِهِ"))
         ch = Chart(-6.3, -1.3, 3.4, 1.4, (0, 10), (0, 1.0))
         sag25 = ch.line([(t, 0.9 - 0.1 * (1 - np.exp(-t / 2))) for t in np.linspace(0, 10, 20)], GREY_INK, 3)
-        sag100 = ch.line([(t, 0.9 - 0.6 * (1 - np.exp(-t / 2))) for t in np.linspace(0, 10, 20)], BAD, 4)
+        sag100 = ch.line([(t, 0.9 - 0.6 * (1 - np.exp(-t / 2))) for t in np.linspace(0, 10, 20)], MOVE, 4)
         self.play(heat.animate.set_value(0), Create(ch.axes), Create(sag100), run_time=1.4)
         self.sync(self.c(4, "وَيَشْتَدُّ"))
-        l1 = VGroup(tag("at 100 %", FS_TAG, BAD).next_to(sag100.get_end(), RIGHT, buff=0.1),
+        l1 = VGroup(tag("at 100 %", FS_TAG, MOVE).next_to(sag100.get_end(), RIGHT, buff=0.1),
                     tag("at 25 %", FS_TAG, GREY_INK).next_to(ch.p(10, 0.8), RIGHT, buff=0.1).shift(UP * 0.1))
         self.play(Create(sag25), FadeIn(l1), run_time=0.8)
         # 2 leak points along the chain
@@ -249,8 +256,8 @@ class PtCalEp04(SyncedScene):
                          for i in range(3)])
         h2 = tag("2  leaks", FS_TAG + 1, BAD).next_to(parts, LEFT, buff=0.5).align_to(parts, UP)
         self.play(FadeIn(parts), Create(links), FadeIn(h2), run_time=0.6)
-        notes = [(1, "O-rings first", "الوَصَلَاتُ السَّرِيعَةُ"), (2, "tape wrong or torn", "ثُمَّ المُحَوِّلَاتُ"),
-                 (0, "check valve worn", "وَصِمَامُ عَدَمِ"), (3, "seal face / gasket", "وَوَصْلَةُ")]
+        notes = [(1, "O-rings first", "الوَصَلَاتُ السَّرِيعَةُ"), (2, "tape wrapped wrong", "ثُمَّ المُحَوِّلَاتُ"),
+                 (0, "check valve", "وَصِمَامُ عَدَمِ"), (3, "process connection", "وَوَصْلَةُ")]
         for i, txt, ph in notes:
             self.sync(self.c(4, ph))
             d = Dot(parts[i].box.get_right() + RIGHT * 0.2, radius=0.07, color=BAD)
@@ -287,7 +294,7 @@ class PtCalEp04(SyncedScene):
             self.play(FadeIn(r, shift=RIGHT * 0.1), run_time=0.4)
         # the acceptance window on a live pressure trace
         self.sync(self.c(5, "وَفِي المُعَايِرِ"))
-        ch = Chart(-6.2, -3.2, 6.6, 2.6, (0, 10), (0, 10), xlabel="time")
+        ch = Chart(-6.2, -3.0, 6.6, 2.4, (0, 10), (0, 10), xlabel="time")
         band = ch.band(6.6, 7.4, GOOD, 0.15)
         tgt = ch.hline(7, INK)
         live = ch.line([(t, 7 - 3.2 * np.exp(-t / 1.6) + 0.1 * np.sin(3 * t) * np.exp(-t / 3)) for t in np.linspace(0, 10, 40)],
@@ -303,9 +310,12 @@ class PtCalEp04(SyncedScene):
         self.play(FadeIn(band), FadeIn(s1), run_time=0.5)
         self.play(Create(live), run_time=1.4)
         self.sync(self.c(5, "وَفَحْصُ"))
-        self.play(FadeIn(s2), run_time=0.4)
+        ok = icon("check", GOOD, 0.35).next_to(ch.p(6, 7), UP, buff=0.3)
+        self.play(FadeIn(s2), FadeIn(ok, scale=1.4), run_time=0.4)
         self.sync(self.c(5, "وَزَمَنُ"))
-        self.play(FadeIn(s3), run_time=0.4)
+        pd = BraceBetweenPoints(ch.p(5, 9.7), ch.p(7.5, 9.7), direction=UP, color=GOOD)
+        pdl = tag("Point Delay", FS_TAG - 2, GOOD).next_to(pd, UP, buff=0.05)
+        self.play(FadeIn(s3), FadeIn(pd), FadeIn(pdl), run_time=0.5)
         # why a wide window is fine: Accept captures both at once
         self.sync(self.c(5, "وَتَوْسِيعُ"))
         cap = DashedLine(ch.p(7.5, 0), ch.p(7.5, 9.5), color=GOOD, stroke_width=3)
@@ -341,6 +351,11 @@ class PtCalEp04(SyncedScene):
                 x = transmitter(bubble=False).scale(0.55).move_to(c)
                 self.play(Create(p), FadeIn(x), FadeIn(caps[k]), run_time=0.4)
                 self.play(Rotate(x, -0.6), run_time=0.6)
+                zs = tag("zero shifted", FS_TAG - 4, BAD).next_to(x, DOWN, buff=0.1)
+                zs.set_y(p.get_bottom()[1] + 0.25)
+                self.sync(self.c(6, "فَالجَاذِبِيَّةُ"))
+                self.play(FadeIn(zs), run_time=0.4)
+                self.play(Transform(zs, tag("re-zero → 0", FS_TAG - 4, GOOD).move_to(zs)), run_time=0.5)
             elif k == 1:
                 ch = Chart(c[0] - 1.0, c[1] - 0.8, 2.0, 1.6, (0, 10), (0, 10))
                 step = ch.line([(0, 2), (3, 2), (3, 8), (10, 8)], GREY_INK, 2)
@@ -348,14 +363,22 @@ class PtCalEp04(SyncedScene):
                               MOVE, 4, smooth=True)
                 self.play(Create(p), FadeIn(ch.axes), Create(step), FadeIn(caps[k]), run_time=0.4)
                 self.play(Create(lag), run_time=0.8)
+                fast = ch.line([(t, 2 + 6 * (1 - np.exp(-(t - 3) / 0.5)) if t > 3 else 2) for t in np.linspace(0, 10, 40)],
+                               GOOD, 4, smooth=True)
+                self.sync(self.c(6, "اخْفِضْهُ"))
+                self.play(Create(fast), lag.animate.set_stroke(opacity=0.3), run_time=0.7)
             elif k == 2:
                 u = poly([c + [-0.7, 0.8, 0], c + [-0.7, -0.6, 0], c + [0.7, -0.6, 0], c + [0.7, 0.8, 0]], INK, 5)
                 slug = Rectangle(width=0.18, height=0.5, stroke_width=0).set_fill(FLUID, 1).move_to(c + [-0.7, -0.3, 0])
                 self.play(Create(p), Create(u), FadeIn(caps[k]), run_time=0.4)
                 self.play(FadeIn(slug), slug.animate.shift(DOWN * 0.05), run_time=0.5)
+                self.sync(self.c(6, "فَصَرِّفْهَا"))
+                self.play(slug.animate.shift(DOWN * 0.25).set_opacity(0), run_time=0.7)
             elif k == 3:
                 g = VGroup(icon("temperature", FLUID, 0.8), icon("clock", INK, 0.7)).arrange(RIGHT, buff=0.3).move_to(c)
                 self.play(Create(p), FadeIn(g), FadeIn(caps[k]), run_time=0.5)
+                self.sync(self.c(6, "لِيَتَعَادَلَ"))
+                self.play(g[0].animate.set_color(INK), Rotate(g[1], -TAU / 2), run_time=0.9)
             else:
                 g = VGroup(icon("gauge", BAD, 0.9), icon("alert-triangle", BAD, 0.6)).arrange(RIGHT, buff=0.2).move_to(c)
                 self.play(Create(p), FadeIn(g), FadeIn(caps[k]), run_time=0.5)
