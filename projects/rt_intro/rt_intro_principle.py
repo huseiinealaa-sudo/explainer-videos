@@ -340,7 +340,7 @@ class RtIntroPrinciple(SyncedScene):
         film_frame = Rectangle(width=X1 - X0, height=FH, stroke_width=2, color=INK)
         film_frame.move_to([(X0 + X1) / 2, FT - FH / 2, 0])
         film = VGroup(*cell.values(), film_frame)
-        film_l = label("Film", FS_NOTE).next_to(film_frame, DOWN, 0.15).align_to(film_frame, LEFT)
+        film_l = label("Film", FS_NOTE).next_to(film_frame, DOWN, 0.3).align_to(film_frame, LEFT)
         self.play(FadeOut(gone), Create(plate), FadeIn(film), FadeIn(film_l), run_time=1.0)
 
         def beam(x, t_metal, extra=0.0):
@@ -385,7 +385,7 @@ class RtIntroPrinciple(SyncedScene):
         self.sync(self.c(s, "فَيَصِلُ"))
         self.play(Create(vout), run_time=0.8)
         self.sync(self.c(s, "أَغْمَقَ") - 0.2)
-        dark_l = label("darker", FS_LABEL, weight=BOLD).next_to(cell["void"], DOWN, 0.15)
+        dark_l = label("darker", FS_LABEL, weight=BOLD).next_to(cell["void"], DOWN, 0.3)
         self.play(cell["void"].animate.set_fill(grey(1.5 * vi), 1), FadeIn(dark_l), run_time=0.8)
 
         # the denser inclusion: more absorbed, lighter film
@@ -399,13 +399,17 @@ class RtIntroPrinciple(SyncedScene):
         self.play(Create(win), run_time=0.6)
         self.play(Create(wout), run_time=0.6)
         self.sync(self.c(s, "أَفْتَحَ") - 0.2)
-        light_l2 = label("lighter", FS_LABEL, weight=BOLD).next_to(cell["w"], DOWN, 0.15)
+        light_l2 = label("lighter", FS_LABEL, weight=BOLD).next_to(cell["w"], DOWN, 0.3)
         self.play(cell["w"].animate.set_fill(grey(1.5 * wi), 1), FadeIn(light_l2), run_time=0.8)
 
         # the difference draws the defect: the film is a map
         self.sync(self.c(s, "فَالفَرْقُ"))
         outs = VGroup(*[b[1] for b in base], vout, wout)
-        self.play(Indicate(outs, color=RAY_C, scale_factor=1.0), run_time=1.2)
+        # pointer: the transmitted rays go to full opacity and back, the film cells flash
+        self.play(outs.animate.set_stroke(opacity=1.0),
+                  Indicate(VGroup(cell["void"], cell["w"]), color=RAY_C, scale_factor=1.15),
+                  run_time=0.6)
+        self.play(outs.animate.set_stroke(opacity=0.55), run_time=0.6)
         self.sync(self.c(s, "وَالصُّورَةُ") - 0.2)
         frame = emphasize(self, film, color=RAY_C, buff=0.1)
         self.say("Radiograph = map of thickness and density")
@@ -474,7 +478,7 @@ class RtIntroPrinciple(SyncedScene):
         l_x = label("X-rays", FS_NOTE, RAY_C).move_to([-2.62, -1.75, 0])
         self.play(FadeIn(l_x), run_time=0.4)
         self.sync(self.c(s, "البُقْعَةُ") - 0.2)
-        fs = callout("Focal spot", spot.get_center(), [-1.0, 0.25, 0], SRC_C, FS_NOTE)
+        fs = callout("Focal\nspot", spot.get_center(), [-1.2, 0.05, 0], SRC_C, FS_NOTE)
         self.play(spot.animate.scale(1.4), FadeIn(fs[0]), GrowArrow(fs[1]), run_time=0.7)
 
         # power switch: ON, then OFF → the beam stops
@@ -559,7 +563,7 @@ class RtIntroPrinciple(SyncedScene):
 
         def inset(center, obj):
             ring = Circle(radius=0.55, color=SRC_C, stroke_width=3).set_fill(WHITE, 1).move_to(center)
-            obj.move_to(ring.get_center() + DOWN * 0.12)
+            obj.move_to(ring.get_center() + DOWN * 0.2)
             arr = DoubleArrow(obj.get_left() + UP * 0.25, obj.get_right() + UP * 0.25, buff=0,
                               stroke_width=3, color=SRC_C, tip_length=0.12,
                               max_tip_length_to_length_ratio=0.3)
@@ -569,8 +573,8 @@ class RtIntroPrinciple(SyncedScene):
         big_cap = RoundedRectangle(width=0.62, height=0.22, corner_radius=0.08, color=SRC_C,
                                    stroke_width=2).set_fill(SRC_C, 1)
         in1, in2 = inset([-1.0, -2.45, 0], big_spot), inset([3.2, -2.5, 0], big_cap)
-        lk1 = DashedLine(spot.get_center(), in1[0].get_top(), color=SRC_C, stroke_width=2)
-        lk2 = DashedLine(cap.get_center(), in2[0].get_top(), color=SRC_C, stroke_width=2)
+        lk1 = DashedLine(spot.get_center(), in1[0].point_at_angle(PI * 0.72), color=SRC_C, stroke_width=2)
+        lk2 = DashedLine(cap.get_center(), in2[0].point_at_angle(PI * 0.28), color=SRC_C, stroke_width=2)
         self.play(Create(lk1), Create(lk2), FadeIn(in1[0]), FadeIn(in2[0]), run_time=0.6)
         self.play(FadeIn(in1[1:]), FadeIn(in2[1:]), run_time=0.7)
         self.sync(self.end(s) - 0.6)
