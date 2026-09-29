@@ -93,11 +93,15 @@ out with its reason and a proposal. Nothing is dropped silently. Then wait for a
    then production goes on and what remains is listed in the PR (step f). Record per
    video the number of automatic iterations and critic rounds.
 3. The manager commits the script, data, storyboard, sources and the critic's memory
-   (`.claude/agent-memory/video-critic/`); then `render-runner` renders 1080p
-   (`python projects/<name>/<name>_<video>.py`), checks the size (< 100 MB) in its ffprobe
-   table, updates PROGRESS.md, commits the video in `output/` and pushes the branch. It
-   returns only the table and the commit message; on an error it returns two lines and the
-   manager fixes the cause.
+   (`.claude/agent-memory/video-critic/`); then `render-runner` renders 1080p, only
+   through `python -m explainer.final_render projects/<name>/<name>_<video>.py` (it checks
+   exit code, new git hash, 1920×1080 and duration, and prints RENDER_OK or RENDER_FAILED),
+   checks the size (< 100 MB), and only after RENDER_OK updates PROGRESS.md, commits the
+   video in `output/` and pushes the branch. It returns the RENDER_OK line, the table and
+   the commit message; on RENDER_FAILED it returns that line as printed and on another
+   error two lines, and the manager fixes the cause. Before accepting the video the manager
+   runs `git hash-object output/<name>_<video>.mp4` itself and compares it with the "after"
+   hash in the table and with the hash before the render (Delegation in `CLAUDE.md`).
 4. **Series: stop here** and present the first episode to the owner (link, duration, the QA
    rounds and their result, anything left open). The other episodes are completed only after
    the owner approves this level. This is the only stop after the narration approval,
