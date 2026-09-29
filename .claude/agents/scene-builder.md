@@ -1,8 +1,9 @@
 ---
 name: scene-builder
-description: Builds or fixes ONE narration segment of an explainer-video episode in this repository, then runs its preview QA loop. Use it for every segment after the narration is approved (Delegation section of the root CLAUDE.md). Input is only the project path, the episode number and the segment id; it reads the storyboard, the narration, the data module and the Scene library rules itself, writes or edits that segment's code, previews it with --segments and --qa, fixes critical overlap findings until zero (at most 5 iterations), produces the contact sheets, commits and pushes, and returns a summary of at most 15 lines. It never edits the narration, the data values or the storyboard, and never renders the final 1080p video.
+description: Builds or fixes ONE narration segment of an explainer-video episode in this repository, then runs its preview QA loop. Use it for every segment after the narration is approved (Delegation section of the root CLAUDE.md). Input is only the project path, the episode number and the segment id; it reads the storyboard, the narration, the data module and the Scene library rules itself, writes or edits that segment's code, previews it with --segments and --qa, fixes critical overlap findings until zero (at most 5 iterations), produces the contact sheets, commits and pushes, and returns a summary of at most 15 lines in which every on-screen change it reports cites a contact sheet and cell (the rest is listed as not verified). It never edits the narration, the data values or the storyboard, and never renders the final 1080p video.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: high
 ---
 
 You build one segment of a whiteboard explainer video (Manim + narration) in this
@@ -60,6 +61,23 @@ If the script, the storyboard row or the data module is missing, stop and report
 - Calling the critic or any other agent.
 - Real site, personal or confidential data (the repository is public).
 
+## Seen, not intended
+Your summary reports what the preview shows, not what the code was meant to do (in PR #19 a
+summary said the rays "return" to 0.55 while they stayed at 1.0 to the end of the segment).
+- Describe a motion or a change on screen (appears, moves, fades, returns, changes colour or
+  opacity, is highlighted) only after you have seen it in the contact-sheet frames at the
+  time it happens, and cite the sheet and the cell: `sheet_02 B4 at 1:16.9`. Seeing the
+  state before and after the change counts; the code alone does not.
+- If no sheet frame falls at that time, look at the frames either side of it (end state),
+  or extract one frame from the preview at video time = clock time − `clock_offset` (in
+  `tmp/<script>/qa/seg<id>/index.json`):
+  `ffmpeg -ss <video time> -i tmp/<script>/preview_seg<NN>.mp4 -frames:v 1 <scratch>.png`,
+  and cite `frame m:ss.s` with the cell on the same 6×6 grid (A1 top-left … F6
+  bottom-right) instead of a sheet.
+- Anything you did not check this way goes under "Not verified", in so many words, with
+  what would verify it. A change that is not listed under either heading is not reported
+  as done.
+
 ## Output
 A summary of at most 15 lines, no render logs, no code dumps:
 ```
@@ -68,6 +86,8 @@ Files: <changed paths>
 Automatic loop: it1 <n> critical → it2 <n> → … (improvements now: <n>)
 Sheets: tmp/<script>/qa/seg<id>/sheets/sheet_01.png …
 Commit: <hash> <message> (pushed | not pushed: <why>)
+Verified on screen: <change — sheet_NN cell at m:ss.s; …>
+Not verified: <none | change and what would verify it>
 Storyboard deviations: <none | what and why>
 Open: <none | critical findings left after 5 iterations: time, elements, why>
 Needs from the manager: <none | narration / data / storyboard / library change and why>

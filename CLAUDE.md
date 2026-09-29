@@ -54,6 +54,8 @@ Subject to the Quality standard: delegation changes who does the work, never the
 - **Parallel:** independent segments run in parallel only when they are in different scripts (episodes). Segments of the same script run one after the other: previews of one script share `tmp/<script>/render.json` and the manim output file (`explainer/pipeline.py`). Before parallel work the manager makes sure `tmp/<script>/audio/` holds every segment's audio and timings, so no two agents synthesize at once.
 - **Delegation messages carry paths, not content:** project path, episode, segment id, and the critic's fixes when there are some; never paste a file the agent can read.
 - **The manager reads summaries, not full render logs;** it opens contact sheets when needed.
+- **Final video fingerprint:** before accepting any final video, the manager runs `git hash-object output/<script>.mp4` itself and checks that it differs from the hash before the render and matches the "after" row of the RENDER_OK table (`explainer/final_render.py`); a video without that check is not accepted, whatever the agent's summary says.
+- **Motion claims need a frame:** the manager does not accept an agent's statement about a motion or change on screen unless it cites a contact sheet and grid cell (e.g. `sheet_02 B4 at 1:16.9`); a claim without one counts as not verified and is checked by the manager or sent back.
 - **Fallback:** if `scene-builder` fails twice on the same segment, the manager takes that segment over.
 - **Record:** `projects/<name>/PROGRESS.md` lists for each segment the agent that built it and its number of calls.
 - Forked copies of the session are denied (`Agent(fork)` in `.claude/settings.json`), so no delegation runs on Opus with the full context.
