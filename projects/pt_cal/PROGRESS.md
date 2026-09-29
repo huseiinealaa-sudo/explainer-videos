@@ -11,16 +11,16 @@ Timing: start 17:50:19 UTC; narration done 18:19:26; model episode 19:03 → 20:
 - ep06 `pt_cal_ep06_trim` — 3:01, 7.8 MB, critic PASS (round 2).
 - ep05 `pt_cal_ep05_verdict` — 3:45, 9.0 MB, critic PASS (round 2).
 - ep01 `pt_cal_ep01_device` — 4:21, 9.0 MB, critic PASS (round 2).
+- ep04 `pt_cal_ep04_procedure` — 4:03, 8.7 MB, critic PASS (round 2).
 
 ## Open items (owner decides after viewing)
 - Text-scene share above the ~33 % guideline: ep01 ≈ 38 %, ep05 ≈ 40 %, ep06 ≈ 40 % (critic measures). Not treated now, per the owner (2026-09-29).
 
 ## In progress
-- ep07 `pt_cal_ep07_uncertainty` — critic round 1 = FIX (4 important: seg 6 E+U arrow in the doubt zone; guard band never narrowed / zones unnamed; seg 4 conversions only listed; seg 5 bars unnamed). Fixing.
-- ep04 `pt_cal_ep04_procedure` — critic round 1 = FIX (3 important: seg 2 hysteresis not drawn; seg 5 stability/delay text only; seg 6 fixes not animated). Fixing.
-- ep03 `pt_cal_ep03_setup` — critic round 1 interrupted by the usage limit; re-run.
+- ep07 `pt_cal_ep07_uncertainty` — critic round 2 = FIX (1 important: k = 2 line invisible) → fixed; next: full QA, critic round 3, 1080p.
+- ep03 `pt_cal_ep03_setup` — critic round 1 = FIX (5 critical, 6 important) → fixed; full QA it8 = 0 critical; next: critic round 2.
 - Series script written: `pt_cal_full_series.py` (run after all 7 are rendered).
 - Usage-limit pause: 2026-09-28 23:59 → 2026-09-29 16:30 UTC (excluded from times).
 
 ## Next step
-- ep03 critic round 1 (re-run); fix ep07 and ep04 findings → critic round 2 → 1080p; then series file, PR, privacy grep.
+- ep03 critic round 2; ep07 full QA + critic round 3; 1080p for both; series file; PR; privacy grep.
