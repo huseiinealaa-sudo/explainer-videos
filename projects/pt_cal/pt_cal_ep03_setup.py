@@ -136,7 +136,7 @@ class Manifold:
         h, l = self.pressures()
         return VGroup(tag(f"HP side {fmt(h, 0)} bar", FS_TAG, FLUID if h else GREY_INK),
                       tag(f"LP side {fmt(l, 0)} bar", FS_TAG, FLUID if l else GREY_INK)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.1).next_to(self.cell, LEFT, buff=0.2)
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.1).next_to(self.cell, DOWN, buff=0.3).align_to(self.cell, LEFT)
 
     def static(self):
         return VGroup(self.lines, self.cell, self.process, self.names)
@@ -177,11 +177,14 @@ class PtCalEp03(SyncedScene):
                  tag("vented: reads\natmospheric\n→ BARO or\nabsolute ref.", FS_TAG - 1),
                  tag("most fragile", FS_TAG - 1, BAD),
                  tag("fixed zero offset\nthat venting\ndoes not remove", FS_TAG - 1)]
+        refs = VGroup(*[tag(r, FS_TAG - 6, GREY_INK).move_to(c.box.get_corner(DR) + LEFT * 0.08 + UP * 0.1,
+                                                               aligned_edge=DR)
+                        for r, c in zip(["atm", "vac", "LP", "seal"], cells)])
         for n_, c in zip(notes, cells):
             n_.next_to(c.box, DOWN, buff=0.35)
         for k, ((n, kind, ph), c) in enumerate(zip(kinds, cells)):
             self.sync(self.c(1, ph))
-            self.play(Create(c[:2]), FadeIn(c[2:]), FadeIn(c.dia), FadeIn(names[k]), run_time=0.6)
+            self.play(Create(c[:2]), FadeIn(c[2:]), FadeIn(c.dia), FadeIn(names[k]), FadeIn(refs[k]), run_time=0.6)
             push = Arrow(c.box.get_left() + LEFT * 0.75, c.box.get_left() + LEFT * 0.05, buff=0, stroke_width=5,
                          color=FLUID, max_tip_length_to_length_ratio=0.35).shift(DOWN * 0.45)
             self.play(GrowArrow(push), c.bow.animate.set_value(0.35), run_time=0.6)
@@ -190,7 +193,7 @@ class PtCalEp03(SyncedScene):
                              color=FLUID, max_tip_length_to_length_ratio=0.35).shift(DOWN * 0.45)
                 self.play(GrowArrow(back), c.bow.animate.set_value(0.15), run_time=0.5)
                 self.play(FadeOut(back), run_time=0.2)
-            self.play(FadeOut(push), c.bow.animate.set_value(0.0 if kind != "sealed" else 0.08),
+            self.play(FadeOut(push), c.bow.animate.set_value({"sealed": 0.08, "absolute": 0.35}.get(kind, 0.0)),
                       FadeIn(notes[k]), run_time=0.6)
             if kind == "gauge":
                 self.sync(self.c(1, "رِيحٍ"))
@@ -219,7 +222,8 @@ class PtCalEp03(SyncedScene):
         ch = Chart(0.2, -2.8, 5.6, 4.6, (0, 100), (4, 20), xticks=[(0, "0"), (50, "50 %"), (100, "100")],
                    yticks=[(4, "4"), (12, "12"), (20, "20")], xlabel="DP", ylabel="mA")
         lin = ch.line([(0, 4), (100, 20)], GREY_INK, 3)
-        sq = ch.line([(p, s) for p, _, s in D.SQRT_TABLE], MOVE, 4, smooth=True)
+        sq = ch.line([(p, D.i_sqrt(D.LRV + p / 100 * D.SPAN)) for p in [q / 4 for q in range(0, 81)] + list(range(21, 101))],
+                     MOVE, 4)
         self.play(Create(ch.axes), FadeIn(ch.ticks), FadeIn(ch.xl), FadeIn(ch.yl), Create(lin), run_time=0.6)
         self.play(Create(sq), run_time=0.8)
         self.sync(self.c(2, "فَنِصْفُ"))
@@ -272,16 +276,16 @@ class PtCalEp03(SyncedScene):
         mc = device("MC6 mA", 1.4, 0.55, FS_TAG).move_to([xc + 0.7, -0.15, 0])
         par = VGroup(pipe([xc + 0.15, 0.95, 0], [xc + 0.15, 0.13, 0], width=2),
                      pipe([xc + 1.25, 0.95, 0], [xc + 1.25, 0.13, 0], width=2))
-        self.play(Create(fa), FadeIn(ta), FadeIn(xa_t), FadeIn(ma), Create(la), Create(la2), run_time=0.8)
+        self.play(Create(fa), FadeIn(ta), FadeIn(xa_t), FadeIn(tag(D.TAG, FS_TAG - 2, FLUID).next_to(xa_t, UP, buff=0.08)), FadeIn(ma), Create(la), Create(la2), run_time=0.8)
         self.play(flow(la2, MOVE, 5), flow(la, MOVE, 5), FadeIn(ha), run_time=1.0)
         self.sync(self.c(3, "الثَّانِيَةُ"))
-        self.play(Create(fb), FadeIn(tb), FadeIn(xb_t), FadeIn(dcs), FadeIn(mb), Create(lb), Create(lb2), Create(lb3),
+        self.play(Create(fb), FadeIn(tb), FadeIn(xb_t), FadeIn(tag(D.TAG, FS_TAG - 2, FLUID).next_to(xb_t, UP, buff=0.08)), FadeIn(dcs), FadeIn(mb), Create(lb), Create(lb2), Create(lb3),
                   run_time=0.8)
         live = tag("control active", FS_TAG, BAD).move_to([xb, 2.05, 0]).shift(DOWN * 0.05)
         self.sync(self.c(3, "وَالتَّحَكُّمُ فَعَّالٌ"))
         self.play(FadeIn(live), flow(lb2, FLUID, 5), run_time=0.8)
         self.sync(self.c(3, "الثَّالِثَةُ"))
-        self.play(Create(fc), FadeIn(tc), FadeIn(xc_t), FadeIn(diode), Create(dl), Create(dl2), run_time=0.8)
+        self.play(Create(fc), FadeIn(tc), FadeIn(xc_t), FadeIn(tag(D.TAG, FS_TAG - 2, FLUID).next_to(xc_t, UP, buff=0.08)), FadeIn(diode), Create(dl), Create(dl2), run_time=0.8)
         self.play(FadeIn(mc), Create(par), run_time=0.6)
         self.sync(self.c(3, "لٰكِنَّ تَسَرُّبَ"))
         heat = VGroup(icon("temperature", BAD, 0.4), tag("hot: diode leakage\n→ reading shifts", FS_TAG, BAD)) \
@@ -289,18 +293,26 @@ class PtCalEp03(SyncedScene):
         self.play(FadeIn(heat), run_time=0.6)
         # HART: 250 Ω, not a second one; modem in parallel
         self.sync(self.c(3, "وَهَارْت يَحْتَاجُ"))
-        res = VGroup(Rectangle(width=1.1, height=0.4, color=MOVE, stroke_width=3),
-                     tag(f"≥ {D.MC6_HART_R_EXT} Ω loop resistance", FS_TAG + 2, MOVE)).arrange(RIGHT, buff=0.3)
-        res.move_to([-3.2, -2.35, 0])
-        self.play(FadeIn(res), run_time=0.6)
+        yw, xr = -2.2, -3.2
+        wire = VGroup(Line([-6.2, yw, 0], [xr - 0.55, yw, 0], stroke_width=3, color=INK),
+                      Line([xr + 0.55, yw, 0], [-0.4, yw, 0], stroke_width=3, color=INK))
+        rbox = Rectangle(width=1.1, height=0.36, color=MOVE, stroke_width=3).set_fill(WHITE, 1).move_to([xr, yw, 0])
+        wl = tag("loop", FS_TAG - 2, GREY_INK).next_to(wire[0], UP, buff=0.08).align_to(wire[0], LEFT)
+        rl = tag(f"≥ {D.MC6_HART_R_EXT} Ω loop resistance", FS_TAG + 1, MOVE).next_to(rbox, UP, buff=0.15)
+        self.play(Create(wire), FadeIn(rbox), FadeIn(wl), FadeIn(rl), run_time=0.6)
         self.sync(self.c(3, "فَلَا تُضِفْ"))
-        one = tag("often already in the DCS input: do not add a second", FS_TAG + 1, GREY_INK) \
-            .next_to(res, DOWN, buff=0.2).align_to(res, LEFT)
-        self.play(FadeIn(one), run_time=0.5)
+        one = tag("often already in the DCS input:\ndo not add a second", FS_TAG + 1, GREY_INK) \
+            .next_to(wire[1], RIGHT, buff=0.3)
+        self.play(Indicate(rbox, color=MOVE), FadeIn(one), run_time=0.6)
         self.sync(self.c(3, "وَالمُودِمُ"))
-        modem = VGroup(tag("HART modem:", FS_TAG + 2), tag("in parallel ✓", FS_TAG + 2, GOOD),
-                       tag("in series ✗", FS_TAG + 2, BAD)).arrange(RIGHT, buff=0.35).move_to([3.4, -2.35, 0])
-        self.play(FadeIn(modem, lag_ratio=0.3), run_time=0.8)
+        mdm = device("HART modem", 1.9, 0.45, FS_TAG - 2).move_to([xr, yw - 0.95, 0])
+        mdm.box.set_stroke(GOOD)
+        leads = VGroup(pipe([xr - 0.55, yw, 0], [xr - 0.55, mdm.box.get_top()[1], 0], color=GOOD, width=3),
+                       pipe([xr + 0.55, yw, 0], [xr + 0.55, mdm.box.get_top()[1], 0], color=GOOD, width=3))
+        pl = tag("in parallel ✓", FS_TAG + 1, GOOD).next_to(mdm, LEFT, buff=0.3)
+        sl = tag("never in series ✗", FS_TAG + 1, BAD).next_to(one, DOWN, buff=0.2).align_to(one, LEFT)
+        self.play(Create(leads), FadeIn(mdm), FadeIn(pl), run_time=0.7)
+        self.play(FadeIn(sl), run_time=0.4)
         self.sync(self.end(3) - 0.6)
         self.clear(self.sec)
 
@@ -364,12 +376,17 @@ class PtCalEp03(SyncedScene):
         self.play(FadeIn(lst[4]), lst[4].animate.set_color(GOOD), run_time=0.5)
         # the late mistake: equalize left open
         self.sync(self.c(5, "وَالخَطَأُ المُتَأَخِّرُ"))
-        self.play(mf.eq.animate.set_value(1), run_time=0.6)
-        rd = tag("DP reading: 0 — whatever the flow", FS_TAG + 2, BAD, weight=BOLD).next_to(lst, DOWN, buff=0.5) \
+        ring = Circle(radius=0.29, color=BAD, stroke_width=5).move_to([mf.ox, 0.4, 0])
+        self.play(mf.eq.animate.set_value(1), Create(ring), lst[2].animate.set_color(BAD),
+                  mf.names[2].animate.set_color(BAD), run_time=0.6)
+        rd = tag("DP reading: 0\nwhatever the flow", FS_TAG + 2, BAD, weight=BOLD).next_to(lst, DOWN, buff=0.5) \
             .align_to(lst, LEFT)
         arrows = VGroup(*[Arrow([mf.xh - 0.6, 2.4 - 0.5 * k, 0], [mf.xh - 0.1, 2.4 - 0.5 * k, 0], buff=0,
                                 stroke_width=4, color=FLUID, max_tip_length_to_length_ratio=0.3) for k in range(2)])
         self.play(FadeIn(rd), FadeIn(arrows, lag_ratio=0.5), run_time=0.8)
+        for f in (1.8, 0.5):
+            self.play(arrows.animate.stretch(f, 0, about_edge=RIGHT), Indicate(rd, color=BAD, scale_factor=1.05),
+                      run_time=0.8)
         self.play(Indicate(mf.dia, color=BAD), run_time=0.7)
         self.sync(self.end(5) - 0.6)
         self.clear(self.sec)
@@ -395,10 +412,17 @@ class PtCalEp03(SyncedScene):
         self.play(*[g.animate.move_to([3.0 + 0.25 * k, -2.7 + 0.12 * (k % 2), 0]) for k, g in enumerate(gas)],
                   run_time=1.6)
         self.sync(self.c(6, "وَيَشُلُّ"))
-        smell = tag("smell disappears at high concentration:\nno smell ≠ safe", FS_TAG + 1, BAD) \
+        smell = tag("smell disappears at\nhigh concentration:\nno smell ≠ safe", FS_TAG + 1, BAD) \
             .next_to(hl, DOWN, buff=0.3).align_to(hl, LEFT)
         self.play(FadeIn(smell), run_time=0.6)
         self.sync(self.c(6, "وَالمَشْعَبُ"))
+        vv = gate_valve(size=0.45).rotate(PI / 2).move_to([3.6, -1.2, 0])
+        vvl = tag("open vent", FS_TAG - 2, GREY_INK).next_to(vv, LEFT, buff=0.15)
+        plume = VGroup(*[Circle(radius=0.1, color=GREY_INK, stroke_width=2).set_fill(GREY_INK, 0.4)
+                         .move_to(vv.get_top()) for _ in range(4)])
+        self.play(FadeIn(vv), FadeIn(vvl), FadeIn(plume), run_time=0.4)
+        self.play(*[m.animate.move_to([3.2 - 0.45 * i, -0.75 + 0.1 * (i % 2), 0]).set_opacity(0.15)
+                    for i, m in enumerate(plume)], run_time=1.0)
         person = icon("user", INK, 0.8).move_to([5.8, -1.45, 0])
         wind = Arrow([6.8, -0.55, 0], [5.3, -0.55, 0], buff=0, stroke_width=4, color=FLUID,
                      max_tip_length_to_length_ratio=0.2)
@@ -447,11 +471,13 @@ class PtCalEp03(SyncedScene):
                   run_time=0.6)
         self.sync(self.c(7, "فَصِمَامٌ وَاحِدٌ"))
         one = tag("one valve is not isolation", FS_TAG + 1, BAD).next_to(dbb, DOWN, buff=0.2).align_to(dbb, LEFT)
-        self.play(FadeIn(one), run_time=0.4)
+        x1 = cross(v1, BAD, 4, pad=0.08)
+        self.play(FadeIn(one), v2.animate.set_opacity(0.2), bleed.animate.set_opacity(0.2), Create(x1), run_time=0.5)
+        self.play(v2.animate.set_opacity(1), bleed.animate.set_opacity(1), FadeOut(x1), run_time=0.4)
         self.sync(self.c(7, "وَضَعْ قُفْلًا"))
         lock = VGroup(icon("lock", MOVE, 0.5), tag("lock + tag with your name", FS_TAG + 1, MOVE)) \
             .arrange(RIGHT, buff=0.12).move_to([0, -0.05, 0]).align_to([0.0, 0, 0], LEFT)
-        self.play(FadeIn(lock), run_time=0.5)
+        self.play(FadeIn(lock), FadeIn(icon("lock", MOVE, 0.32).next_to(v1, UP, buff=0.04)), run_time=0.5)
         self.sync(self.c(7, "وَافْتَرِضْ"))
         trapped = tag("assume trapped pressure\nuntil proven otherwise", FS_TAG, BAD).next_to(lock, DOWN, buff=0.12) \
             .align_to(lock, LEFT)
@@ -508,7 +534,7 @@ class PtCalEp03(SyncedScene):
         mid = Rectangle(width=a.get_right()[0] - b.get_left()[0], height=0.2, stroke_width=0)
         mid = Rectangle(width=b.get_left()[0] - a.get_right()[0], height=0.2, stroke_width=0) \
             .set_fill(BAD, 0.6).move_to([(a.get_right()[0] + b.get_left()[0]) / 2, -2.2, 0])
-        tp = tag("trapped pressure between two closed valves", FS_TAG + 1, BAD).next_to(VGroup(a, b), DOWN, buff=0.25)
+        tp = tag("trapped pressure between two closed valves", FS_TAG + 1, BAD).next_to(VGroup(a, b), UP, buff=0.25)
         self.play(FadeIn(a), FadeIn(b), GrowFromCenter(mid), FadeIn(tp), run_time=0.8)
         self.sync(self.end(8) + 1.0)
 

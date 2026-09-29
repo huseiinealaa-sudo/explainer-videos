@@ -150,6 +150,7 @@ class PtCalEp07(SyncedScene):
         minl = tag(f"industrial minimum {D.TUR_MIN} : 1", FS_TAG + 2, INK, weight=BOLD).move_to([0, -1.9, 0])
         self.sync(self.c(3, "وَالحَدُّ الأَدْنَى"))
         self.play(FadeIn(bars[2]), FadeIn(ticks), FadeIn(minl), run_time=0.6)
+        self.play(Indicate(ticks[2], color=INK, scale_factor=1.6), run_time=0.5)
         order = [3, 2, 1, 0]
         cues = ["عَشَرَةٌ فَأَكْثَرُ", "وَمِنْ أَرْبَعَةٍ", "وَمِنِ اثْنَيْنِ", "وَأَقَلُّ"]
         for k, ph in zip(order, cues):
@@ -183,7 +184,7 @@ class PtCalEp07(SyncedScene):
                       tag("U = k · u_c,  k = 2  (about 95 %)", FS_TAG + 2, MOVE, weight=BOLD)) \
             .arrange(DOWN, aligned_edge=LEFT, buff=0.22).move_to([3.0, -0.3, 0]).align_to([-0.8, 0, 0], LEFT)
         self.play(FadeIn(conv[0]), run_time=0.3)
-        div = {0: "÷√3", 1: "÷√3", 4: "÷√3", 5: "÷√3", 2: "÷2√3", 3: "= s", 6: "in row 1"}
+        div = {0: "÷√3", 1: "÷√3", 4: "÷√3", 5: "÷√3", 2: "÷2√3", 3: "= s", 6: "in module spec"}
         divs = VGroup(*[tag(div[k], FS_TAG - 2, FLUID).next_to(chips[k], RIGHT, buff=0.1) for k in range(7)])
         groups = {"المُوَاصَفَةُ": [0, 1, 4, 5, 6], "وَتَمْيِيزُ الشَّاشَةِ عَلَى": [2], "وَالتَّكْرَارِيَّةُ هِيَ": [3]}
         for k, ph in zip(range(1, 4), groups):
@@ -199,7 +200,8 @@ class PtCalEp07(SyncedScene):
                   run_time=0.9)
         self.remove(sq)
         self.sync(self.c(4, "وَتُضْرَبُ"))
-        self.play(FadeIn(conv[5], shift=RIGHT * 0.1), Indicate(conv[5], color=MOVE), run_time=0.6)
+        self.play(FadeIn(conv[5], shift=RIGHT * 0.1), run_time=0.4)
+        self.play(Indicate(conv[5], color=MOVE), run_time=0.5)
         self.sync(self.end(4) - 0.6)
         self.clear(self.sec)
 
@@ -293,7 +295,7 @@ class PtCalEp07(SyncedScene):
         rules = VGroup(tag("PASS if |E| + U ≤ tolerance", FS_TAG + 2, GOOD),
                        tag("FAIL if |E| − U > tolerance", FS_TAG + 2, BAD),
                        tag("between: zone of doubt → documented engineering decision", FS_TAG + 2, GREY_INK)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([0, 2.5, 0])
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([0, 2.3, 0])
         zt = [tag(t, FS_TAG, c, weight=BOLD).move_to(z).align_to(z, UP).shift(DOWN * 0.08)
               for t, c, z in (("PASS", GOOD, z_pass), ("FAIL", BAD, z_fail), ("doubt", GREY_INK, z_doubt))]
         zt[2].align_to(z_doubt, LEFT).shift(RIGHT * 0.12)

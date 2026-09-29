@@ -16,7 +16,7 @@ from `gate_valve` symbols joined by `connect(kind="process")`. Colours: ACCENT_1
 | 7 | Zones; process isolation (DBB, LOTO); loop isolation; SIS | zone map (0 / 1 / 2 nested outlines); double block and bleed: two valves + bleed; lock + tag; control-room link (loop to MANUAL, bypass, sign); SIS box with a higher-authority key | zones fill at their words; DBB: two valves close, bleed opens; lock snaps; the loop switch goes AUTO → MAN; SIS bypass needs a second key | — | custom drawing | 0:45 |
 | 8 | Pressure hazards during calibration | person beside (not in front of) the connection; hose loop tied down; injection-jet warning; two closed valves with trapped pressure | red jet from a pin-hole with a hand crossed out; hose whip arc stopped by a tie; trapped section glows red until a vent opens | — | custom drawing + icons | 0:30 |
 
-Text-scene share: checklist part of seg 6 ≈ 15 s / ≈ 300 s ≈ **5 %**. Custom drawings: **8**. Worked examples: **1** (15.314 mA).
+Text-scene share: ≈ **22–25 %** (critic round 1 measure). Custom drawings: **8**. Worked examples: **1** (15.314 mA).
 Left out: nothing. Correction applied: the manifold sequence follows the reference manual (see conflicts).
 
 ## Narration (fully diacritized)
