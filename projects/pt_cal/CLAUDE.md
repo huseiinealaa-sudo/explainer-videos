@@ -55,7 +55,7 @@ the root `CLAUDE.md` also apply, and where they differ this file wins for this p
 | 4 | `pt_cal_ep04_procedure` | ten steps, approach rule, pressure decay | rendered 1080p (4:03, 8.7 MB), critic PASS round 2 |
 | 5 | `pt_cal_ep05_verdict` | calculation, verdict, certificate, interval | rendered 1080p (3:45, 9.0 MB), critic PASS round 2 |
 | 6 | `pt_cal_ep06_trim` | four operations, trims and their order, when to trim, error patterns | rendered 1080p (3:01, 7.8 MB), critic PASS round 2 |
-| 7 | `pt_cal_ep07_uncertainty` | error vs uncertainty, budget, TUR, guard band | narration approved |
+| 7 | `pt_cal_ep07_uncertainty` | error vs uncertainty, budget, TUR, guard band | rendered 1080p (4:35, 11.0 MB), critic PASS round 3 |
 | — | `pt_cal_full_series` | the seven episodes joined with title cards | after approval |
 
 Storyboards: `storyboard/pt_cal_ep0N_<name>.md` (with the narration).
