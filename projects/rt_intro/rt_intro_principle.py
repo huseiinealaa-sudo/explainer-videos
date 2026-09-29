@@ -478,7 +478,7 @@ class RtIntroPrinciple(SyncedScene):
         l_x = label("X-rays", FS_NOTE, RAY_C).move_to([-2.62, -1.75, 0])
         self.play(FadeIn(l_x), run_time=0.4)
         self.sync(self.c(s, "البُقْعَةُ") - 0.2)
-        fs = callout("Focal spot", spot.get_center(), [-1.0, 0.25, 0], SRC_C, FS_NOTE)
+        fs = callout("Focal\nspot", spot.get_center(), [-1.2, 0.05, 0], SRC_C, FS_NOTE)
         self.play(spot.animate.scale(1.4), FadeIn(fs[0]), GrowArrow(fs[1]), run_time=0.7)
 
         # power switch: ON, then OFF → the beam stops
@@ -563,7 +563,7 @@ class RtIntroPrinciple(SyncedScene):
 
         def inset(center, obj):
             ring = Circle(radius=0.55, color=SRC_C, stroke_width=3).set_fill(WHITE, 1).move_to(center)
-            obj.move_to(ring.get_center() + DOWN * 0.12)
+            obj.move_to(ring.get_center() + DOWN * 0.2)
             arr = DoubleArrow(obj.get_left() + UP * 0.25, obj.get_right() + UP * 0.25, buff=0,
                               stroke_width=3, color=SRC_C, tip_length=0.12,
                               max_tip_length_to_length_ratio=0.3)
