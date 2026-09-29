@@ -569,8 +569,8 @@ class RtIntroPrinciple(SyncedScene):
         big_cap = RoundedRectangle(width=0.62, height=0.22, corner_radius=0.08, color=SRC_C,
                                    stroke_width=2).set_fill(SRC_C, 1)
         in1, in2 = inset([-1.0, -2.45, 0], big_spot), inset([3.2, -2.5, 0], big_cap)
-        lk1 = DashedLine(spot.get_center(), in1[0].get_top(), color=SRC_C, stroke_width=2)
-        lk2 = DashedLine(cap.get_center(), in2[0].get_top(), color=SRC_C, stroke_width=2)
+        lk1 = DashedLine(spot.get_center(), in1[0].point_at_angle(PI * 0.72), color=SRC_C, stroke_width=2)
+        lk2 = DashedLine(cap.get_center(), in2[0].point_at_angle(PI * 0.28), color=SRC_C, stroke_width=2)
         self.play(Create(lk1), Create(lk2), FadeIn(in1[0]), FadeIn(in2[0]), run_time=0.6)
         self.play(FadeIn(in1[1:]), FadeIn(in2[1:]), run_time=0.7)
         self.sync(self.end(s) - 0.6)
