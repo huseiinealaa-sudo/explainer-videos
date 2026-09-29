@@ -235,7 +235,7 @@ class PtCalEp03(SyncedScene):
         self.sync(self.c(2, "بَلْ"))
         t2 = tag(f"{fmt(D.DP_50_SQRT_MA, 3)} mA", FS_TAG + 2, MOVE, weight=BOLD).next_to(d2, UL, buff=0.1)
         wk = tag(f"4 + 16 × √0.5 = {fmt(D.DP_50_SQRT_MA, 3)} mA", FS_TAG + 1, MOVE) \
-            .next_to(ch.axes, UP, buff=0.55).align_to(ch.axes, LEFT)
+            .next_to(ch.axes, UP, buff=0.55).align_to(ch.axes, LEFT).shift(RIGHT * 0.7)
         self.play(FadeIn(d2, scale=1.5), FadeIn(t2), FadeIn(wk), run_time=0.6)
         self.sync(self.end(2) - 0.5)
         self.clear(self.sec, run_time=0.5)
@@ -460,12 +460,12 @@ class PtCalEp03(SyncedScene):
             self.sync(self.c(7, ph))
             self.play(Create(z), FadeIn(l), run_time=0.6)
         self.sync(self.c(7, "وَالهَاتِفُ"))
-        ph_note = tag("phone and camera: same restriction", FS_TAG, BAD).next_to(labels[2], DOWN, buff=0.1)
+        ph_note = tag("phone and camera: same restriction", FS_TAG, BAD).next_to(labels[2], DOWN, buff=0.1).align_to(labels[2], LEFT)
         self.play(FadeIn(ph_note), run_time=0.5)
         # process isolation: double block and bleed, lock and tag
         self.sync(self.c(7, "وَلِعَزْلِ العَمَلِيَّةِ"))
         sds = VGroup(icon("file-text", INK, 0.45), tag("process fluid from the safety data sheet", FS_TAG + 1)) \
-            .arrange(RIGHT, buff=0.15).move_to([2.8, 2.5, 0]).align_to([0.0, 0, 0], LEFT)
+            .arrange(RIGHT, buff=0.15).move_to([2.8, 2.5, 0]).align_to([-0.15, 0, 0], LEFT)
         self.play(FadeIn(sds), run_time=0.5)
         self.sync(self.c(7, "وَاعْزِلْ"))
         v1 = gate_valve(size=0.6).move_to([-0.3, 1.5, 0])
@@ -504,7 +504,7 @@ class PtCalEp03(SyncedScene):
         byp = tag("alarm bypass: approved, documented", FS_TAG + 1, GREY_INK).next_to(cr, DOWN, buff=0.2).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(byp), run_time=0.4)
         self.sync(self.c(7, "وَمُرْسِلُ نِظَامِ"))
-        sis = VGroup(icon("shield-check", BAD, 0.45), tag("SIS: special procedure, higher authority", FS_TAG + 1, BAD)) \
+        sis = VGroup(icon("shield-check", BAD, 0.45), tag("SIS: special procedure,\nhigher authority", FS_TAG + 1, BAD)) \
             .arrange(RIGHT, buff=0.12).next_to(byp, DOWN, buff=0.2).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(sis), run_time=0.5)
         self.sync(self.end(7) - 0.6)
@@ -536,7 +536,7 @@ class PtCalEp03(SyncedScene):
                        for a in (-0.15, 0, 0.15)])
         hand = VGroup(icon("alert-triangle", BAD, 0.5), tag("fine liquid jet can enter the skin:\n"
                                                            "never feel for a leak by hand", FS_TAG + 1, BAD)) \
-            .arrange(RIGHT, buff=0.15).move_to([3.9, -0.3, 0])
+            .arrange(RIGHT, buff=0.15).move_to([3.75, -0.3, 0])
         self.play(FadeIn(pin), Create(jet), FadeIn(hand), run_time=0.8)
         self.sync(self.c(8, "وَاحْذَرِ"))
         a = gate_valve(size=0.55).move_to([1.0, -2.2, 0]).set_fill(INK, 1)
