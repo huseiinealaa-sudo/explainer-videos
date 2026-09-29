@@ -14,13 +14,13 @@ Timing: start 17:50:19 UTC; narration done 18:19:26; model episode 19:03 → 20:
 - ep04 `pt_cal_ep04_procedure` — 4:03, 9.0 MB, critic PASS (round 2).
 - ep07 `pt_cal_ep07_uncertainty` — 4:35, 10.5 MB, critic PASS (round 3).
 - ep03 `pt_cal_ep03_setup` — 4:39, 11.1 MB, critic PASS (round 3).
+- Series `pt_cal_full_series` — 30:13, 70.1 MB (7 episodes + 6 title cards, stream copy).
 
 ## Open items (owner decides after viewing)
 - Text-scene share above the ~33 % guideline: ep01 ≈ 38 %, ep05 ≈ 40 %, ep06 ≈ 40 % (critic measures). Not treated now, per the owner (2026-09-29).
 
 ## In progress
-- Full series file `pt_cal_full_series.py` → `output/pt_cal_full_series.mp4`.
 - Usage-limit pause: 2026-09-28 23:59 → 2026-09-29 16:30 UTC (excluded from times).
 
 ## Next step
-- Series file; one PR; privacy grep (607458 / FQ-314 / 314-PT) and `git diff origin/main...HEAD --stat`.
+- One PR; privacy grep (607458 / FQ-314 / 314-PT) and `git diff origin/main...HEAD --stat`.
