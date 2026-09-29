@@ -52,10 +52,10 @@ the root `CLAUDE.md` also apply, and where they differ this file wins for this p
 | 1 | `pt_cal_ep01_device` | the MC6, electrical side, pressure modules, modes | rendered 1080p (4:21, 9.0 MB), critic PASS round 2 |
 | 2 | `pt_cal_ep02_pressure` | generating pressure; hydraulic hand pump (model episode) | rendered 1080p (5:30), critic PASS round 3; level approved by the owner |
 | 3 | `pt_cal_ep03_setup` | transmitter types, connections, 3-valve manifold, safety | narration approved |
-| 4 | `pt_cal_ep04_procedure` | ten steps, approach rule, pressure decay | rendered 1080p (4:03, 8.7 MB), critic PASS round 2 |
-| 5 | `pt_cal_ep05_verdict` | calculation, verdict, certificate, interval | rendered 1080p (3:45, 9.0 MB), critic PASS round 2 |
-| 6 | `pt_cal_ep06_trim` | four operations, trims and their order, when to trim, error patterns | rendered 1080p (3:01, 7.8 MB), critic PASS round 2 |
-| 7 | `pt_cal_ep07_uncertainty` | error vs uncertainty, budget, TUR, guard band | rendered 1080p (4:35, 11.0 MB), critic PASS round 3 |
+| 4 | `pt_cal_ep04_procedure` | ten steps, approach rule, pressure decay | rendered 1080p (4:03, 9.0 MB), critic PASS round 2 |
+| 5 | `pt_cal_ep05_verdict` | calculation, verdict, certificate, interval | rendered 1080p (3:45, 9.4 MB), critic PASS round 2 |
+| 6 | `pt_cal_ep06_trim` | four operations, trims and their order, when to trim, error patterns | rendered 1080p (3:01, 8.1 MB), critic PASS round 2 |
+| 7 | `pt_cal_ep07_uncertainty` | error vs uncertainty, budget, TUR, guard band | rendered 1080p (4:35, 10.5 MB), critic PASS round 3 |
 | — | `pt_cal_full_series` | the seven episodes joined with title cards | after approval |
 
 Storyboards: `storyboard/pt_cal_ep0N_<name>.md` (with the narration).

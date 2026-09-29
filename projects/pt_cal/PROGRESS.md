@@ -8,11 +8,11 @@ Timing: start 17:50:19 UTC; narration done 18:19:26; model episode 19:03 → 20:
 
 ## Done
 - ep02 `pt_cal_ep02_pressure` — 5:30, 12.2 MB, critic PASS (round 3), owner approved the level.
-- ep06 `pt_cal_ep06_trim` — 3:01, 7.8 MB, critic PASS (round 2).
-- ep05 `pt_cal_ep05_verdict` — 3:45, 9.0 MB, critic PASS (round 2).
+- ep06 `pt_cal_ep06_trim` — 3:01, 8.1 MB, critic PASS (round 2).
+- ep05 `pt_cal_ep05_verdict` — 3:45, 9.4 MB, critic PASS (round 2).
 - ep01 `pt_cal_ep01_device` — 4:21, 9.0 MB, critic PASS (round 2).
-- ep04 `pt_cal_ep04_procedure` — 4:03, 8.7 MB, critic PASS (round 2).
-- ep07 `pt_cal_ep07_uncertainty` — 4:35, 11.0 MB, critic PASS (round 3).
+- ep04 `pt_cal_ep04_procedure` — 4:03, 9.0 MB, critic PASS (round 2).
+- ep07 `pt_cal_ep07_uncertainty` — 4:35, 10.5 MB, critic PASS (round 3).
 
 ## Open items (owner decides after viewing)
 - Text-scene share above the ~33 % guideline: ep01 ≈ 38 %, ep05 ≈ 40 %, ep06 ≈ 40 % (critic measures). Not treated now, per the owner (2026-09-29).
