@@ -280,7 +280,8 @@ class PtCalEp07(SyncedScene):
         z_fail = Rectangle(width=X(0.7) - X(D.TOL_PCT + D.U_EXP_PCT), height=0.9, stroke_width=0) \
             .set_fill(BAD, 0.25).move_to([(X(D.TOL_PCT + D.U_EXP_PCT) + X(0.7)) / 2, 0.35, 0])
         tol = DashedLine([X(D.TOL_PCT), -0.3, 0], [X(D.TOL_PCT), 1.35, 0], color=BAD, stroke_width=4)
-        self.play(Create(ax), Create(tol), run_time=0.6)
+        toll = tag(f"tolerance {fmt(D.TOL_PCT, 2)} %", FS_TAG, BAD).next_to(tol.get_top(), RIGHT, buff=0.12)
+        self.play(Create(ax), Create(tol), FadeIn(toll), run_time=0.6)
         # the guard band narrows the acceptance limit by U
         ya = -1.35
         end = ValueTracker(D.TOL_PCT)
