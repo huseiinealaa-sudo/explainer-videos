@@ -406,9 +406,10 @@ class RtIntroPrinciple(SyncedScene):
         self.sync(self.c(s, "فَالفَرْقُ"))
         outs = VGroup(*[b[1] for b in base], vout, wout)
         # pointer: the transmitted rays go to full opacity and back, the film cells flash
-        self.play(outs.animate.set_stroke(opacity=1.0).set_rate_func(there_and_back),
+        self.play(outs.animate.set_stroke(opacity=1.0),
                   Indicate(VGroup(cell["void"], cell["w"]), color=RAY_C, scale_factor=1.15),
-                  run_time=1.2)
+                  run_time=0.6)
+        self.play(outs.animate.set_stroke(opacity=0.55), run_time=0.6)
         self.sync(self.c(s, "وَالصُّورَةُ") - 0.2)
         frame = emphasize(self, film, color=RAY_C, buff=0.1)
         self.say("Radiograph = map of thickness and density")
