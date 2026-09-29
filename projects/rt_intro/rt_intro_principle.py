@@ -340,7 +340,7 @@ class RtIntroPrinciple(SyncedScene):
         film_frame = Rectangle(width=X1 - X0, height=FH, stroke_width=2, color=INK)
         film_frame.move_to([(X0 + X1) / 2, FT - FH / 2, 0])
         film = VGroup(*cell.values(), film_frame)
-        film_l = label("Film", FS_NOTE).next_to(film_frame, DOWN, 0.15).align_to(film_frame, LEFT)
+        film_l = label("Film", FS_NOTE).next_to(film_frame, DOWN, 0.3).align_to(film_frame, LEFT)
         self.play(FadeOut(gone), Create(plate), FadeIn(film), FadeIn(film_l), run_time=1.0)
 
         def beam(x, t_metal, extra=0.0):
@@ -385,7 +385,7 @@ class RtIntroPrinciple(SyncedScene):
         self.sync(self.c(s, "فَيَصِلُ"))
         self.play(Create(vout), run_time=0.8)
         self.sync(self.c(s, "أَغْمَقَ") - 0.2)
-        dark_l = label("darker", FS_LABEL, weight=BOLD).next_to(cell["void"], DOWN, 0.15)
+        dark_l = label("darker", FS_LABEL, weight=BOLD).next_to(cell["void"], DOWN, 0.3)
         self.play(cell["void"].animate.set_fill(grey(1.5 * vi), 1), FadeIn(dark_l), run_time=0.8)
 
         # the denser inclusion: more absorbed, lighter film
@@ -399,7 +399,7 @@ class RtIntroPrinciple(SyncedScene):
         self.play(Create(win), run_time=0.6)
         self.play(Create(wout), run_time=0.6)
         self.sync(self.c(s, "أَفْتَحَ") - 0.2)
-        light_l2 = label("lighter", FS_LABEL, weight=BOLD).next_to(cell["w"], DOWN, 0.15)
+        light_l2 = label("lighter", FS_LABEL, weight=BOLD).next_to(cell["w"], DOWN, 0.3)
         self.play(cell["w"].animate.set_fill(grey(1.5 * wi), 1), FadeIn(light_l2), run_time=0.8)
 
         # the difference draws the defect: the film is a map
