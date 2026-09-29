@@ -174,11 +174,12 @@ class PtCalEp04(SyncedScene):
         d_bad = Dot(ch.p(5.2, 50), radius=0.09, color=BAD)
         d_ok = Dot(ch.p(4.6, 50), radius=0.08, color=GREY_INK)
         hy = DoubleArrow(ch.p(6.0, 50), ch.p(6.0, 58), buff=0, stroke_width=3, color=BAD, tip_length=0.12)
-        hyl = tag("hysteresis", FS_TAG - 2, BAD).next_to(hy, RIGHT, buff=0.1).shift(UP * 0.12)
-        self.play(FadeIn(d_bad), FadeIn(d_ok), GrowFromCenter(hy), FadeIn(hyl), FadeIn(ol), run_time=0.8)
+        hyl = tag("overshoot", FS_TAG - 2, BAD).next_to(hy, RIGHT, buff=0.1).shift(UP * 0.12)
+        same = tag("same 50 %, different reading", FS_TAG, BAD).next_to(ol, DOWN, buff=0.2).align_to(ol, LEFT)
+        self.play(FadeIn(d_bad), FadeIn(d_ok), GrowFromCenter(hy), FadeIn(hyl), FadeIn(ol), FadeIn(same), run_time=0.8)
         self.sync(self.c(2, "فَفَسَدَ"))
         self.play(Indicate(d_bad, color=BAD, scale_factor=1.8), Indicate(d_ok, color=BAD, scale_factor=1.8), run_time=0.6)
-        both = tag("both numbers spoiled", FS_TAG + 2, BAD, weight=BOLD).next_to(ol, DOWN, buff=0.25).align_to(ol, LEFT)
+        both = tag("both numbers spoiled", FS_TAG + 2, BAD, weight=BOLD).next_to(same, DOWN, buff=0.25).align_to(ol, LEFT)
         self.play(FadeIn(both), Indicate(over, color=BAD), run_time=0.6)
         self.sync(self.end(2) - 0.5)
         self.clear(self.sec, run_time=0.5)
@@ -328,7 +329,12 @@ class PtCalEp04(SyncedScene):
                      DashedLine(ch.p(5, 0), ch.p(5, 9.5), color=BAD, stroke_width=2))
         pl = fit(tag("by eye and pen: the pressure\nfalls between the two looks", FS_TAG, BAD), 5.6) \
             .next_to(cl, DOWN, buff=0.2).align_to(cl, LEFT)
-        self.play(FadeOut(VGroup(live, cap)), Create(fall), Create(pen), FadeIn(pl), run_time=0.8)
+        p3, p5 = ch.p(3, 7.2 - 0.25 * 3), ch.p(5, 7.2 - 0.25 * 5)
+        looks = VGroup(Dot(p3, radius=0.08, color=BAD), Dot(p5, radius=0.08, color=BAD),
+                       DoubleArrow([p5[0] + 0.25, p3[1], 0], [p5[0] + 0.25, p5[1], 0], buff=0, stroke_width=3,
+                                   color=BAD, tip_length=0.1))
+        self.play(FadeOut(VGroup(live, cap, ok, pd, pdl)), Create(fall), Create(pen), FadeIn(pl), FadeIn(looks),
+                  run_time=0.8)
         self.sync(self.end(5) - 0.6)
         self.clear(self.sec)
 

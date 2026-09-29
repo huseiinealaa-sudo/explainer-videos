@@ -295,7 +295,7 @@ class PtCalEp07(SyncedScene):
         rules = VGroup(tag("PASS if |E| + U ≤ tolerance", FS_TAG + 2, GOOD),
                        tag("FAIL if |E| − U > tolerance", FS_TAG + 2, BAD),
                        tag("between: zone of doubt → documented engineering decision", FS_TAG + 2, GREY_INK)) \
-            .arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([0, 2.3, 0])
+            .arrange(DOWN, aligned_edge=LEFT, buff=0.14).move_to([0, 2.45, 0])
         zt = [tag(t, FS_TAG, c, weight=BOLD).move_to(z).align_to(z, UP).shift(DOWN * 0.08)
               for t, c, z in (("PASS", GOOD, z_pass), ("FAIL", BAD, z_fail), ("doubt", GREY_INK, z_doubt))]
         zt[2].align_to(z_doubt, LEFT).shift(RIGHT * 0.12)
