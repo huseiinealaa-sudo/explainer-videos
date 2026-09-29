@@ -234,7 +234,9 @@ class PtCalEp03(SyncedScene):
         self.play(Create(g), FadeIn(d1), FadeIn(t1), run_time=0.6)
         self.sync(self.c(2, "بَلْ"))
         t2 = tag(f"{fmt(D.DP_50_SQRT_MA, 3)} mA", FS_TAG + 2, MOVE, weight=BOLD).next_to(d2, UL, buff=0.1)
-        self.play(FadeIn(d2, scale=1.5), FadeIn(t2), run_time=0.6)
+        wk = tag(f"4 + 16 × √0.5 = {fmt(D.DP_50_SQRT_MA, 3)} mA", FS_TAG + 1, MOVE) \
+            .next_to(ch.axes, UP, buff=0.55).align_to(ch.axes, LEFT)
+        self.play(FadeIn(d2, scale=1.5), FadeIn(t2), FadeIn(wk), run_time=0.6)
         self.sync(self.end(2) - 0.5)
         self.clear(self.sec, run_time=0.5)
 
@@ -322,6 +324,10 @@ class PtCalEp03(SyncedScene):
         mf = Manifold()
         self.mf = mf
         self.play(Create(mf.static()), FadeIn(mf.moving()), run_time=1.2)
+        for k, (ph, pt) in enumerate(zip(["صِمَامُ عَزْلٍ لِلْعَالِي", "وَصِمَامُ عَزْلٍ لِلْمُنْخَفِضِ", "وَصِمَامُ مُعَادَلَةٍ"],
+                                         [[mf.xh, 1.6, 0], [mf.xl, 1.6, 0], [mf.ox, 0.4, 0]])):
+            self.sync(self.c(4, ph))
+            self.play(Circumscribe(mf.names[k], color=MOVE), Flash(pt, color=MOVE, flash_radius=0.4), run_time=0.6)
         self.sync(self.c(4, "غِشَاؤُهُ"))
         self.play(Indicate(mf.dia, color=MOVE), run_time=0.6)
         line = tag(f"line pressure {D.LINE_PRESSURE_BAR} bar on both sides", FS_TAG + 1, FLUID) \
@@ -365,7 +371,7 @@ class PtCalEp03(SyncedScene):
         steps = ["1  close vent", "2  equalize open: open HP slowly", "3  close equalize",
                  "4  open LP isolate", "5  leak check, watch the reading"]
         lst = VGroup(*[tag(s, FS_TAG + 2) for s in steps]).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
-        lst.move_to([3.4, 1.3, 0]).align_to([0.6, 0, 0], LEFT)
+        lst.move_to([3.4, 1.3, 0]).align_to([1.0, 0, 0], LEFT)
         acts = [("أَغْلِقِ التَّنْفِيسَ", mf.vent, 0), ("وَافْتَحْ عَزْلَ العَالِي", mf.hp, 1),
                 ("ثُمَّ أَغْلِقِ المُعَادَلَةَ", mf.eq, 0), ("ثُمَّ افْتَحْ عَزْلَ المُنْخَفِضِ", mf.lp, 1)]
         for k, (ph, tr, val) in enumerate(acts):
@@ -384,6 +390,9 @@ class PtCalEp03(SyncedScene):
         arrows = VGroup(*[Arrow([mf.xh - 0.6, 2.4 - 0.5 * k, 0], [mf.xh - 0.1, 2.4 - 0.5 * k, 0], buff=0,
                                 stroke_width=4, color=FLUID, max_tip_length_to_length_ratio=0.3) for k in range(2)])
         self.play(FadeIn(rd), FadeIn(arrows, lag_ratio=0.5), run_time=0.8)
+        fl = tag("flow", FS_TAG, FLUID).next_to(arrows, LEFT, buff=0.15)
+        self.play(FadeIn(fl), run_time=0.3)
+        self.sync(self.c(5, "مَهْمَا"))
         for f in (1.8, 0.5):
             self.play(arrows.animate.stretch(f, 0, about_edge=RIGHT), Indicate(rd, color=BAD, scale_factor=1.05),
                       run_time=0.8)
@@ -472,9 +481,10 @@ class PtCalEp03(SyncedScene):
         self.sync(self.c(7, "فَصِمَامٌ وَاحِدٌ"))
         one = tag("one valve is not isolation", FS_TAG + 1, BAD).next_to(dbb, DOWN, buff=0.2).align_to(dbb, LEFT)
         x1 = cross(v1, BAD, 4, pad=0.08)
-        self.play(FadeIn(one), v2.animate.set_opacity(0.2), bleed.animate.set_opacity(0.2), Create(x1), run_time=0.5)
-        self.play(v2.animate.set_opacity(1), bleed.animate.set_opacity(1), FadeOut(x1), run_time=0.4)
-        self.sync(self.c(7, "وَضَعْ قُفْلًا"))
+        self.play(FadeIn(one), v2.animate.set_opacity(0.2), bleed.animate.set_stroke(opacity=0.2), Create(x1),
+                  run_time=0.5)
+        self.sync(self.c(7, "وَضَعْ قُفْلًا") - 0.4)
+        self.play(v2.animate.set_opacity(1), bleed.animate.set_stroke(opacity=1), FadeOut(x1), run_time=0.4)
         lock = VGroup(icon("lock", MOVE, 0.5), tag("lock + tag with your name", FS_TAG + 1, MOVE)) \
             .arrange(RIGHT, buff=0.12).move_to([0, -0.05, 0]).align_to([0.0, 0, 0], LEFT)
         self.play(FadeIn(lock), FadeIn(icon("lock", MOVE, 0.32).next_to(v1, UP, buff=0.04)), run_time=0.5)
@@ -534,7 +544,7 @@ class PtCalEp03(SyncedScene):
         mid = Rectangle(width=a.get_right()[0] - b.get_left()[0], height=0.2, stroke_width=0)
         mid = Rectangle(width=b.get_left()[0] - a.get_right()[0], height=0.2, stroke_width=0) \
             .set_fill(BAD, 0.6).move_to([(a.get_right()[0] + b.get_left()[0]) / 2, -2.2, 0])
-        tp = tag("trapped pressure between two closed valves", FS_TAG + 1, BAD).next_to(VGroup(a, b), UP, buff=0.25)
+        tp = tag("trapped pressure between\ntwo closed valves", FS_TAG + 1, BAD).next_to(VGroup(a, b), UP, buff=0.25)
         self.play(FadeIn(a), FadeIn(b), GrowFromCenter(mid), FadeIn(tp), run_time=0.8)
         self.sync(self.end(8) + 1.0)
 
