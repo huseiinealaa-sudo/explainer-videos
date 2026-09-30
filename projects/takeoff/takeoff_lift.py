@@ -694,14 +694,17 @@ class TakeoffLift(SyncedScene, ThreeDScene):
             return always_redraw(build)
 
         lift_len = lambda: LEN_W * ratio.get_value()
-        lift_tip = lambda: cg() + UP * max(lift_len(), 0.9)
+        STUB = 0.2                                              # lift at the first mention: a short stub, it grows with V
+        lift_tip = lambda: cg() + UP * max(lift_len(), 0.6)
         a_lift = arrow(UP, ACCENT_1, lift_len)
         a_weight = arrow(DOWN, ACCENT_4, lambda: LEN_W * gw.get_value())
         a_thrust = arrow(RIGHT, ACCENT_2, lambda: LEN_T * gt.get_value())
         a_drag = arrow(LEFT, ACCENT_4, lambda: LEN_D * gd.get_value())
         on = lambda g: (lambda: min(1.0, max(0.0, (g.get_value() - 0.6) / 0.4)))
-        gl = ValueTracker(0.0)                                  # the "Lift" tag stays once shown
-        t_lift_tag = tag("Lift", ACCENT_1, lift_tip, UP, on(gl))
+        gl = ValueTracker(0.0)                                  # the "Lift" tag is shown with the lift arrow
+        # the tag follows the arrow: full while the arrow is at least a stub, gone when the arrow is
+        lift_on = lambda: min(1.0, gl.get_value(), lift_len() / (LEN_W * STUB))
+        t_lift_tag = tag("Lift", ACCENT_1, lift_tip, UP, lift_on)
         t_weight = tag("Weight", ACCENT_4, lambda: cg() + DOWN * LEN_W, DOWN, on(gw))
         t_thrust = tag("Thrust", ACCENT_2, lambda: cg() + RIGHT * LEN_T, RIGHT, on(gt))
         t_drag = tag("Drag", ACCENT_4, lambda: cg() + LEFT * LEN_D, LEFT, on(gd))
@@ -714,7 +717,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.add(a_lift, t_lift_tag, a_weight, t_weight, a_thrust, t_thrust, a_drag, t_drag)
 
         self.sync(c("الرَّفْعُ") - 0.1)
-        self.play(ratio.animate.set_value(1.0), gl.animate.set_value(1.0), run_time=0.7)
+        self.play(ratio.animate.set_value(STUB), gl.animate.set_value(1.0), run_time=0.7)
         self.sync(c("الجَنَاحُ") - 0.1)
         self.play(plane.wings.animate.set_fill(ACCENT_1, 0.9).set_stroke(ACCENT_1), run_time=0.6)
         self.play(Flash(plane.wings.get_center(), color=ACCENT_1, flash_radius=0.5, line_length=0.15,
@@ -729,7 +732,9 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         calc = VGroup(w1, w2, w3).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
         calc.next_to(sec, DOWN, buff=0.4).align_to(sec, LEFT)
         self.sync(c("الكُتْلَةُ") - 0.1)
-        self.play(Write(w1), run_time=0.8)
+        w_pair = a_weight.copy()                                  # static copy of the arrow: the pointer for «الكُتْلَةُ»
+        self.play(Write(w1), Indicate(w_pair, color=INK, scale_factor=1.3, run_time=1.2), run_time=1.2)
+        self.remove(w_pair)
         self.sync(c("سَبْعُونَ") - 0.1)
         self.play(Write(w2), run_time=1.2)
         self.sync(c("أَيْ") - 0.1)
@@ -768,8 +773,10 @@ class TakeoffLift(SyncedScene, ThreeDScene):
                           [bx + BAR_W, n_weight.get_center()[1] - 0.3, 0], color=GREY_INK, stroke_width=2.5)
         self.sync(c("فِي الإِقْلَاعِ") - 0.1)
         self.add(v_read, bar_lift)
+        at_rest = fit(label("At rest: V = 0, lift ≈ 0", FS_LABEL)).move_to([0, -3.5, 0])
         self.play(FadeIn(names), FadeIn(bar_weight), FadeIn(mark), ro.animate.set_value(1.0),
-                  ratio.animate.set_value(0.0), run_time=0.8)
+                  ratio.animate.set_value(0.0), FadeIn(at_rest, shift=UP * 0.08), run_time=0.8)
+        self.caption = at_rest
         self.sync(c("الدَّفْعُ", 2) - 0.1)            # 2nd: «يَكُونُ الدَّفْعُ» (the 1st is inside «وَالدَّفْعُ»)
         self.say("Thrust > Drag", y=-3.5)
         self.sync(t_acc - 0.1)
