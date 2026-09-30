@@ -212,6 +212,43 @@ def runway_3d(x_start=-9.0, length=70.0, width=4.6):
     return parts
 
 
+# ---------------- 2D helpers (segment 2) ----------------
+RUNWAY_Y = -1.5                     # top edge of the runway (the wheels stand on it)
+PLANE_SCALE = 1.2                   # side-view airliner scale (units of airliner_side)
+CG_HEIGHT = 0.75 * PLANE_SCALE      # centre of the fuselage above the ground
+PLANE_X = 1.8                       # x of the centre of gravity
+LEN_W, LEN_T, LEN_D = 1.2, 3.4, 2.5  # weight arrow; thrust longer than drag (units)
+BAR_W = 2.4                         # length of the weight bar; the lift bar is BAR_W * L / W
+P_MAX = 1.10                        # V / V(L = W) at the end of the segment
+
+
+def airliner_side():
+    """A generic airliner in side view (nose to the right), centre of gravity at the origin.
+
+    Parts as attributes: body, wings, engine, fin; `ground` is the wheel-bottom offset.
+    """
+    poly = lambda pts, **kw: Polygon(*[[x, y, 0] for x, y in pts], **kw)
+    body = RoundedRectangle(width=3.6, height=0.56, corner_radius=0.28, color=INK,
+                            fill_color=WHITE, fill_opacity=1, stroke_width=3)
+    window = poly([(1.2, 0.04), (1.62, 0.04), (1.55, 0.18), (1.2, 0.18)], color=GREY_INK,
+                     fill_color=PANEL_FILL, fill_opacity=1, stroke_width=1.5)
+    fin = poly([(-1.25, 0.2), (-1.85, 0.95), (-1.45, 0.95), (-0.8, 0.25)], color=INK,
+                  fill_color=WHITE, fill_opacity=1, stroke_width=3)
+    wings = poly([(0.55, -0.1), (-0.35, -0.1), (-1.0, -0.52), (-0.7, -0.52)], color=INK,
+                    fill_color=WHITE, fill_opacity=1, stroke_width=3)
+    engine = RoundedRectangle(width=0.8, height=0.3, corner_radius=0.14, color=ACCENT_2,
+                              fill_color=ACCENT_2, fill_opacity=0.35, stroke_width=3)
+    engine.move_to([0.7, -0.47, 0])
+    gear = VGroup()
+    for x in (-0.35, 1.4):
+        gear.add(Line([x, -0.28, 0], [x, -0.64, 0], color=GREY_INK, stroke_width=3),
+                 Circle(radius=0.11, color=INK, fill_color=GREY_INK, fill_opacity=1,
+                        stroke_width=2).move_to([x, -0.64, 0]))
+    plane = VGroup(gear, fin, body, window, wings, engine)
+    plane.body, plane.wings, plane.engine, plane.fin = body, wings, engine, fin
+    return plane
+
+
 class TakeoffLift(SyncedScene, ThreeDScene):
     """SyncedScene timing on a 3D camera: 2D segments keep the default top-down view."""
 
@@ -223,6 +260,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(self.end(1))
 
         # ---------------- Segment 2: the four forces ----------------
+        self.segment_2()
         self.sync(self.end(2))
 
         # ---------------- Segment 3: how the wing makes lift ----------------
@@ -353,6 +391,168 @@ class TakeoffLift(SyncedScene, ThreeDScene):
                   streaks.animate(run_time=roll, rate_func=linear).shift(LEFT * 16),
                   plane.animate(run_time=roll, rate_func=rate_functions.ease_in_quad).shift(RIGHT * 2.5))
         self.reset_camera_2d(driver)
+
+    # ---------------- Segment 2 ----------------
+    def segment_2(self):
+        c = lambda phrase, nth=1: self.cue(2, phrase, nth)
+        t0, t_end = self.start(2), self.end(2)
+        t_acc = c("فَتَتَسَارَعُ")                              # the run begins
+        t_lift = c("الوَزْنَ") + 0.25                          # V reaches the speed where L = W
+        st = dict(p=0.0, scroll=0.0, h=0.0, ang=0.0)
+
+        plane = airliner_side().scale(PLANE_SCALE, about_point=ORIGIN)
+        plane.shift([PLANE_X, RUNWAY_Y + CG_HEIGHT, 0])
+        cg = lambda: plane.body.get_center()
+        ratio = ValueTracker(0.0)                              # lift / weight
+        gw, gt, gd = ValueTracker(0.0), ValueTracker(0.0), ValueTracker(0.0)   # arrows growing
+        ro = ValueTracker(0.0)                                 # opacity of the readout and bars
+
+        # --- runway: two edge lines and a dashed centreline that scrolls with the speed
+        top = Line([-6.85, RUNWAY_Y, 0], [6.85, RUNWAY_Y, 0], color=GREY_INK, stroke_width=3)
+        bottom = Line([-6.85, RUNWAY_Y - 1.6, 0], [6.85, RUNWAY_Y - 1.6, 0], color=GREY_INK, stroke_width=3)
+        dashes = VGroup(*[Line(ORIGIN, RIGHT * 0.6, color=LIGHT_INK, stroke_width=5) for _ in range(8)])
+
+        def place_dashes(m):
+            for i, d in enumerate(m):
+                x = -6.8 + (i * 1.65 - st["scroll"]) % 13.2
+                d.put_start_and_end_on([x, RUNWAY_Y - 0.95, 0], [x + 0.6, RUNWAY_Y - 0.95, 0])
+        place_dashes(dashes)
+        dashes.add_updater(place_dashes)
+
+        # --- driver on the narration clock: speed, scrolling, lift-off (added first)
+        driver = Mobject()
+        driver.clock = self.renderer.time
+        driver.last = (0.0, 0.0)
+
+        def drive(m, dt):
+            m.clock += dt
+            T = m.clock
+            p = min(max((T - t_acc) / (t_lift - t_acc), 0.0), P_MAX)
+            st["p"] = p
+            if T < t_lift:
+                st["scroll"] += p * 5.0 * dt
+            if T >= t_acc:
+                ratio.set_value(p * p)
+            s = min(max((T - t_lift) / (t_end - t_lift), 0.0), 1.0)
+            h, ang = 1.5 * s ** 1.5, 6.0 * min(1.0, 3 * s)
+            plane.shift(UP * (h - m.last[0]))
+            plane.rotate((ang - m.last[1]) * DEGREES, about_point=plane.body.get_center())
+            m.last = (h, ang)
+        driver.add_updater(drive)
+        self.add(driver)
+        _play = self.play
+
+        def synced_play(*a, **k):
+            """Manim's first frame of every play has dt = 0: put the driver back on the clock."""
+            _play(*a, **k)
+            driver.clock = self.renderer.time
+        self.play = synced_play
+
+        # --- force arrows and their labels (follow the centre of gravity)
+        def arrow(direction, colour, length):
+            def build():
+                L = length()
+                if L < 0.08:
+                    return VMobject()
+                s = cg()
+                return Arrow(s, s + direction * L, buff=0, color=colour, stroke_width=7,
+                             tip_length=min(0.28, 0.5 * L), max_tip_length_to_length_ratio=0.6,
+                             max_stroke_width_to_length_ratio=12)
+            return always_redraw(build)
+
+        def tag(text, colour, tip, direction, alpha):
+            def build():
+                t = label(text, FS_LABEL, colour).next_to(tip(), direction, buff=0.15)
+                return t.set_opacity(alpha())
+            return always_redraw(build)
+
+        lift_len = lambda: LEN_W * ratio.get_value()
+        lift_tip = lambda: cg() + UP * max(lift_len(), 0.9)
+        a_lift = arrow(UP, ACCENT_1, lift_len)
+        a_weight = arrow(DOWN, ACCENT_4, lambda: LEN_W * gw.get_value())
+        a_thrust = arrow(RIGHT, ACCENT_2, lambda: LEN_T * gt.get_value())
+        a_drag = arrow(LEFT, ACCENT_4, lambda: LEN_D * gd.get_value())
+        on = lambda g: (lambda: min(1.0, max(0.0, (g.get_value() - 0.6) / 0.4)))
+        gl = ValueTracker(0.0)                                  # the "Lift" tag stays once shown
+        t_lift_tag = tag("Lift", ACCENT_1, lift_tip, UP, on(gl))
+        t_weight = tag("Weight", ACCENT_4, lambda: cg() + DOWN * LEN_W, DOWN, on(gw))
+        t_thrust = tag("Thrust", ACCENT_2, lambda: cg() + RIGHT * LEN_T, RIGHT, on(gt))
+        t_drag = tag("Drag", ACCENT_4, lambda: cg() + LEFT * LEN_D, LEFT, on(gd))
+
+        # --- the four forces come in, at their words
+        self.sync(t0 + 0.1)
+        sec = section_title(self, "The four forces")
+        self.sec = sec
+        self.play(Create(top), Create(bottom), FadeIn(plane, shift=DOWN * 0.2), FadeIn(dashes), run_time=1.0)
+        self.add(a_lift, t_lift_tag, a_weight, t_weight, a_thrust, t_thrust, a_drag, t_drag)
+
+        self.sync(c("الرَّفْعُ") - 0.1)
+        self.play(ratio.animate.set_value(1.0), gl.animate.set_value(1.0), run_time=0.7)
+        self.sync(c("الجَنَاحُ") - 0.1)
+        self.play(plane.wings.animate.set_fill(ACCENT_1, 0.9).set_stroke(ACCENT_1), run_time=0.6)
+        self.play(Flash(plane.wings.get_center(), color=ACCENT_1, flash_radius=0.5, line_length=0.15,
+                        run_time=0.6))
+        self.sync(c("وَالوَزْنُ") - 0.1)
+        self.play(gw.animate.set_value(1.0), run_time=0.7)
+
+        # weight calculation, line by line, from the data module
+        w1 = label("W = m · g", FS_LABEL + 2, ACCENT_4)
+        w2 = label(f"= {D.MASS:,.0f} kg × {D.G} m/s²", FS_LABEL)
+        w3 = label(f"= {D.WEIGHT:,.0f} N", FS_LABEL + 2, ACCENT_4, weight=BOLD)
+        calc = VGroup(w1, w2, w3).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
+        calc.next_to(sec, DOWN, buff=0.4).align_to(sec, LEFT)
+        self.sync(c("الكُتْلَةُ") - 0.1)
+        self.play(Write(w1), run_time=0.8)
+        self.sync(c("سَبْعُونَ") - 0.1)
+        self.play(Write(w2), run_time=1.2)
+        self.sync(c("أَيْ") - 0.1)
+        self.play(Write(w3), run_time=1.0)
+
+        # thrust from the engines, drag from the air
+        self.sync(c("وَالدَّفْعُ") - 0.1)
+        self.play(gt.animate.set_value(1.0), run_time=0.7)
+        self.sync(c("المُحَرِّكَاتِ") - 0.1)
+        self.play(Indicate(plane.engine, color=ACCENT_2, scale_factor=1.5), run_time=0.9)
+        self.sync(c("وَالسَّحْبُ") - 0.1)
+        self.play(gd.animate.set_value(1.0), run_time=0.7)
+        self.sync(c("مُقَاوَمَةُ") - 0.1)
+        streaks = VGroup(*[Line([PLANE_X + 3.9, RUNWAY_Y + CG_HEIGHT + dy, 0],
+                                [PLANE_X + 4.6, RUNWAY_Y + CG_HEIGHT + dy, 0],
+                                color=ACCENT_1, stroke_width=4) for dy in (0.6, 1.0, 1.4)])
+        self.play(FadeIn(streaks, run_time=0.3))
+        self.play(streaks.animate(run_time=1.0, rate_func=linear).shift(LEFT * 1.6))
+        self.play(FadeOut(streaks, run_time=0.3))
+
+        # readout and bars: at rest the lift is zero
+        v_read = always_redraw(lambda: label(f"V = {st['p'] * D.V_15:.1f} m/s", FS_LABEL)
+                               .next_to(calc, DOWN, buff=0.45).align_to(calc, LEFT).set_opacity(ro.get_value()))
+        n_lift = label("Lift", FS_NOTE, ACCENT_1)
+        n_weight = label("Weight", FS_NOTE, ACCENT_4)
+        names = VGroup(n_lift, n_weight).arrange(DOWN, aligned_edge=LEFT, buff=0.35)
+        names.next_to(v_read, DOWN, buff=0.4).align_to(calc, LEFT)
+        bx = names.get_right()[0] + 0.3
+        bar_lift = always_redraw(lambda: Rectangle(width=max(BAR_W * ratio.get_value(), 0.02), height=0.28,
+                                                   color=ACCENT_1, fill_color=ACCENT_1, fill_opacity=ro.get_value(),
+                                                   stroke_width=0).move_to([bx, n_lift.get_center()[1], 0], LEFT)
+                                 .set_stroke(opacity=0))
+        bar_weight = Rectangle(width=BAR_W, height=0.28, color=ACCENT_4, fill_color=ACCENT_4,
+                               fill_opacity=1, stroke_width=0).move_to([bx, n_weight.get_center()[1], 0], LEFT)
+        mark = DashedLine([bx + BAR_W, n_lift.get_center()[1] + 0.3, 0],
+                          [bx + BAR_W, n_weight.get_center()[1] - 0.3, 0], color=GREY_INK, stroke_width=2.5)
+        self.sync(c("فِي الإِقْلَاعِ") - 0.1)
+        self.add(v_read, bar_lift)
+        self.play(FadeIn(names), FadeIn(bar_weight), FadeIn(mark), ro.animate.set_value(1.0),
+                  ratio.animate.set_value(0.0), run_time=0.8)
+        self.sync(c("الدَّفْعُ") - 0.1)
+        self.say("Thrust > Drag", y=-3.5)
+        self.sync(t_acc - 0.1)
+        self.say("The plane accelerates", y=-3.5)
+        self.sync(c("وَكُلَّمَا") - 0.1)
+        self.say("More speed, more lift", y=-3.5)
+        self.sync(c("حَتَّى") - 0.1)
+        self.say("Lift > Weight: the plane rises", y=-3.5)
+        self.sync(t_end)
+        del self.play                                           # back to the class method
 
 
 if __name__ == "__main__":
