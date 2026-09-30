@@ -49,7 +49,7 @@ def make_background(path, w=1280, h=720):
     ground = hexrgb("#3b2438")[None, None, :] * (1 - t[:, :, None]) + hexrgb("#100a1a")[None, None, :] * t[:, :, None]
     img = np.where(below[:, :, None], ground, img)
     # sun glow + disc
-    sx, sy = 0.72 * w, y_h - 6
+    sx, sy = 0.72 * w, y_h - 34
     d2 = ((xs - sx) / (0.42 * w)) ** 2 + ((ys - sy) / (0.30 * h)) ** 2
     img += np.exp(-d2)[:, :, None] * hexrgb("#ff8a3c") * 0.55 * (ys < y_h + 20)[:, :, None]
     disc = np.clip(1.8 - np.sqrt((xs - sx) ** 2 + (ys - sy) ** 2) / 26.0, 0, 1) * (ys < y_h)
@@ -120,6 +120,12 @@ class StyleA3D(ThreeDScene):
         return self._far(p, layer)
 
     def construct(self):
+        # Manim treats everything added before the first object with an updater as static (drawn once):
+        # the updater object must therefore be the FIRST thing in the scene.
+        tracker = ValueTracker(0.0)
+        ticker = Mobject()
+        ticker.add_updater(lambda m: frame(tracker.get_value()), call_updater=False)
+        self.add(ticker)
         tab = G.flight_table(DUR, 0.002)
         self.set_camera_orientation(phi=PHI, theta=-150 * DEGREES, focal_distance=20, zoom=1, frame_center=[0, 0, 2.6])
 
@@ -152,8 +158,8 @@ class StyleA3D(ThreeDScene):
 
         # ---- ground, haze, runway, scenery (all recycled / re-centred each frame)
         ground = self._flat("#191120", layer=0)
-        haze_y = self._flat("#35213a", layer=1)
-        haze_x = self._flat("#35213a", layer=1)
+        haze_y = self._flat("#2a1a34", layer=1)
+        haze_x = self._flat("#3b2438", layer=1.2)
         runway = self._flat("#2d2740", layer=2)
         sheen = self._flat("#5a3a52", 0.55, layer=2.5)  # sunset reflection on the asphalt, far end
         edge_l = self._flat("#d8d2cc", layer=3)
@@ -163,7 +169,7 @@ class StyleA3D(ThreeDScene):
         cores = [self._flat("#ffe2a8", 1.0, layer=6, n=8) for _ in range(56)]
         shadow = self._flat("#05030a", 0.5, layer=4.5, n=14)
         scenery = []
-        for x0, x1, h, col in ((40, 105, 2.6, "#1b1530"), (122, 150, 3.4, "#1b1530"), (-30, 6, 3.0, "#1b1530")):
+        for x0, x1, h, col in ((70, 190, 4.0, "#1b1530"), (215, 265, 5.5, "#1b1530"), (-90, -30, 4.5, "#1b1530")):
             scenery.append((self._flat(col, layer=1.5), x0, x1, h))
         windows = self._flat("#ffbf60", layer=1.6)
         tower = self._flat("#1b1530", layer=1.5)
@@ -201,12 +207,12 @@ class StyleA3D(ThreeDScene):
             # camera: tracking + slow sweep from the rear quarter towards the side, plane low in frame, rises after lift-off
             u = smooth(0, DUR, t)
             self.set_camera_orientation(theta=(-150 + 52 * u) * DEGREES,
-                                        frame_center=[cx + 2.0, 0.0, 2.6 + 0.65 * (centre[2] - S * 4.2)])
+                                        frame_center=[cx + 0.6, 0.0, 2.6 + 0.65 * (centre[2] - S * 4.2)])
 
             x_lo = cx - 12
-            set_corners(ground, rect(x_lo, cx + 250, -12, 140))
-            set_corners(haze_y, rect(x_lo, cx + 250, 105, 140))
-            set_corners(haze_x, rect(cx + 215, cx + 250, -12, 140))
+            set_corners(ground, rect(x_lo, cx + 1500, -12, 1400))
+            set_corners(haze_y, rect(x_lo, cx + 1500, 250, 1400))
+            set_corners(haze_x, rect(x_lo, cx + 1500, 700, 1400))
             set_corners(runway, rect(x_lo, cx + 250, -3.6, 3.6, 0.005))
             set_corners(sheen, rect(cx + 60, cx + 250, -3.6, 3.6, 0.008))
             set_corners(edge_l, rect(x_lo, cx + 250, -3.42, -3.3, 0.01))
@@ -230,14 +236,10 @@ class StyleA3D(ThreeDScene):
             set_corners(shadow, ngon(cx - 0.6 + 0.6 * alt, -0.3, 3.4 * (1 + 0.1 * alt), 14, 0.02, sy=0.45))
             # far-side buildings (static in the world)
             for poly, x0, x1, h in scenery:
-                set_corners(poly, [[x0, 26, 0], [x1, 26, 0], [x1, 26, h], [x0, 26, h]])
-            set_corners(windows, [[42, 25.9, 1.2], [103, 25.9, 1.2], [103, 25.9, 1.55], [42, 25.9, 1.55]])
-            set_corners(tower, [[160, 30, 0], [162.2, 30, 0], [162.2, 30, 8], [160, 30, 8]])
-            set_corners(tower_cab, [[158.6, 29.9, 8], [163.6, 29.9, 8], [163.6, 29.9, 9.2], [158.6, 29.9, 9.2]])
+                set_corners(poly, [[x0, 90, 0], [x1, 90, 0], [x1, 90, h], [x0, 90, h]])
+            set_corners(windows, [[74, 89.9, 1.6], [186, 89.9, 1.6], [186, 89.9, 2.1], [74, 89.9, 2.1]])
+            set_corners(tower, [[300, 100, 0], [304, 100, 0], [304, 100, 16], [300, 100, 16]])
+            set_corners(tower_cab, [[297.5, 99.9, 16], [306.5, 99.9, 16], [306.5, 99.9, 18.4], [297.5, 99.9, 18.4]])
 
         frame(0.0)
-        tracker = ValueTracker(0.0)
-        ticker = Mobject()
-        ticker.add_updater(lambda m: frame(tracker.get_value()))
-        self.add(ticker)
         self.play(tracker.animate.set_value(DUR), run_time=DUR, rate_func=linear)

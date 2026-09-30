@@ -28,8 +28,8 @@ WHEEL_Y = -2.42  # where the wheels touch on screen at the start
 PIVOT = np.array([-0.35, -0.79, 0.0])  # main-gear contact, plane-local
 
 PAL = dict(
-    sun="#fff1c8", halo="#ff9a52", cloud="#f0769a", far="#6b3a8f", mid="#4a2a78", hills="#33205e", city="#281a52",
-    airport="#1f1445", ground="#1b1038", runway="#2a1c4d", near="#140a2a", lit="#ffbf60",
+    sun="#fff1c8", halo="#ff9a52", cloud="#f0769a", far="#6b3a8f", mid="#4a2a78", hills="#33205e", city="#33226a",
+    airport="#120a2e", ground="#1b1038", runway="#2a1c4d", near="#140a2a", lit="#ffbf60",
     body="#f6f2f4", belly="#cfc3e2", stripe="#2f9fe0", fin="#ff7043", fin_dark="#e0512a", wing="#ece7f0", wing_dark="#b9adcc",
     engine="#d7d0e2", engine_dark="#a79bbd", glass="#2a1f4a", rim="#ffb36b",
 )
@@ -117,6 +117,12 @@ def tiled(make_tile, W, copies=2):
 
 class StyleBVector(Scene):
     def construct(self):
+        # Manim treats everything added before the first object with an updater as static (drawn once):
+        # the updater object must therefore be the FIRST thing in the scene.
+        tracker = ValueTracker(0.0)
+        ticker = Mobject()
+        ticker.add_updater(lambda m: frame(tracker.get_value()), call_updater=False)
+        self.add(ticker)
         os.makedirs(TMP, exist_ok=True)
         rng = random.Random(11)
         sky = ImageMobject(make_sky(os.path.join(TMP, "b_sky.png"))).set_height(FH)
@@ -321,8 +327,4 @@ class StyleBVector(Scene):
             shadow.set_fill(opacity=max(0.0, 0.45 - 0.12 * alt))
 
         frame(0.0)
-        tracker = ValueTracker(0.0)
-        ticker = Mobject()
-        ticker.add_updater(lambda m: frame(tracker.get_value()))
-        self.add(ticker)
         self.play(tracker.animate.set_value(DUR), run_time=DUR, rate_func=linear)
