@@ -249,6 +249,124 @@ def airliner_side():
     return plane
 
 
+# ---------------- 2D helpers (segment 3): the wing section and the flow round it ----------------
+# The section is a Joukowski profile (computed, not drawn by hand) and the streamlines are the potential
+# flow past it with the Kutta condition: faster and lower-pressure over the top, deflected down behind.
+_J_A, _J_EPS, _J_DEL = 1.0, 0.15, 0.07
+_J_MU = complex(-_J_EPS, _J_DEL)
+_J_R = abs(_J_A - _J_MU)
+_J_PROFILE = _J_MU + _J_R * np.exp(1j * np.linspace(0, TAU, 160, endpoint=False))
+_J_PROFILE = _J_PROFILE + _J_A ** 2 / _J_PROFILE
+_J_TE = complex(2 * _J_A, 0)
+_J_LE = _J_PROFILE[np.argmax(abs(_J_PROFILE - _J_TE))]
+_J_THETA = np.angle(_J_TE - _J_LE)                      # tilt of the chord line in the profile's own frame
+_J_SCALE = 4.6 / abs(_J_TE - _J_LE)                     # chord length on screen: 4.6 units
+_J_PIVOT = _J_LE + 0.25 * (_J_TE - _J_LE)               # quarter chord: the wing pitches about it
+WING_PIVOT = np.array([-3.0, -0.35])                    # where the quarter chord sits on screen
+ALPHA_WORK, ALPHA_CRIT, ALPHA_STALL = 9.0, 15.0, 19.0   # degrees, schematic (drawn larger than real)
+FLOW_X0, FLOW_X1 = -5.5, 3.3                            # streamlines are drawn between these x
+# sketch of C_L against the angle of attack (no values are shown): rises, peaks, then falls but not to 0
+_CL_CURVE = None
+
+
+def cl_curve(alpha):
+    """Schematic lift coefficient (0..1, peak at ALPHA_CRIT) for an angle of attack in degrees."""
+    global _CL_CURVE
+    if _CL_CURVE is None:
+        from scipy.interpolate import PchipInterpolator
+        pts = [(0, .12), (3, .31), (6, .52), (9, .75), (12, .93), (14, .99), (15, 1.0), (16, .97),
+               (17, .86), (19, .66), (22, .50), (24, .44)]
+        _CL_CURVE = PchipInterpolator(*zip(*pts))
+    return float(_CL_CURVE(min(max(alpha, 0.0), 24.0)))
+
+
+def _cplx(p):
+    return complex(p[0], p[1])
+
+
+class WingFlow:
+    """The wing at `alpha` degrees (chord tilted nose-up about the quarter chord) in a horizontal wind."""
+
+    def __init__(self, alpha):
+        self.al = np.radians(alpha)
+        self.af = self.al + _J_THETA                    # wind direction in the profile's frame
+        zp = _J_A - _J_MU                               # Kutta: the velocity at the trailing edge is finite
+        g = -(np.exp(-1j * self.af) - _J_R ** 2 * np.exp(1j * self.af) / zp ** 2) * 2 * np.pi * zp / 1j
+        self.gam = g.real
+        self.pivot = _cplx(WING_PIVOT)
+
+    def to_world(self, z):
+        return self.pivot + _J_SCALE * np.exp(-1j * (self.al + _J_THETA)) * (np.asarray(z) - _J_PIVOT)
+
+    def to_z(self, w):
+        return _J_PIVOT + np.exp(1j * (self.al + _J_THETA)) * (w - self.pivot) / _J_SCALE
+
+    def velocity(self, w):
+        z = self.to_z(w)
+        s = np.sqrt(z * z - 4 * _J_A ** 2 + 0j)
+        z1, z2 = (z + s) / 2, (z - s) / 2
+        zt = z1 if abs(z1 - _J_MU) > abs(z2 - _J_MU) else z2
+        zp = zt - _J_MU
+        dw = np.exp(-1j * self.af) - _J_R ** 2 * np.exp(1j * self.af) / zp ** 2 + 1j * self.gam / (2 * np.pi * zp)
+        return np.conj(dw / (1 - _J_A ** 2 / zt ** 2)) * np.exp(-1j * (self.al + _J_THETA))
+
+    def outline(self):
+        return self.to_world(_J_PROFILE)
+
+    def le(self):
+        return self.to_world(_J_LE)
+
+    def te(self):
+        return self.to_world(_J_TE)
+
+    def stream(self, y0, x0=-6.6, dt=0.05, x1=FLOW_X1, nmax=1500):
+        """Streamline from (x0, y0) as complex points, one every dt of flow time (speed 1 far away)."""
+        w, pts, f = complex(x0, y0), [complex(x0, y0)], self.velocity
+        for _ in range(nmax):
+            k1 = f(w)
+            k2 = f(w + dt / 2 * k1)
+            k3 = f(w + dt / 2 * k2)
+            k4 = f(w + dt * k3)
+            w = w + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+            pts.append(w)
+            if w.real > x1:
+                break
+        return np.array(pts)
+
+    def divider(self):
+        """Seed height (at x = -6.6) of the streamline that splits at the leading edge."""
+        le = self.le()
+        lo, hi = -2.5, 2.5
+        for _ in range(28):
+            mid = (lo + hi) / 2
+            s = self.stream(mid, dt=0.06, x1=le.real + 0.3)
+            over = s[np.argmin(abs(s.real - le.real))].imag > le.imag
+            lo, hi = (lo, mid) if over else (mid, hi)
+        return (lo + hi) / 2
+
+
+def _pts3(cs):
+    cs = np.asarray(cs)
+    return [[c.real, c.imag, 0.0] for c in cs]
+
+
+def _polyline(cs, color, width, opacity=1.0):
+    m = VMobject(color=color, stroke_width=width, stroke_opacity=opacity)
+    m.set_points_as_corners(_pts3(cs))
+    return m
+
+
+def _minus(color):
+    return VGroup(Circle(radius=0.19, color=color, stroke_width=3),
+                  Line([-0.11, 0, 0], [0.11, 0, 0], color=color, stroke_width=4))
+
+
+def _plus(color):
+    return VGroup(Circle(radius=0.19, color=color, stroke_width=3),
+                  Line([-0.11, 0, 0], [0.11, 0, 0], color=color, stroke_width=4),
+                  Line([0, -0.11, 0], [0, 0.11, 0], color=color, stroke_width=4))
+
+
 class TakeoffLift(SyncedScene, ThreeDScene):
     """SyncedScene timing on a 3D camera: 2D segments keep the default top-down view."""
 
@@ -264,6 +382,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(self.end(2))
 
         # ---------------- Segment 3: how the wing makes lift ----------------
+        self.segment_3()
         self.sync(self.end(3))
 
         # ---------------- Segment 4: the lift equation, worked example ----------------
@@ -553,6 +672,346 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.say("Lift > Weight: the plane rises", y=-3.5)
         self.sync(t_end)
         del self.play                                           # back to the class method
+
+    # ---------------- Segment 3 ----------------
+    def segment_3(self):
+        c = lambda phrase, nth=1: self.cue(3, phrase, nth)
+        t0, t_end = self.start(3), self.end(3)
+        P = np.array([WING_PIVOT[0], WING_PIVOT[1], 0.0])
+        f0, f9, f19 = WingFlow(0.0), WingFlow(ALPHA_WORK), WingFlow(ALPHA_STALL)
+        le0, te0, le9, te9 = f0.le(), f0.te(), f9.le(), f9.te()
+        p3 = lambda z: np.array([z.real, z.imag, 0.0])
+        alpha = ValueTracker(0.0)                       # pitch of the wing section (degrees)
+        fv, cf = ValueTracker(0.0), ValueTracker(0.0)   # section visible / chord line drawn (0..1)
+        adot = ValueTracker(ALPHA_WORK)                 # angle shown by the dot on the C_L curve and by the lift arrow
+        lv, dv = ValueTracker(0.0), ValueTracker(0.0)   # lift arrow / downwash arrow visible (0..1)
+        lab_push, lab_lift = ValueTracker(0.0), ValueTracker(0.0)   # opacity of the two lift labels
+        PANEL_X = 5.3                                   # centre of the right-hand panel
+        K_ARROW = 2.4                                   # arrow length (units) per unit of C_L
+
+        # --- the wing section and its chord line follow the pitch tracker
+        def build_foil():
+            fl, v = WingFlow(alpha.get_value()), fv.get_value()
+            body = Polygon(*_pts3(fl.outline()), color=INK, fill_color=WHITE, fill_opacity=v, stroke_width=3.5)
+            body.set_stroke(opacity=v)
+            chord = DashedLine(p3(fl.le()), p3(fl.te()), dash_length=0.14, color=GREY_INK, stroke_width=3)
+            n = len(chord)
+            for i, d in enumerate(chord):
+                d.set_stroke(opacity=1.0 if (i + 1) / n <= cf.get_value() + 1e-6 else 0.0)
+            return VGroup(body, chord)
+        foil = always_redraw(build_foil)
+
+        # --- lift arrow (from the quarter chord, straight up) and its two labels
+        def lift_len():
+            return lv.get_value() * K_ARROW * cl_curve(adot.get_value())
+
+        def build_lift():
+            L = lift_len()
+            if L < 0.1:                                 # invisible stand-in (an empty VMobject leaves a dot at the origin)
+                return Arrow(P, P + UP * 0.2, buff=0, color=ACCENT_1).set_opacity(0.0)
+            return Arrow(P, P + UP * L, buff=0, color=ACCENT_1, stroke_width=8, tip_length=min(0.3, 0.5 * L),
+                         max_tip_length_to_length_ratio=0.6, max_stroke_width_to_length_ratio=12)
+        lift_arrow = always_redraw(build_lift)
+        lift_lbl_push = always_redraw(lambda: label("Wing pushed up", FS_LABEL, ACCENT_1)
+                                      .next_to(P + UP * max(lift_len(), 0.2), UP, buff=0.15)
+                                      .set_opacity(lab_push.get_value()))
+        lift_lbl = always_redraw(lambda: label("Lift", FS_LABEL, ACCENT_1, weight=BOLD)
+                                 .next_to(P + UP * max(lift_len(), 0.2), UP, buff=0.15)
+                                 .set_opacity(lab_lift.get_value()))
+
+        # --- clear segment 2 (stop its drivers first) and turn its heading into this one's
+        for m in self.mobjects:
+            m.clear_updaters(recursive=True)
+        head = label("How the wing makes lift", FS_BODY - 6, weight=BOLD).to_corner(UL, buff=0.4)
+        gone = [m for m in self.mobjects if m is not self.sec]
+        self.play(*[FadeOut(m) for m in gone], Transform(self.sec, head), run_time=0.6)
+        self.caption = VMobject()
+        self.add(foil, lift_arrow, lift_lbl_push, lift_lbl)
+
+        # --- the section appears
+        self.sync(t0 + 0.6)
+        self.play(fv.animate.set_value(1.0), run_time=1.0)
+
+        # --- leading edge, trailing edge, chord: the chord line is drawn from edge to edge while they are named
+        edge_l = label("Leading edge", FS_LABEL).move_to(p3(le0) + np.array([-1.3, 0.95, 0]))
+        edge_l_arrow = Arrow(edge_l.get_bottom() + DOWN * 0.08 + RIGHT * 0.5, p3(le0) + np.array([-0.08, 0.06, 0]),
+                             buff=0, color=GREY_INK, stroke_width=3, tip_length=0.18)
+        edge_t = label("Trailing edge", FS_LABEL).next_to(p3(te0), RIGHT, buff=0.3)
+        speed = 1.0 / 3.5                                # chord fraction per second, constant
+        t_le, t_te = c("حَافَّتِهِ الأَمَامِيَّةِ"), c("حَافَّتِهِ الخَلْفِيَّةِ")
+        t_a = c("الخَطُّ") - 0.1
+        self.sync(t_a)
+        self.play(cf.animate(rate_func=linear).set_value((t_le - t_a) * speed), run_time=t_le - t_a)
+        self.play(FadeIn(VGroup(edge_l, edge_l_arrow), run_time=0.4), Flash(p3(le0), color=ACCENT_1, flash_radius=0.4, line_length=0.12,
+                                                      run_time=0.5),
+                  cf.animate(rate_func=linear).set_value((t_te - t_a) * speed), run_time=t_te - t_le)
+        self.play(FadeIn(edge_t, run_time=0.4), Flash(p3(te0), color=ACCENT_1, flash_radius=0.4, line_length=0.12,
+                                                      run_time=0.5),
+                  cf.animate(rate_func=linear).set_value(1.0), run_time=0.6)
+        dim_y = le0.imag - 1.0
+        dim = DoubleArrow([le0.real, dim_y, 0], [te0.real, dim_y, 0], buff=0, color=GREY_INK, stroke_width=3,
+                          tip_length=0.18)
+        ext = VGroup(*[Line([z.real, z.imag - 0.55, 0], [z.real, dim_y - 0.15, 0], color=GREY_INK, stroke_width=2)
+                       for z in (le0, te0)])
+        chord_lbl = label("Chord", FS_LABEL).next_to(dim, DOWN, buff=0.2)
+        self.sync(c("هُوَ الوَتَرُ") - 0.1)
+        self.play(FadeIn(ext), GrowFromCenter(dim), FadeIn(chord_lbl), run_time=0.7)
+
+        # --- angle of attack: the section pitches nose-up against the wind direction
+        ref = DashedLine(p3(le9) + LEFT * 1.6, p3(le9), dash_length=0.14, color=GREY_INK, stroke_width=3)
+        chord_ext = DashedLine(p3(le9), p3(le9) + 1.6 * np.array([-np.cos(f9.al), np.sin(f9.al), 0]),
+                               dash_length=0.14, color=GREY_INK, stroke_width=3)
+        arc = Arc(radius=1.35, start_angle=PI - f9.al, angle=f9.al, arc_center=p3(le9), color=INK, stroke_width=4)
+        a_sym = label("α", FS_TITLE // 2 + 4, INK, weight=BOLD).move_to(
+            p3(le9) + 1.95 * np.array([-np.cos(f9.al / 2), np.sin(f9.al / 2), 0]))
+        a_name = label("Angle of\nattack", FS_LABEL).next_to(ref, DOWN, buff=0.3).align_to(ref, LEFT)
+        self.sync(c("وَزَاوِيَةُ") - 0.1)
+        self.play(FadeOut(VGroup(edge_l, edge_l_arrow, edge_t, dim, ext, chord_lbl)), alpha.animate.set_value(ALPHA_WORK),
+                  run_time=1.2, rate_func=smooth)
+        self.sync(c("الزَّاوِيَةُ بَيْنَ") - 0.1)
+        self.play(Create(ref), Create(chord_ext), run_time=0.4)
+        self.play(Create(arc), FadeIn(a_sym), FadeIn(a_name), run_time=0.5)
+        self.sync(c("الوَتَرِ") - 0.05)
+        hi = Line(p3(le9), p3(te9), color=INK, stroke_width=7)
+        self.play(Create(hi, run_time=0.25))
+        self.play(FadeOut(hi, run_time=0.25))
+
+        # --- the relative wind arrives
+        div = f9.divider()
+        wind_y = [div - 1.0, div - 0.5, div + 1.75]
+        wind = VGroup(*[Arrow([-6.75, y, 0], [-5.7, y, 0], buff=0, color=ACCENT_1, stroke_width=5, tip_length=0.24)
+                        for y in wind_y])
+        wind_lbl = label("Relative wind", FS_LABEL, ACCENT_1).next_to(wind[2], UP, buff=0.2).align_to(wind[2], LEFT)
+        self.sync(c("وَاتِّجَاهِ") - 0.1)
+        self.play(LaggedStart(*[GrowArrow(a) for a in wind], lag_ratio=0.2), ref.animate.set_color(ACCENT_1),
+                  run_time=0.5)
+        self.sync(c("الهَوَاءِ النِّسْبِيِّ") - 0.1)
+        self.play(FadeIn(wind_lbl, run_time=0.5))
+
+        # --- the flow: streamlines and moving air parcels
+        seeds = [div + d for d in (-1.0, -0.5, -0.25, -0.1, 0.12, 0.35, 0.65, 1.05, 1.75)]
+        paths = []
+        for y in seeds:
+            st = f9.stream(y)
+            paths.append(st[np.argmax(st.real >= FLOW_X0):])
+        lines = VGroup(*[_polyline(pth, ACCENT_1, 3) for pth in paths])
+        fvv = ValueTracker(0.0)
+        parcels = VGroup(*[Dot(radius=0.07, color=ACCENT_1).set_opacity(0.0) for _ in paths for _ in range(4)])
+        for i, d in enumerate(parcels):
+            d.path, d.phase = paths[i // 4], (i % 4) / 4 + 0.06 * (i // 4)
+        parcels.clock = 0.0
+
+        def move_parcels(m, dt):
+            m.clock += dt
+            for d in m:
+                n = len(d.path)
+                idx = (d.phase * n + m.clock * 1.7 / 0.05) % (n - 1)
+                i, fr = int(idx), idx - int(idx)
+                q = d.path[i] * (1 - fr) + d.path[i + 1] * fr
+                d.move_to([q.real, q.imag, 0])
+                d.set_opacity(fvv.get_value() * min(1.0, idx / (n - 1) / 0.05, (1 - idx / (n - 1)) / 0.05))
+        parcels.add_updater(move_parcels)
+        self.sync(c("الجَنَاحُ يَحْرِفُ") - 0.1)
+        self.add(parcels)
+        self.play(FadeOut(wind_lbl, run_time=0.3), FadeOut(VGroup(a_name, a_sym, arc, ref, chord_ext), run_time=0.3),
+                  LaggedStart(*[Create(l) for l in lines], lag_ratio=0.1, run_time=1.4),
+                  fvv.animate(run_time=1.4).set_value(1.0))
+
+        # --- Newton: the wing pushes the air down, the air pushes the wing up
+        x_dw = te9.real + 1.15
+        down_len = K_ARROW * cl_curve(ALPHA_WORK)
+        down_arrow = always_redraw(lambda: Arrow([x_dw, te9.imag + 0.1, 0],
+                                                 [x_dw, te9.imag + 0.1 - max(down_len * dv.get_value(), 0.02), 0],
+                                                 buff=0, color=ACCENT_1, stroke_width=8, tip_length=0.3,
+                                                 max_tip_length_to_length_ratio=0.6, max_stroke_width_to_length_ratio=12)
+                                   if dv.get_value() > 0.06 else
+                                   Arrow([x_dw, te9.imag, 0], [x_dw, te9.imag - 0.2, 0], buff=0).set_opacity(0.0))
+        down_lbl = label("Air pushed down", FS_LABEL, ACCENT_1).move_to([x_dw + 0.3, te9.imag + 0.1 - down_len - 0.45, 0])
+        down_lbl.set_opacity(0.0)
+        self.add(down_arrow)
+        self.sync(c("الأَسْفَلِ") - 0.1)
+        self.play(dv.animate.set_value(1.0), lines.animate.set_stroke(opacity=0.35), down_lbl.animate.set_opacity(1.0),
+                  run_time=0.7)
+        self.sync(c("فَيَدْفَعُهُ") - 0.1)
+        self.play(lv.animate.set_value(1.0), lab_push.animate.set_value(1.0), run_time=0.8)
+
+        def panel_tag(line1, line2, color, y):
+            """A boxed two-line tag in the right-hand panel (x from 3.75 to 6.85)."""
+            txt = fit(VGroup(label(line1, FS_AXIS, INK, weight=BOLD), label(line2, FS_AXIS, GREY_INK))
+                      .arrange(DOWN, buff=0.1), 2.7)
+            box = SurroundingRectangle(txt, buff=0.2, color=color, corner_radius=0.1, stroke_width=3)
+            return VGroup(box, txt).move_to([PANEL_X, y, 0])
+        newton = panel_tag("Newton's third law", "action = reaction", ACCENT_1, 2.35)
+        self.sync(c("قَانُونُ") - 0.1)
+        self.play(FadeIn(newton, shift=LEFT * 0.2), run_time=0.6)
+
+        # --- Bernoulli: lower pressure above, higher pressure below
+        marks_up_x, marks_lo_x = [-2.2, -1.5, -0.8, -0.1], [-3.6, -2.6, -1.6, -0.6]
+        out9 = f9.outline()
+
+        def surface(x, top):
+            near = out9[abs(out9.real - x) < 0.06]
+            return near.imag.max() if top else near.imag.min()
+        m_up = VGroup(*[_minus(ACCENT_1).move_to([x, surface(x, True) + 0.42, 0]) for x in marks_up_x])
+        m_lo = VGroup(*[_plus(INK).move_to([x, surface(x, False) - 0.42, 0]) for x in marks_lo_x])
+        lo_lbl = label("Low pressure", FS_LABEL, ACCENT_1).next_to(m_up, UP, buff=0.25)
+        hi_lbl = label("High pressure", FS_LABEL, INK).next_to(m_lo, DOWN, buff=0.25)
+        bern = panel_tag("Bernoulli", "low pressure above", ACCENT_1, 0.6)
+        self.sync(c("وَفِي الوَقْتِ") - 0.1)
+        self.play(FadeOut(parcels, run_time=0.4), FadeOut(lines, run_time=0.4), FadeOut(wind, run_time=0.4),
+                  dv.animate(run_time=0.4).set_value(0.0),
+                  FadeOut(down_lbl, run_time=0.4), lv.animate(run_time=0.4).set_value(0.0),
+                  lab_push.animate(run_time=0.4).set_value(0.0), run_time=0.5)
+        parcels.clear_updaters()
+        self.remove(parcels, lines)
+        self.sync(c("فَوْقَ الجَنَاحِ") - 0.1)
+        self.play(LaggedStart(*[GrowFromCenter(m) for m in m_up], lag_ratio=0.15), FadeIn(lo_lbl), run_time=0.8)
+        self.sync(c("تَحْتَهُ") - 0.5)
+        self.play(LaggedStart(*[GrowFromCenter(m) for m in m_lo], lag_ratio=0.15), FadeIn(hi_lbl), run_time=0.8)
+        self.sync(c("مَبْدَأُ") - 0.1)
+        self.play(FadeIn(bern, shift=LEFT * 0.2), run_time=0.6)
+
+        # --- the two views are one phenomenon: the same lift
+        eq = label("=", FS_TITLE // 2, INK, weight=BOLD)
+        same = label("same lift", FS_AXIS, ACCENT_1)
+        VGroup(eq, same).arrange(RIGHT, buff=0.25).move_to([PANEL_X, 1.48, 0])
+        self.sync(c("وَالتَّفْسِيرَانِ") - 0.1)
+        self.play(FadeIn(eq, scale=1.4), run_time=0.5)
+        self.sync(c("لِلظَّاهِرَةِ") - 0.1)
+        self.play(FadeOut(VGroup(m_up, m_lo, lo_lbl, hi_lbl), run_time=0.5), lv.animate.set_value(1.0),
+                  lab_lift.animate.set_value(1.0), FadeIn(same), run_time=0.8)
+
+        # --- angle of attack, lift and the stall
+        ox, oy, sx, sy = 4.25, -2.3, 0.1, 2.7                   # origin of the chart and its scales (per degree, per C_L)
+        cpt = lambda a: np.array([ox + sx * a, oy + sy * cl_curve(a), 0.0])
+        ax_x = Arrow([ox, oy, 0], [6.75, oy, 0], buff=0, color=INK, stroke_width=3, tip_length=0.2)
+        ax_y = Arrow([ox, oy, 0], [ox, oy + 3.0, 0], buff=0, color=INK, stroke_width=3, tip_length=0.2)
+        x_lbl = fit(label("Angle of attack α", FS_AXIS), 2.9).next_to(ax_x, DOWN, buff=0.2).align_to(ax_x, RIGHT)
+        y_lbl = VGroup(label("Lift coefficient C", FS_AXIS), label("L", FS_AXIS)).arrange(RIGHT, buff=0.02,
+                                                                                        aligned_edge=DOWN)
+        y_lbl[1].shift(DOWN * 0.07)
+        y_lbl.rotate(PI / 2).next_to(ax_y, LEFT, buff=0.12).align_to(ax_y, DOWN).shift(UP * 0.1)
+        curve = _polyline([complex(*cpt(a)[:2]) for a in np.linspace(0, 24, 90)], ACCENT_1, 5)
+        dot = always_redraw(lambda: Dot(cpt(adot.get_value()), radius=0.1, color=ACCENT_4, stroke_width=0))
+        chart = VGroup(ax_x, ax_y, x_lbl, y_lbl)
+        self.sync(c("زِيَادَةُ") - 0.5)
+        self.play(FadeOut(VGroup(newton, bern, eq, same), run_time=0.5), FadeIn(chart), run_time=0.6)
+        self.play(Create(curve, run_time=0.9, rate_func=linear))
+        self.add(dot)
+        # pitch up step by step: the wing rotates, the dot climbs the curve, the arrow grows
+        self.sync(c("زِيَادَةُ") + 0.9)
+        self.play(alpha.animate.set_value(12.0), adot.animate.set_value(12.0), run_time=1.6, rate_func=smooth)
+        self.sync(c("حَتَّى") - 0.1)
+        crit_lbl = label("Critical angle", FS_LABEL, INK).next_to(cpt(ALPHA_CRIT), UP, buff=0.55).shift(LEFT * 0.3)
+        crit_line = DashedLine(crit_lbl.get_bottom() + DOWN * 0.06 + RIGHT * 0.3, cpt(ALPHA_CRIT) + UP * 0.15,
+                               dash_length=0.1, color=GREY_INK, stroke_width=3)
+        t_crit = c("زَاوِيَةٍ حَرِجَةٍ") - 0.4          # the fade starts ~0.3 s late (first frame of the play)
+        self.play(alpha.animate.set_value(ALPHA_CRIT), adot.animate.set_value(ALPHA_CRIT), run_time=1.6,
+                  rate_func=smooth,
+                  *[Succession(Wait(t_crit - self.renderer.time), FadeIn(crit_lbl, run_time=0.4))],
+                  *[Succession(Wait(t_crit - self.renderer.time), Create(crit_line, run_time=0.4))])
+
+        # --- past it the flow separates: red eddies over the upper surface
+        seeds19 = [f19.divider() + d for d in (-1.0, -0.5, -0.25, -0.1, 0.12, 0.35, 0.65, 1.05, 1.75)]
+        sep_x = f19.le().real + 0.38 * (f19.te().real - f19.le().real)
+        att, low, eddy_src = VGroup(), VGroup(), []
+        for y in seeds19:
+            st = f19.stream(y)
+            st = st[np.argmax(st.real >= FLOW_X0):]
+            over = st[np.argmin(abs(st.real - f19.le().real))].imag > f19.le().imag
+            if over and y > seeds19[3]:
+                j = np.argmax(st.real >= sep_x)
+                att.add(_polyline(st[:j + 1], ACCENT_1, 3))
+                eddy_src.append(st[j])
+            else:
+                low.add(_polyline(st, ACCENT_1, 3))
+        eph = ValueTracker(0.0)
+        eph.add_updater(lambda m, dt: m.increment_value(2.2 * dt))
+
+        def build_eddies():
+            out = VGroup()
+            for k, q in enumerate(eddy_src):
+                tau = np.linspace(0, (FLOW_X1 - q.real) / 1.1, 80)
+                r = np.minimum(0.05 + 0.13 * tau, 0.36)
+                th = 3.4 * tau - eph.get_value() + 1.7 * k
+                x = q.real + 1.1 * tau + r * np.sin(th) - r[0] * np.sin(th[0])
+                y = q.imag + 0.12 * tau * (1 + 0.3 * k) + r * (np.cos(th) - np.cos(th[0]))
+                out.add(_polyline([complex(a, b) for a, b in zip(x, y)], ACCENT_4, 3))
+            return out
+        eddies = always_redraw(build_eddies)
+        sep_lbl = label("Air separates", FS_LABEL, ACCENT_4)
+        sep_lbl.next_to(build_eddies(), UP, buff=0.3)
+        stall_flow = VGroup(att, low)
+        self.sync(c("يَنْفَصِلُ") - 0.3)
+        self.add(eph)
+        self.play(alpha.animate(run_time=0.9, rate_func=smooth).set_value(ALPHA_STALL),
+                  Succession(Wait(0.6), AnimationGroup(FadeIn(stall_flow, run_time=0.6), FadeIn(eddies, run_time=0.6),
+                                                       FadeIn(sep_lbl, run_time=0.6))))
+
+        # --- lift drops quickly: the arrow shrinks (it does not vanish), the dot falls along the curve
+        self.sync(c("فَيَنْخَفِضُ") - 0.1)
+        self.play(adot.animate.set_value(ALPHA_STALL), run_time=1.3, rate_func=smooth)
+        stall_lbl = label("Stall", FS_LABEL + 2, ACCENT_4, weight=BOLD).move_to(cpt(21.0) + np.array([-0.35, -0.6, 0]))
+        self.sync(c("الانْهِيَارُ") - 0.1)
+        self.play(FadeIn(stall_lbl, scale=1.3), run_time=0.5)
+
+        # --- back to a normal angle; the myth of equal transit times
+        self.sync(c("وَأَخِيرًا") - 0.7)
+        self.play(FadeOut(VGroup(stall_flow, eddies, sep_lbl, chart, curve, crit_lbl, crit_line, stall_lbl), run_time=0.6),
+                  FadeOut(dot, run_time=0.6), alpha.animate.set_value(ALPHA_WORK), lv.animate.set_value(0.0),
+                  lab_lift.animate.set_value(0.0), run_time=1.0, rate_func=smooth)
+        eph.clear_updaters()
+
+        up = f9.stream(div + 0.03, dt=0.03, x1=te9.real + 0.06)
+        lo = f9.stream(div - 0.03, dt=0.03, x1=te9.real + 0.06)
+        start_x, finish_x = le9.real - 1.0, te9.real + 0.05
+        up, lo = [q[np.argmax(q.real >= start_x):] for q in (up, lo)]
+        up, lo = [q[:np.argmax(q.real >= finish_x) + 1] for q in (up, lo)]
+        rate = len(up) / 1.5                                     # path steps per second: the upper parcel takes 1.5 s
+        pr = ValueTracker(0.0)
+        parcel_up = Dot(p3(up[0]), radius=0.1, color=ACCENT_1, stroke_width=0)
+        parcel_lo = Dot(p3(lo[0]), radius=0.1, color=INK, stroke_width=0)
+
+        def at(path, sec):
+            i = min(sec * rate, len(path) - 1.0)
+            k, fr = int(i), i - int(i)
+            q = path[k] if k >= len(path) - 1 else path[k] * (1 - fr) + path[k + 1] * fr
+            return p3(q)
+        parcel_up.add_updater(lambda m: m.move_to(at(up, pr.get_value())))
+        parcel_lo.add_updater(lambda m: m.move_to(at(lo, pr.get_value())))
+        trail_up = TracedPath(parcel_up.get_center, stroke_color=ACCENT_1, stroke_width=4)
+        trail_lo = TracedPath(parcel_lo.get_center, stroke_color=INK, stroke_width=4)
+        y_mid = (up[0].imag + lo[0].imag) / 2
+        start_line = DashedLine([start_x, y_mid - 0.8, 0], [start_x, y_mid + 0.8, 0], dash_length=0.12,
+                                color=GREY_INK, stroke_width=3)
+        finish_line = DashedLine([finish_x, y_mid - 1.0, 0], [finish_x, y_mid + 1.3, 0], dash_length=0.12,
+                                 color=GREY_INK, stroke_width=3)
+        start_lbl = label("Start", FS_NOTE, GREY_INK).next_to(start_line, DOWN, buff=0.15)
+        finish_lbl = label("Finish", FS_NOTE, GREY_INK).next_to(finish_line, DOWN, buff=0.15)
+        myth = fit(VGroup(label("Myth:", FS_AXIS, ACCENT_4, weight=BOLD),
+                          label("equal transit time", FS_AXIS, ACCENT_4)).arrange(DOWN, buff=0.1), 2.7)
+        box_m = SurroundingRectangle(myth, buff=0.2, color=ACCENT_4, corner_radius=0.1, stroke_width=3)
+        myth_grp = VGroup(box_m, myth).move_to([PANEL_X, 1.5, 0])
+        no = VGroup(icon("x", ACCENT_4, 0.7), label("Not true", FS_LABEL, ACCENT_4, weight=BOLD)).arrange(RIGHT, buff=0.2)
+        no.next_to(myth_grp, DOWN, buff=0.35)
+        self.sync(c("خُرَافَةٌ") - 0.1)
+        self.play(FadeIn(myth_grp, shift=LEFT * 0.2), run_time=0.6)
+        self.sync(c("الهَوَاءَ فَوْقَ الجَنَاحِ") - 0.1)
+        self.play(FadeIn(start_line), FadeIn(start_lbl), FadeIn(parcel_up), FadeIn(parcel_lo), run_time=0.6)
+        self.sync(c("الحَافَّةِ الخَلْفِيَّةِ") - 0.1)
+        self.play(FadeIn(finish_line), FadeIn(finish_lbl), run_time=0.5)
+        self.sync(c("هٰذَا غَيْرُ") - 0.1)
+        self.play(FadeIn(no, scale=1.3), myth_grp.animate.set_opacity(0.55), run_time=0.5)
+        self.add(trail_up, trail_lo)
+        first = label("Upper air arrives first", FS_LABEL, ACCENT_1)
+        first.next_to(finish_line.get_top(), UP, buff=0.2)
+        t_run = c("الهَوَاءُ فَوْقَ") - 0.15
+        self.sync(t_run)
+        self.play(pr.animate(rate_func=linear).set_value(len(lo) / rate), run_time=len(lo) / rate,
+                  *[Succession(Wait(max(c("أَبْكَرَ") - 0.1 - t_run, 0.0)), FadeIn(first, run_time=0.4))])
+        self.sync(t_end)
+        for m in self.mobjects:                                 # leave nothing running for the next segment
+            m.clear_updaters(recursive=True)
 
 
 if __name__ == "__main__":
