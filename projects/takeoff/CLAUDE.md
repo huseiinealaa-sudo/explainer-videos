@@ -51,3 +51,4 @@ First episode outside the industrial field: it is also a test of what the templa
 
 ## Owner decisions
 - 2026-09-30: project created; single episode (target 4:30–4:50, max 5:00); segments 1 and 5 in 3D; left out for later episodes: landing, jet engines, flight controls, engine failure in detail.
+- 2026-09-30: narration, storyboard and quality gate approved; cuts (a) seg 1 closing sentence and (b) the spoken text of Newton's third law in seg 3 applied (measured narration 4:45.7); (c) the spoken km/h in seg 4 kept. If the video would exceed 5:00 after fixes, apply cut (d) only (the spoken 70,000 × 9.81 in seg 2) and say so in the PR. Corrections V1 (14 CFR 1.2) and hot air (PHAK 11-16) approved.
