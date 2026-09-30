@@ -401,6 +401,52 @@ def _sqrt_frac(num, den, color=INK, width=3):
     grp.num, grp.bar, grp.den, grp.rad, grp.frac = num, bar, den, rad, frac
     return grp
 
+# ---------------- 2D helpers (segment 6): heat, wind and weight ----------------
+GAUGE_MARK = 0.62                   # needle position (0..1 of the dial) at the lift-off reading, the same for both dials
+
+
+def _gauge(r=0.8):
+    """A round airspeed dial without numbers: face, ticks, a green mark at GAUGE_MARK, hub. Needle: see _needle."""
+    ang = lambda u: 225 * DEGREES - 270 * DEGREES * u
+    dirn = lambda u: np.array([np.cos(ang(u)), np.sin(ang(u)), 0.0])
+    face = Circle(radius=r * 1.08, color=INK, fill_color=WHITE, fill_opacity=1, stroke_width=3)
+    ticks = VGroup(*[Line(dirn(u) * r * 0.82, dirn(u) * r * 0.98, color=GREY_INK, stroke_width=3)
+                     for u in np.linspace(0, 1, 9)])
+    mark = Line(dirn(GAUGE_MARK) * r * 0.74, dirn(GAUGE_MARK) * r * 1.0, color=ACCENT_3, stroke_width=7)
+    hub = Dot(ORIGIN, radius=0.06, color=INK)
+    g = VGroup(face, ticks, mark, hub)
+    g.r, g.dirn = r, dirn
+    return g
+
+
+def _needle(gauge, u):
+    """Needle of a dial that follows a ValueTracker u (0..1)."""
+    return always_redraw(lambda: Line(gauge.get_center(), gauge.get_center() + gauge.dirn(u.get_value()) * gauge.r * 0.7,
+                                      color=INK, stroke_width=5))
+
+
+def _jiggle_dots(box, bases0, bases1, keep, tracker, color, amp0, amp1, hz):
+    """Air molecules in a box: they wobble round their base points. With a tracker s (0..1) the dots not in `keep`
+    fade out, the others spread to bases1 and wobble wider (warm air: fewer, faster molecules)."""
+    dots = VGroup(*[Dot(ORIGIN, radius=0.075, color=color) for _ in bases0])
+    ph = np.random.RandomState(3).uniform(0, 6.28, (len(bases0), 2))
+    dots.t = 0.0
+
+    def upd(m, dt):
+        m.t += dt
+        s = tracker.get_value() if tracker is not None else 0.0
+        amp = amp0 + (amp1 - amp0) * s
+        for k, d in enumerate(m):
+            b = bases0[k]
+            if k in keep:
+                b = (1 - s) * bases0[k] + s * bases1[k]
+            w = np.array([np.sin(hz * m.t + ph[k, 0]), np.cos(1.3 * hz * m.t + ph[k, 1]), 0.0])
+            d.move_to(box.get_center() + b + amp * w)
+            d.set_fill(color, opacity=1.0 if k in keep else 1.0 - s)
+    dots.add_updater(upd)
+    upd(dots, 0)
+    return dots
+
 
 class TakeoffLift(SyncedScene, ThreeDScene):
     """SyncedScene timing on a 3D camera: 2D segments keep the default top-down view."""
@@ -429,6 +475,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(self.end(5))
 
         # ---------------- Segment 6: heat, wind and weight ----------------
+        self.segment_6()
         self.sync(self.end(6))
 
         # ---------------- Segment 7: conclusion ----------------
@@ -1493,6 +1540,272 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         del self.play
         self.reset_camera_2d(cam)
         state.clear_updaters()
+
+    # ---------------- Segment 6 ----------------
+    def segment_6(self):
+        """Three factors move the lift-off speed: warm air, a headwind, weight (2D, flat top-down camera)."""
+        c = lambda phrase, nth=1: self.cue(6, phrase, nth)
+        T = lambda phrase, dt=0.1, nth=1: c(phrase, nth) - dt
+        t0, t_end = self.start(6), self.end(6)
+        T_STD_C = D.P0 / (D.R_AIR * D.RHO_15) - 273.15          # the temperature behind RHO_15 (15 °C)
+        assert f"{T_STD_C:.0f}" == "15"
+        heavy_f = 1 + D.WEIGHT_INCREASE                          # W -> 1.10 W
+
+        # ---------- the three factors: a big row first, then a stage bar on top with a marker on the current one
+        names = [("temperature", "Heat"), ("wind", "Headwind"), ("weight", "Weight")]
+        big = VGroup(*[VGroup(icon(n, INK, 1.3), label(t, FS_BODY)).arrange(DOWN, buff=0.25) for n, t in names])
+        big.arrange(RIGHT, buff=1.8, aligned_edge=UP).move_to([0, 0.2, 0])
+        stage = VGroup(*[VGroup(icon(n, INK, 0.5), label(t, FS_LABEL)).arrange(RIGHT, buff=0.15) for n, t in names])
+        stage.arrange(RIGHT, buff=0.9).move_to([1.0, 3.3, 0])
+        ring = lambda i: RoundedRectangle(width=stage[i].width + 0.4, height=stage[i].height + 0.3, corner_radius=0.12,
+                                          color=ACCENT_1, stroke_width=3.5).move_to(stage[i])
+        marker = ring(0)
+
+        self.sync(T("ثَلَاثَةُ", -0.1))
+        self.play(LaggedStart(*[FadeIn(b, shift=UP * 0.2) for b in big], lag_ratio=0.8), run_time=2.2)
+
+        # ================= (a) warm air =================
+        BW, BH = 2.7, 2.0
+        box_c = Rectangle(width=BW, height=BH, color=GREY_INK, fill_color=PANEL_FILL, fill_opacity=0.5, stroke_width=3)
+        box_h = Rectangle(width=BW, height=BH, color=GREY_INK, fill_color=PANEL_FILL, fill_opacity=0.5, stroke_width=3)
+        VGroup(box_c, box_h).arrange(RIGHT, buff=0.8).move_to([-3.55, 0.95, 0])
+        cols, rows = 6, 4
+        rng = np.random.RandomState(6)
+        gx = np.linspace(-BW / 2 + 0.3, BW / 2 - 0.3, cols)
+        gy = np.linspace(-BH / 2 + 0.3, BH / 2 - 0.3, rows)
+        bases0 = [np.array([gx[i], gy[j], 0.0]) + np.array([*rng.uniform(-0.1, 0.1, 2), 0.0])
+                  for j in range(rows) for i in range(cols)]
+        keep = [j * cols + i for j in range(rows) for i in range(cols) if (i + j) % 2 == 0]      # 12 of the 24 stay
+        hx, hy = np.linspace(-BW / 2 + 0.4, BW / 2 - 0.4, 4), np.linspace(-BH / 2 + 0.4, BH / 2 - 0.4, 3)
+        spread = [np.array([hx[i], hy[j], 0.0]) for j in range(3) for i in range(4)]
+        bases1 = {k: spread[n] for n, k in enumerate(keep)}
+        thin = ValueTracker(0.0)
+        dots_c = _jiggle_dots(box_c, bases0, bases0, list(range(24)), None, ACCENT_1, 0.05, 0.05, 5.0)
+        dots_h = _jiggle_dots(box_h, bases0, bases1, keep, thin, ACCENT_2, 0.06, 0.15, 7.5)
+        tmp_c = VGroup(icon("temperature", ACCENT_1, 0.45), label(f"{T_STD_C:.0f} °C", FS_LABEL)).arrange(RIGHT, buff=0.12)
+        tmp_h = VGroup(icon("temperature", ACCENT_2, 0.45), label(f"{D.T_HOT_C:.0f} °C", FS_LABEL, ACCENT_2)).arrange(RIGHT, buff=0.12)
+        tmp_c.next_to(box_c, UP, buff=0.2)
+        tmp_h.next_to(box_h, UP, buff=0.2)
+        rho_c = label(f"ρ = {D.RHO_15:.3f} kg/m³", FS_AXIS, ACCENT_1).next_to(box_c, DOWN, buff=0.22)
+        rho_h = label(f"ρ = {D.RHO_HOT:.2f} kg/m³", FS_AXIS, ACCENT_2).next_to(box_h, DOWN, buff=0.22)
+
+        # airspeed bars (right column, top)
+        X0, kv = 1.6, 3.0 / D.V_15
+        sp_head = label("Airspeed needed for lift-off", FS_AXIS, GREY_INK)
+        sp_head.move_to([3.7, 2.5, 0])
+        bar = lambda w, y: Rectangle(width=w, height=0.36, color=ACCENT_1, fill_color=ACCENT_1, fill_opacity=0.9,
+                                     stroke_width=0).move_to([X0 + w / 2, y, 0])
+        sp_c, sp_h = bar(kv * D.V_15, 1.85), bar(kv * D.V_HOT, 1.2)
+        sp_tc = label(f"{T_STD_C:.0f} °C", FS_AXIS).next_to(sp_c, LEFT, buff=0.15)
+        sp_th = label(f"{D.T_HOT_C:.0f} °C", FS_AXIS, ACCENT_2).next_to(sp_h, LEFT, buff=0.15)
+        sp_vc = label(f"{D.V_15:.1f} m/s", FS_LABEL).next_to(sp_c, RIGHT, buff=0.15)
+        sp_vh = label(f"{D.V_HOT:.1f} m/s", FS_LABEL, ACCENT_2)
+        sp_vh.next_to(sp_h, RIGHT, buff=0.15)
+        sp_ref = DashedLine([X0 + kv * D.V_15, 2.1, 0], [X0 + kv * D.V_15, 1.0, 0], dash_length=0.1, color=GREY_INK, stroke_width=2.5)
+        sp_plus = label(f"+{D.HOT_INCREASE * 100:.0f} %", FS_LABEL, ACCENT_2, weight=BOLD)
+        sp_plus.next_to(sp_h, DOWN, buff=0.12).align_to(sp_h, RIGHT)
+
+        # runway needed (left column, bottom): longer for warm air, no number
+        rw_head = label("Runway needed", FS_AXIS, GREY_INK)
+        rw_head.move_to([-3.55, -1.3, 0])
+        rw_x0 = -5.4
+        rbar = lambda w, y: Rectangle(width=w, height=0.36, color=GREY_INK, fill_color=GREY_INK, fill_opacity=0.5,
+                                      stroke_width=0).move_to([rw_x0 + w / 2, y, 0])
+        rw_c, rw_h, rw_h2 = rbar(2.6, -1.95), rbar(2.6, -2.6), rbar(3.5, -2.6)
+        rw_tc = label(f"{T_STD_C:.0f} °C", FS_AXIS).next_to(rw_c, LEFT, buff=0.15)
+        rw_th = label(f"{D.T_HOT_C:.0f} °C", FS_AXIS, ACCENT_2).next_to(rw_h, LEFT, buff=0.15)
+        rw_long = label("longer", FS_LABEL, ACCENT_2, weight=BOLD).next_to(rw_h2, RIGHT, buff=0.2)
+
+        # the cockpit airspeed indicator reads the same in both cases (dial without numbers)
+        dial_head = label("Cockpit airspeed indicator", FS_AXIS, GREY_INK).move_to([3.7, -0.4, 0])
+        g_c, g_h = _gauge(0.8), _gauge(0.8)
+        g_c.move_to([2.3, -1.65, 0])
+        g_h.move_to([5.1, -1.65, 0])
+        u_c, u_h = ValueTracker(0.0), ValueTracker(0.0)
+        nd_c, nd_h = _needle(g_c, u_c), _needle(g_h, u_h)
+        g_tc = label(f"{T_STD_C:.0f} °C", FS_AXIS).next_to(g_c, DOWN, buff=0.25)
+        g_th = label(f"{D.T_HOT_C:.0f} °C", FS_AXIS, ACCENT_2).next_to(g_h, DOWN, buff=0.25)
+        g_eq = label("=", FS_HEADING, ACCENT_3, weight=BOLD).move_to([3.7, -1.65, 0])
+        g_same = label("same reading", FS_LABEL, ACCENT_3, weight=BOLD).move_to([3.7, -3.4, 0])
+
+        # --- the big row becomes the stage bar, marker on "Heat"
+        self.sync(T("أَوَّلًا", 0.25))
+        self.play(FadeOut(big, shift=UP * 0.3), FadeIn(stage, shift=DOWN * 0.15), Create(marker), run_time=0.7)
+
+        # --- dense cold air, then warm air
+        self.sync(T("الهَوَاءُ الحَارُّ", 0.1))
+        self.play(FadeIn(VGroup(box_c, dots_c, tmp_c, rho_c)), run_time=0.5)
+        self.sync(T("الحَارُّ", 0.1))
+        self.play(FadeIn(VGroup(box_h, dots_h, tmp_h[0])), run_time=0.3)
+        self.sync(T("أَقَلُّ", 0.05))
+        self.play(thin.animate.set_value(1.0), run_time=1.3, rate_func=smooth)
+        self.sync(T("خَمْسٍ", 0.05))
+        self.play(FadeIn(tmp_h[1], shift=LEFT * 0.1), run_time=0.4)
+        self.sync(T("الكَثَافَةُ", 0.05))
+        self.play(Indicate(rho_c, color=ACCENT_2, scale_factor=1.15), run_time=0.7)
+        self.sync(T("وَاحِدٍ", 0.05))
+        self.play(FadeIn(rho_h, shift=DOWN * 0.1), run_time=0.5)
+
+        # --- airspeed bars: 76.4 → 80.3 m/s, about 5 % more
+        self.sync(T("فَتَصِيرُ", 0.05))
+        self.play(FadeIn(sp_head, shift=DOWN * 0.1), run_time=0.5)
+        self.sync(T("السُّرْعَةُ اللَّازِمَةُ", 0.05))
+        self.play(GrowFromEdge(sp_c, LEFT), FadeIn(sp_tc), run_time=0.7)
+        self.play(FadeIn(sp_vc, shift=RIGHT * 0.1), run_time=0.3)
+        self.sync(T("بِالنِّسْبَةِ", 0.05))
+        self.play(Circumscribe(sp_head, color=ACCENT_1, buff=0.12, run_time=0.9))
+        self.sync(T("ثَمَانِينَ", 0.05))
+        self.play(GrowFromEdge(sp_h, LEFT), FadeIn(sp_th), Create(sp_ref), run_time=0.9)
+        self.sync(T("ثَلَاثَةٍ", 0.05))
+        self.play(FadeIn(sp_vh, shift=RIGHT * 0.1), run_time=0.4)
+        self.sync(T("خَمْسَةٍ", 0.05))
+        self.play(FadeIn(sp_plus, shift=UP * 0.1), run_time=0.5)
+
+        # --- a longer runway
+        self.sync(T("وَيَلْزَمُ", 0.05))
+        self.play(FadeIn(rw_head), GrowFromEdge(rw_c, LEFT), GrowFromEdge(rw_h, LEFT), FadeIn(rw_tc), FadeIn(rw_th),
+                  run_time=0.7)
+        self.sync(T("أَطْوَلُ", 0.15))
+        self.play(Transform(rw_h, rw_h2), run_time=0.7)
+        self.play(FadeIn(rw_long, shift=RIGHT * 0.1), run_time=0.4)
+
+        # --- the cockpit airspeed indicator shows the same value
+        self.sync(T("عَدَّادَ", 0.05))
+        self.add(nd_c, nd_h)
+        self.play(FadeIn(VGroup(dial_head, g_c, g_h, nd_c, nd_h, g_tc, g_th)), run_time=0.6)
+        self.sync(T("فِي قُمْرَةِ", 0.2))
+        self.play(u_c.animate.set_value(GAUGE_MARK), run_time=0.9, rate_func=smooth)
+        self.sync(T("يُظْهِرُ", 0.05))
+        self.play(u_h.animate.set_value(GAUGE_MARK), run_time=0.9, rate_func=smooth)
+        self.sync(T("نَفْسَهَا", 0.05))
+        self.play(FadeIn(g_eq), FadeIn(g_same, shift=UP * 0.1), run_time=0.6)
+
+        # ================= (b) headwind =================
+        A = VGroup(box_c, box_h, dots_c, dots_h, tmp_c, tmp_h, rho_c, rho_h, sp_head, sp_c, sp_h, sp_tc, sp_th, sp_vc,
+                   sp_vh, sp_ref, sp_plus, rw_head, rw_c, rw_h, rw_tc, rw_th, rw_long, dial_head, g_c, g_h, nd_c, nd_h,
+                   g_tc, g_th, g_eq, g_same)
+        RWY = 0.8                                            # top edge of the runway
+        PS = 0.9
+        plane = airliner_side().scale(PS, about_point=ORIGIN)
+        plane.shift([-2.0, RWY + 0.75 * PS, 0])
+        cg = plane.body.get_center()
+        rw_top = Line([-6.85, RWY, 0], [6.85, RWY, 0], color=GREY_INK, stroke_width=3)
+        rw_bot = Line([-6.85, RWY - 0.9, 0], [6.85, RWY - 0.9, 0], color=GREY_INK, stroke_width=3)
+        rw_dash = VGroup(*[Line([x, RWY - 0.45, 0], [x + 0.6, RWY - 0.45, 0], color=LIGHT_INK, stroke_width=5)
+                           for x in np.arange(-6.6, 6.6, 1.65)])
+        ground = VGroup(rw_top, rw_bot, rw_dash)
+        w_arrow = Arrow([5.9, 1.75, 0], [3.0, 1.75, 0], buff=0, color=ACCENT_1, stroke_width=7, tip_length=0.3)
+        w_row = VGroup(icon("wind", ACCENT_1, 0.6), label("Headwind", FS_LABEL, ACCENT_1),
+                       label(f"{D.HEADWIND:.0f} m/s", FS_LABEL, ACCENT_1, weight=BOLD)).arrange(RIGHT, buff=0.2)
+        w_row.move_to([4.45, 2.5, 0])
+        streaks = VGroup(*[Line(ORIGIN, RIGHT * 0.7, color=ACCENT_1, stroke_width=4) for _ in range(3)])
+        streaks.t = 0.0
+        s_y = [1.05, 1.35, 1.2]
+
+        def flow(m, dt):
+            m.t += dt
+            for i, sl in enumerate(m):
+                x = 6.3 - ((m.t * 2.2 + i * 1.9) % 5.2)
+                sl.put_start_and_end_on([x + 0.7, s_y[i], 0], [x, s_y[i], 0])
+                sl.set_stroke(opacity=float(min(1.0, (x - 1.1) / 0.6, (6.3 - x) / 0.6)) if 1.1 < x < 6.3 else 0.0)
+        streaks.add_updater(flow)
+        flow(streaks, 0)
+        lift_a = Arrow(cg + UP * 0.3, cg + UP * 1.05, buff=0, color=ACCENT_1, stroke_width=7, tip_length=0.28)
+        lift_t = label("Lift", FS_LABEL, ACCENT_1).next_to(lift_a, RIGHT, buff=0.12)
+
+        K = 0.07
+        AX0 = -3.3
+        ya, yg = -0.85, -1.85
+        air_l = label("Airspeed", FS_LABEL, ACCENT_1).move_to([-6.5, ya, 0], LEFT)
+        air_a = Arrow([AX0, ya, 0], [AX0 + K * D.V_15, ya, 0], buff=0, color=ACCENT_1, stroke_width=8, tip_length=0.3)
+        air_v = label(f"{D.V_15:.1f} m/s", FS_LABEL, ACCENT_1).next_to(air_a, RIGHT, buff=0.2)
+        gr_l = label("Ground speed", FS_LABEL).move_to([-6.5, yg, 0], LEFT)
+        gr_a = Arrow([AX0, yg, 0], [AX0 + K * D.V_GROUND_HEADWIND, yg, 0], buff=0, color=INK, stroke_width=8, tip_length=0.3)
+        gr_gap = DashedLine([AX0 + K * D.V_GROUND_HEADWIND, yg, 0], [AX0 + K * D.V_15, yg, 0], dash_length=0.1,
+                            color=ACCENT_1, stroke_width=6)
+        gr_gap_t = label(f"{D.HEADWIND:.0f} m/s", FS_AXIS, ACCENT_1).next_to(gr_gap, DOWN, buff=0.2)
+        gr_v = label(f"{D.V_GROUND_HEADWIND:.1f} m/s", FS_LABEL).next_to(gr_gap, RIGHT, buff=0.2)
+        eq_cap = label("Ground speed = airspeed − wind", FS_AXIS, GREY_INK)
+        eq = label(f"{D.V_15:.1f} − {D.HEADWIND:.0f} = {D.V_GROUND_HEADWIND:.1f} m/s", FS_LABEL + 6, INK, weight=BOLD)
+        VGroup(eq_cap, eq).arrange(DOWN, buff=0.15).move_to([-0.5, -3.1, 0])
+
+        self.sync(T("ثَانِيًا", 0.1))
+        self.play(FadeOut(A), Transform(marker, ring(1)), FadeIn(VGroup(ground, plane)), run_time=0.6)
+        for m in A:
+            m.clear_updaters()
+        self.remove(nd_c, nd_h)
+        self.sync(T("المُعَاكِسَةُ", 0.05))
+        self.add(streaks)
+        self.play(FadeIn(w_row[0]), FadeIn(w_row[1]), FadeIn(w_arrow, shift=LEFT * 0.6), run_time=0.8)
+        self.sync(T("الرَّفْعَ", 0.05))
+        self.play(GrowArrow(lift_a), FadeIn(lift_t), run_time=0.6)
+        self.sync(T("سُرْعَةِ الطَّائِرَةِ", 0.05))
+        self.play(FadeIn(air_l), GrowArrow(air_a), run_time=0.7)
+        self.play(FadeIn(air_v, shift=RIGHT * 0.1), run_time=0.25)
+        self.sync(T("بِالنِّسْبَةِ", 0.05, 2))
+        self.play(Circumscribe(VGroup(w_arrow, w_row[:2]), color=ACCENT_1, buff=0.15), run_time=0.9)
+        self.sync(T("لِلْأَرْضِ", 0.05))
+        self.play(Circumscribe(ground, color=GREY_INK, buff=0.1), run_time=0.8)
+        self.sync(T("عَشَرَةُ", 0.05))
+        self.play(FadeIn(w_row[2], shift=LEFT * 0.1), run_time=0.4)
+        self.sync(T("أَرْضِيَّةٌ", 0.05))
+        self.play(FadeIn(gr_l), run_time=0.4)
+        self.sync(T("سِتَّةٌ", 0.05))
+        self.play(GrowArrow(gr_a), run_time=0.8)
+        self.play(Create(gr_gap), FadeIn(gr_gap_t), run_time=0.5)
+        self.sync(T("أَرْبَعَةٍ", 0.05))
+        self.play(FadeIn(gr_v, shift=RIGHT * 0.1), run_time=0.4)
+        self.play(FadeIn(VGroup(eq_cap, eq), shift=UP * 0.1), run_time=0.6)
+
+        # ================= (c) weight =================
+        B = VGroup(ground, plane, w_row, w_arrow, streaks, lift_a, lift_t, air_l, air_a, air_v, gr_l, gr_a, gr_gap,
+                   gr_gap_t, gr_v, eq_cap, eq)
+        WX = -4.6
+        wt_head = VGroup(icon("weight", ACCENT_4, 1.0), label("Weight", FS_LABEL, ACCENT_4)).arrange(RIGHT, buff=0.2)
+        wt_head.move_to([WX + 0.5, 2.1, 0])
+        mk_w = lambda L: Arrow([WX, 1.3, 0], [WX, 1.3 - L, 0], buff=0, color=ACCENT_4, stroke_width=9, tip_length=0.32)
+        w_a, w_a2 = mk_w(2.0), mk_w(2.0 * heavy_f)
+        w_t1 = label("W", FS_LABEL + 6, ACCENT_4, weight=BOLD).next_to(Point([WX, 0.6, 0]), RIGHT, buff=0.3)
+        w_t2 = label(f"{heavy_f:.2f} W", FS_LABEL + 6, ACCENT_4, weight=BOLD).next_to(Point([WX, 0.6, 0]), RIGHT, buff=0.3)
+        w_old = DashedLine([WX - 0.35, 1.3 - 2.0, 0], [WX + 0.35, 1.3 - 2.0, 0], dash_length=0.08, color=GREY_INK, stroke_width=2.5)
+        w_plus = label(f"+{D.WEIGHT_INCREASE * 100:.0f} %", FS_LABEL, ACCENT_4, weight=BOLD).next_to(w_a2, DOWN, buff=0.2)
+
+        VX0, kw = -0.4, 4.4 / D.V_15
+        v_head = label("Speed needed for lift-off", FS_AXIS, GREY_INK).move_to([2.4, 2.3, 0])
+        vbar = lambda w, y: Rectangle(width=w, height=0.4, color=ACCENT_1, fill_color=ACCENT_1, fill_opacity=0.9,
+                                      stroke_width=0).move_to([VX0 + w / 2, y, 0])
+        v_b1, v_b2 = vbar(kw * D.V_15, 1.6), vbar(kw * D.V_HEAVY, 0.85)
+        v_t1 = label("W", FS_LABEL, ACCENT_4, weight=BOLD).next_to(v_b1, LEFT, buff=0.15)
+        v_t2 = label(f"{heavy_f:.2f} W", FS_LABEL, ACCENT_4, weight=BOLD).next_to(v_b2, LEFT, buff=0.15)
+        v_v1 = label(f"{D.V_15:.1f} m/s", FS_LABEL, ACCENT_1).next_to(v_b1, RIGHT, buff=0.3)
+        v_ref = DashedLine([VX0 + kw * D.V_15, 1.85, 0], [VX0 + kw * D.V_15, 0.62, 0], dash_length=0.1, color=GREY_INK, stroke_width=2.5)
+        v_plus = label(f"+{D.HEAVY_INCREASE * 100:.1f} %", FS_LABEL + 4, ACCENT_1, weight=BOLD).next_to(v_b2, RIGHT, buff=0.3)
+        f1 = label("V ∝ √", FS_HEADING, INK)
+        f2 = label("W", FS_HEADING, ACCENT_4, weight=BOLD)
+        form = VGroup(f1, f2).arrange(RIGHT, buff=0.04).move_to([2.4, -0.55, 0])
+        calc = label(f"V × √{heavy_f:.2f} = V × {np.sqrt(heavy_f):.3f}", FS_LABEL, INK).move_to([2.4, -1.6, 0])
+
+        self.sync(T("ثَالِثًا", 0.1))
+        self.play(FadeOut(B), Transform(marker, ring(2)), run_time=0.55)
+        for m in B:
+            m.clear_updaters(recursive=True)
+        self.sync(T("الوَزْنُ", 0.05))
+        self.play(FadeIn(wt_head, shift=DOWN * 0.1), GrowArrow(w_a), FadeIn(w_t1), run_time=0.7)
+        self.sync(T("السُّرْعَةُ اللَّازِمَةُ", 0.05, 2))
+        self.play(FadeIn(v_head), GrowFromEdge(v_b1, LEFT), FadeIn(v_t1), run_time=0.7)
+        self.play(FadeIn(v_v1, shift=RIGHT * 0.1), run_time=0.3)
+        self.sync(T("تَتَنَاسَبُ", 0.05))
+        self.play(FadeIn(f1, shift=DOWN * 0.1), run_time=0.6)
+        self.sync(T("الجَذْرِ", 0.05))
+        self.play(FadeIn(f2, shift=DOWN * 0.1), run_time=0.5)
+        self.sync(T("بِعَشَرَةٍ", 0.05))
+        self.add(w_old)
+        self.play(Transform(w_a, w_a2), Transform(w_t1, w_t2), FadeIn(w_plus, shift=UP * 0.1), run_time=0.9)
+        self.sync(T("سُرْعَةً أَعْلَى", 0.05))
+        self.play(GrowFromEdge(v_b2, LEFT), FadeIn(v_t2), Create(v_ref), FadeIn(calc, shift=UP * 0.1), run_time=1.2)
+        self.sync(T("تِسْعَةٍ", 0.05))
+        self.play(FadeIn(v_plus, shift=RIGHT * 0.1), run_time=0.5)
+        self.sync(t_end)
 
 
 if __name__ == "__main__":
