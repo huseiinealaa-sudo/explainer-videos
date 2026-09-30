@@ -1,0 +1,6 @@
+# Narration settings for this project (read by explainer.pipeline.project_settings).
+# Missing keys fall back to: Arabic, ar-SA-HamedNeural, normal speed.
+[narration]
+language = "ar"                 # ar | en | ... (a language without a voice gets its default voice)
+voice = "ar-SA-HamedNeural"     # any edge-tts voice, e.g. en-US-GuyNeural
+rate = "+0%"                    # speed: "+0%" normal, "-10%" slower, "+10%" faster
