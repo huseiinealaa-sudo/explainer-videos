@@ -1391,11 +1391,12 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         pointer = Polygon([-0.15, -0.24, 0], [0.15, -0.24, 0], [0, 0, 0], color=INK, fill_color=INK,
                           fill_opacity=1, stroke_width=1)
         marks = []
-        for name, full, p in [("V1", "Decision speed", P_V1), ("VR", "Rotation", P_VR),
-                              ("V2", "Takeoff safety speed", P_V2)]:
+        for name, full, p in [("V1", "Decision\nspeed", P_V1), ("VR", "Rotation", P_VR),
+                              ("V2", "Takeoff\nsafety speed", P_V2)]:
             tick = Line([tx(p), TY + BH / 2, 0], [tx(p), TY + BH / 2 + 0.2, 0], color=INK, stroke_width=4)
             sym = label(name, FS_LABEL, INK, weight=BOLD).next_to(tick, UP, buff=0.06)
-            nm = label(full, FS_AXIS, GREY_INK).move_to([tx(p), TY - BH / 2 - 0.24 - 0.15 - 0.2, 0])
+            nm = label(full, FS_AXIS, GREY_INK, line_spacing=0.5)
+            nm.move_to([tx(p), TY - BH / 2 - 0.55 - nm.height / 2, 0])
             marks.append(dict(p=p, tick=tick, sym=sym, name=nm, lit=False))
         red = Rectangle(width=tx(P_V1) - TX0, height=BH, color=ACCENT_4, fill_color=ACCENT_4, fill_opacity=0.9,
                         stroke_width=0).move_to([(TX0 + tx(P_V1)) / 2, TY, 0])
@@ -1405,6 +1406,19 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         z_rej.move_to(red)
         z_con = VGroup(icon("check", WHITE, 0.32), label("Continue", FS_AXIS, WHITE, weight=BOLD)).arrange(RIGHT, buff=0.15)
         z_con.move_to(green)
+
+        # --- accelerate-stop distance: an illustrative bracket under the scene (fixed in frame, no numbers)
+        AY, xa, xb, xc = -3.0, -4.6, 0.4, 4.6
+        d_acc = Arrow([xa, AY, 0], [xb - 0.05, AY, 0], buff=0, color=ACCENT_2, stroke_width=6, tip_length=0.22)
+        d_stop = Arrow([xb + 0.05, AY, 0], [xc, AY, 0], buff=0, color=ACCENT_4, stroke_width=6, tip_length=0.22)
+        d_ticks = VGroup(*[Line([x, AY - 0.16, 0], [x, AY + 0.16, 0], color=INK, stroke_width=4) for x in (xa, xb, xc)])
+        d_acc_t = label("accelerate", FS_AXIS, ACCENT_2, weight=BOLD).next_to(d_acc, DOWN, buff=0.15)
+        d_stop_t = label("stop", FS_AXIS, ACCENT_4, weight=BOLD).next_to(d_stop, DOWN, buff=0.15)
+        d_title = label("Accelerate-stop distance", FS_LABEL, INK, weight=BOLD)
+        d_box = SurroundingRectangle(d_title, buff=0.14, color=GREY_INK, fill_color=WHITE, fill_opacity=0.95,
+                                     corner_radius=0.1, stroke_width=2)
+        d_head = VGroup(d_box, d_title).next_to(d_ticks, UP, buff=0.12).set_x(0.5 * (xa + xc))
+        d_all = self.fixed(d_acc, d_stop, d_ticks, d_acc_t, d_stop_t, d_box, d_title)
 
         # --- angle of attack (3D lines that follow the nose) and its label; lift arrow above the wing
         av, lg = ValueTracker(0.0), ValueTracker(0.0)
@@ -1490,7 +1504,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
             aoa_leader.put_start_and_end_on(aoa_box.get_top() + UP * 0.02, proj(aoa_mid()))
             aoa_dot.move_to(proj(aoa_mid()))
             b = rot(B0)
-            lift_txt.move_to(proj(b + np.array([0, 0, 0.25 + 1.0 * lg.get_value()])) + LEFT * 0.62 + UP * 0.05)
+            lift_txt.move_to(proj(b + np.array([0, 0, 0.25 + 0.5 * lg.get_value()])) + LEFT * 0.62)
             lift_txt.set_opacity(min(1.0, 3 * lg.get_value()))
         state.add_updater(drive)
         self.add(state)
@@ -1523,11 +1537,18 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(c("سُرْعَةُ القَرَارِ") - 0.1)
         self.play(FadeIn(m1["name"], shift=DOWN * 0.1), run_time=0.5)
 
-        # V1: reject before it, continue after it
+        # V1: the accelerate-stop distance, then reject before it, continue after it
+        self.sync(c("مَسَافَةِ") - 0.1)
+        self.play(FadeIn(d_head), FadeIn(d_ticks), run_time=0.5)
+        self.sync(c("التَّسَارُعِ") - 0.1)
+        self.play(GrowArrow(d_acc), FadeIn(d_acc_t), run_time=0.7)
+        self.sync(c("وَالتَّوَقُّفِ") - 0.1)
+        self.play(GrowArrow(d_stop), FadeIn(d_stop_t), run_time=0.7)
         self.sync(c("قَبْلَهَا") - 0.2)
         self.play(FadeIn(red), FadeIn(z_rej), run_time=0.6)
         self.sync(c("وَبَعْدَهَا") - 0.2)
-        self.play(FadeIn(green), FadeIn(z_con), run_time=0.6)
+        self.play(FadeOut(VGroup(d_head, d_ticks, d_acc, d_stop, d_acc_t, d_stop_t)), FadeIn(green), FadeIn(z_con),
+                  run_time=0.6)
 
         # VR: the nose goes up, the angle of attack and the lift grow
         self.sync(c("ثُمَّ فِي آرْ") - 0.1)
