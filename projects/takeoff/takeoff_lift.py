@@ -1082,17 +1082,17 @@ class TakeoffLift(SyncedScene, ThreeDScene):
             self.play(*anims, run_time=0.4)
 
         # ================= phase A: angle of attack and flaps raise C_L =================
-        FX, FY = -2.9, -1.55                                 # centre of the chord of the drawn section
+        FX, FY = -2.6, -1.5                                 # centre of the chord of the drawn section
         f0 = WingFlow(0.0)
-        chord = 3.4
+        chord = 4.2
         k = chord / abs(f0.te() - f0.le())
         mid = (f0.le() + f0.te()) / 2
         place = lambda z: (np.asarray(z) - mid) * k + complex(FX, FY)
         pts = place(f0.outline())
-        pts = pts.real + 1j * (FY + 1.6 * (pts.imag - FY))      # drawn thicker than the computed profile, for legibility
+        pts = pts.real + 1j * (FY + 1.9 * (pts.imag - FY))      # drawn thicker than the computed profile, for legibility
         pts = np.roll(pts, -int(np.argmax(abs(pts - place(f0.te())))))       # start at the leading edge
         le_z, te_z = place(f0.le()), place(f0.te())
-        xc = le_z.real + 0.58 * chord                         # the flap is the last 42 % of the chord (schematic)
+        xc = le_z.real + 0.68 * chord                         # the flap is the last 32 % of the chord (schematic)
         idx = np.where(pts.real >= xc)[0]
         assert np.all(np.diff(idx) == 1)
         flap_c = pts[idx[0]: idx[-1] + 1]
@@ -1104,21 +1104,22 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         pivot_z = le_z + 0.25 * (te_z - le_z)                 # quarter chord: the wing pitches about it
         pivot = p3(pivot_z)
 
+        LIFT_OFF = 0.55                                       # the arrow starts inside the wing and clears its top
         cl, clsp, lv = ValueTracker(CL_ZERO_S), ValueTracker(CL_ZERO_S), ValueTracker(0.0)
 
         def build_arrow():
             L = cl.get_value()
-            a = Arrow(pivot, pivot + UP * L, buff=0, color=ACCENT_1, stroke_width=8, tip_length=min(0.3, 0.5 * L),
+            a = Arrow(pivot, pivot + UP * (L + LIFT_OFF), buff=0, color=ACCENT_1, stroke_width=8, tip_length=0.3,
                       max_tip_length_to_length_ratio=0.6, max_stroke_width_to_length_ratio=12)
             return a.set_opacity(lv.get_value())
         lift_arrow = always_redraw(build_arrow)
         lift_lbl = always_redraw(lambda: label("Lift", FS_LABEL, ACCENT_1, weight=BOLD)
-                                 .next_to(pivot + UP * cl.get_value(), RIGHT, buff=0.15).set_opacity(lv.get_value()))
+                                 .next_to(pivot + UP * (cl.get_value() + LIFT_OFF), RIGHT, buff=0.15).set_opacity(lv.get_value()))
 
         BAR_H, BAR_MAX, SPEED_W = 0.32, 3.2, 2.4
         n_cl = _cl_label(FS_LABEL)
         n_sp = label("Speed needed", FS_LABEL)
-        bnames = VGroup(n_cl, n_sp).arrange(DOWN, aligned_edge=LEFT, buff=0.9).move_to([1.5, -1.4, 0])
+        bnames = VGroup(n_cl, n_sp).arrange(DOWN, aligned_edge=RIGHT, buff=0.9).move_to([1.5, -1.4, 0])
         bx = bnames.get_right()[0] + 0.3
         bv = ValueTracker(0.0)
         bar_cl = always_redraw(lambda: Rectangle(width=max(BAR_MAX * cl.get_value() / D.CL_TAKEOFF, 0.02), height=BAR_H,
@@ -1166,11 +1167,11 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.play(clsp.animate.set_value(D.CL_TAKEOFF), run_time=1.2, rate_func=smooth)
 
         # ================= phase B: double the speed, four times the lift =================
-        CELL = 0.95
+        CELL = 1.15
         cell = lambda: Square(CELL, color=ACCENT_1, fill_color=ACCENT_1, fill_opacity=0.3, stroke_width=3)
         sq1 = cell()
         cells2 = VGroup(*[cell() for _ in range(4)]).arrange_in_grid(2, 2, buff=0)
-        VGroup(sq1, cells2).arrange(RIGHT, buff=2.6, aligned_edge=DOWN).move_to([0, -1.2, 0])
+        VGroup(sq1, cells2).arrange(RIGHT, buff=3.4, aligned_edge=DOWN).move_to([0, -1.3, 0])
         outline2 = Square(2 * CELL, color=ACCENT_1, stroke_width=3).move_to(cells2)
         dim1 = DoubleArrow(sq1.get_corner(DL) + DOWN * 0.3, sq1.get_corner(DR) + DOWN * 0.3, buff=0, color=INK,
                            stroke_width=3, tip_length=0.15)
