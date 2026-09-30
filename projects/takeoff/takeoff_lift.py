@@ -367,6 +367,41 @@ def _plus(color):
                   Line([0, -0.11, 0], [0, 0.11, 0], color=color, stroke_width=4))
 
 
+# ---------------- 2D helpers (segment 4): the lift equation ----------------
+# Schematic lift coefficients for the flap drawing (only bar lengths, no numbers are shown for them):
+# wing at zero angle of attack and at the working angle without flaps; with takeoff flaps it is CL_TAKEOFF.
+CL_ZERO_S, CL_CLEAN_S = 0.85, 1.1
+
+
+def _cl_label(size, color=INK):
+    """C with a small subscript L (no LaTeX in the container)."""
+    c = label("C", size, color)
+    sub = label("L", max(int(size * 0.65), 16), color)
+    sub.next_to(c, RIGHT, buff=0.03).align_to(c, DOWN).shift(DOWN * 0.08)
+    return VGroup(c, sub)
+
+
+def _stack(*lines, size=FS_TAG, color=GREY_INK):
+    return VGroup(*[label(t, size, color) for t in lines]).arrange(DOWN, buff=0.05)
+
+
+def _sqrt_frac(num, den, color=INK, width=3):
+    """A square root over a fraction, from a VGroup numerator and denominator (returns a VGroup)."""
+    bar = Line(LEFT, RIGHT, color=color, stroke_width=width)
+    frac = VGroup(num, bar, den).arrange(DOWN, buff=0.14)
+    w = max(num.width, den.width) + 0.25
+    bar.put_start_and_end_on(bar.get_center() + LEFT * w / 2, bar.get_center() + RIGHT * w / 2)
+    left, right = frac.get_left()[0] - 0.1, frac.get_right()[0] + 0.1
+    top, bot = frac.get_top()[1] + 0.14, frac.get_bottom()[1]
+    cy = (top + bot) / 2
+    rad = VMobject(color=color, stroke_width=width)
+    rad.set_points_as_corners([[left - 0.36, cy - 0.02, 0], [left - 0.27, cy + 0.06, 0],
+                               [left - 0.14, bot - 0.06, 0], [left - 0.03, top, 0], [right, top, 0]])
+    grp = VGroup(rad, frac)
+    grp.num, grp.bar, grp.den, grp.rad, grp.frac = num, bar, den, rad, frac
+    return grp
+
+
 class TakeoffLift(SyncedScene, ThreeDScene):
     """SyncedScene timing on a 3D camera: 2D segments keep the default top-down view."""
 
@@ -386,6 +421,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(self.end(3))
 
         # ---------------- Segment 4: the lift equation, worked example ----------------
+        self.segment_4()
         self.sync(self.end(4))
 
         # ---------------- Segment 5: the runway run, V1 VR V2 (3D) ----------------
@@ -662,7 +698,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.add(v_read, bar_lift)
         self.play(FadeIn(names), FadeIn(bar_weight), FadeIn(mark), ro.animate.set_value(1.0),
                   ratio.animate.set_value(0.0), run_time=0.8)
-        self.sync(c("الدَّفْعُ") - 0.1)
+        self.sync(c("الدَّفْعُ", 2) - 0.1)            # 2nd: «يَكُونُ الدَّفْعُ» (the 1st is inside «وَالدَّفْعُ»)
         self.say("Thrust > Drag", y=-3.5)
         self.sync(t_acc - 0.1)
         self.say("The plane accelerates", y=-3.5)
@@ -1012,6 +1048,210 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(t_end)
         for m in self.mobjects:                                 # leave nothing running for the next segment
             m.clear_updaters(recursive=True)
+
+    # ---------------- Segment 4 ----------------
+    def segment_4(self):
+        c = lambda phrase, nth=1: self.cue(4, phrase, nth)
+        T = lambda phrase, dt=0.1, nth=1: c(phrase, nth) - dt
+        t_end = self.end(4)
+        p3 = lambda z: np.array([z.real, z.imag, 0.0])
+
+        # --- the heading of segment 3 becomes this one's; everything else leaves
+        head = label("The lift equation", FS_BODY - 6, weight=BOLD).to_corner(UL, buff=0.4)
+        gone = [m for m in self.mobjects if m is not self.sec]
+        self.play(*[FadeOut(m) for m in gone], Transform(self.sec, head), run_time=0.6)
+        self.caption = VMobject()
+
+        # --- the equation L = 1/2 rho V^2 S C_L, one factor at a time, each with its name
+        E = 46
+        parts = VGroup(label("L", E, ACCENT_1, weight=BOLD), label("=", E), label("½", E), label("ρ", E),
+                       label("V²", E), label("S", E), _cl_label(E)).arrange(RIGHT, buff=1.0)
+        parts.move_to([-0.4, 2.5, 0])
+        names = {3: _stack("air", "density"), 4: _stack("speed", "squared"), 5: _stack("wing", "area"),
+                 6: _stack("lift", "coefficient")}
+        for k, n in names.items():
+            n.next_to(parts, DOWN, buff=0.3).set_x(parts[k].get_center()[0])
+        self.sync(T("الرَّفْعُ"))
+        self.play(FadeIn(parts[0], shift=DOWN * 0.15), FadeIn(parts[1], shift=DOWN * 0.15), run_time=0.5)
+        for k, when in [(2, T("نِصْفَ", 0.05)), (3, T("كَثَافَةِ", 0.05)), (4, T("مُرَبَّعِ", 0.05)),
+                        (5, T("مِسَاحَةِ", 0.05)), (6, T("مُعَامِلِ", 0.05))]:
+            self.sync(when)
+            anims = [FadeIn(parts[k], shift=DOWN * 0.15)]
+            if k in names:
+                anims.append(FadeIn(names[k], shift=DOWN * 0.1))
+            self.play(*anims, run_time=0.4)
+
+        # ================= phase A: angle of attack and flaps raise C_L =================
+        FX, FY = -2.9, -1.55                                 # centre of the chord of the drawn section
+        f0 = WingFlow(0.0)
+        chord = 3.4
+        k = chord / abs(f0.te() - f0.le())
+        mid = (f0.le() + f0.te()) / 2
+        place = lambda z: (np.asarray(z) - mid) * k + complex(FX, FY)
+        pts = place(f0.outline())
+        pts = pts.real + 1j * (FY + 1.6 * (pts.imag - FY))      # drawn thicker than the computed profile, for legibility
+        pts = np.roll(pts, -int(np.argmax(abs(pts - place(f0.te())))))       # start at the leading edge
+        le_z, te_z = place(f0.le()), place(f0.te())
+        xc = le_z.real + 0.58 * chord                         # the flap is the last 42 % of the chord (schematic)
+        idx = np.where(pts.real >= xc)[0]
+        assert np.all(np.diff(idx) == 1)
+        flap_c = pts[idx[0]: idx[-1] + 1]
+        main_c = np.concatenate([pts[idx[-1] + 1:], pts[:idx[0]]])
+        main = Polygon(*_pts3(main_c), color=INK, fill_color=WHITE, fill_opacity=1, stroke_width=3.5)
+        flap = Polygon(*_pts3(flap_c), color=ACCENT_2, fill_color=WHITE, fill_opacity=1, stroke_width=3.5)
+        hinge = Dot(p3(pts[idx[-1]]) + UP * 0.03, radius=0.06, color=ACCENT_2)
+        foil = VGroup(main, flap, hinge)
+        pivot_z = le_z + 0.25 * (te_z - le_z)                 # quarter chord: the wing pitches about it
+        pivot = p3(pivot_z)
+
+        cl, clsp, lv = ValueTracker(CL_ZERO_S), ValueTracker(CL_ZERO_S), ValueTracker(0.0)
+
+        def build_arrow():
+            L = cl.get_value()
+            a = Arrow(pivot, pivot + UP * L, buff=0, color=ACCENT_1, stroke_width=8, tip_length=min(0.3, 0.5 * L),
+                      max_tip_length_to_length_ratio=0.6, max_stroke_width_to_length_ratio=12)
+            return a.set_opacity(lv.get_value())
+        lift_arrow = always_redraw(build_arrow)
+        lift_lbl = always_redraw(lambda: label("Lift", FS_LABEL, ACCENT_1, weight=BOLD)
+                                 .next_to(pivot + UP * cl.get_value(), RIGHT, buff=0.15).set_opacity(lv.get_value()))
+
+        BAR_H, BAR_MAX, SPEED_W = 0.32, 3.2, 2.4
+        n_cl = _cl_label(FS_LABEL)
+        n_sp = label("Speed needed", FS_LABEL)
+        bnames = VGroup(n_cl, n_sp).arrange(DOWN, aligned_edge=LEFT, buff=0.9).move_to([1.5, -1.4, 0])
+        bx = bnames.get_right()[0] + 0.3
+        bv = ValueTracker(0.0)
+        bar_cl = always_redraw(lambda: Rectangle(width=max(BAR_MAX * cl.get_value() / D.CL_TAKEOFF, 0.02), height=BAR_H,
+                                                 color=ACCENT_1, fill_color=ACCENT_1, fill_opacity=bv.get_value(),
+                                                 stroke_width=0).move_to([bx, n_cl.get_center()[1], 0], LEFT)
+                               .set_stroke(opacity=0))
+        bar_sp = always_redraw(lambda: Rectangle(width=SPEED_W * np.sqrt(CL_CLEAN_S / clsp.get_value()), height=BAR_H,
+                                                 color=GREY_INK, fill_color=GREY_INK, fill_opacity=bv.get_value(),
+                                                 stroke_width=0).move_to([bx, n_sp.get_center()[1], 0], LEFT)
+                               .set_stroke(opacity=0))
+
+        # the section arrives with the sentence about the lift coefficient
+        self.sync(T("وَمُعَامِلُ الرَّفْعِ"))
+        self.add(lift_arrow, lift_lbl)
+        self.play(FadeIn(foil, shift=UP * 0.2), lv.animate.set_value(1.0), run_time=0.6)
+        self.play(Indicate(parts[6], color=ACCENT_1, scale_factor=1.25), run_time=0.6)
+        self.sync(T("يَعْتَمِدُ"))
+        self.add(bar_cl, bar_sp)
+        self.play(FadeIn(bnames), bv.animate.set_value(1.0), run_time=0.5)
+
+        # angle of attack: the section pitches nose-up, the arrow and the bar grow, the needed speed falls
+        alpha = np.radians(ALPHA_WORK)
+        le_after = p3(pivot_z + np.exp(-1j * alpha) * (le_z - pivot_z))
+        ref = DashedLine(le_after + LEFT * 1.5, le_after, dash_length=0.14, color=GREY_INK, stroke_width=3)
+        chord_ext = DashedLine(le_after, le_after + 1.5 * np.array([-np.cos(alpha), np.sin(alpha), 0]), dash_length=0.14,
+                               color=GREY_INK, stroke_width=3)
+        arc = Arc(radius=1.3, start_angle=PI - alpha, angle=alpha, arc_center=le_after, color=INK, stroke_width=4)
+        a_sym = label("α", FS_LABEL + 4, INK, weight=BOLD).move_to(
+            le_after + 1.75 * np.array([-np.cos(alpha / 2), np.sin(alpha / 2), 0]))
+        self.sync(T("زَاوِيَةِ", 0.05))
+        self.play(foil.animate.rotate(-alpha, about_point=pivot), cl.animate.set_value(CL_CLEAN_S),
+                  clsp.animate.set_value(CL_CLEAN_S), run_time=0.8, rate_func=smooth)
+        self.play(Create(ref), Create(chord_ext), Create(arc), FadeIn(a_sym), run_time=0.4)
+
+        # flaps: the trailing edge drops, C_L grows, then the speed needed falls
+        FLAP_DEG = 22
+        flap_end = flap.copy().rotate(-np.radians(FLAP_DEG), about_point=hinge.get_center())
+        flap_lbl = label("Flap", FS_LABEL, ACCENT_2).next_to(flap_end, DOWN, buff=0.25)
+        self.sync(T("القَلَّابَاتِ", 0.1))
+        self.play(FadeIn(flap_lbl, shift=UP * 0.1), Indicate(flap, color=ACCENT_2, scale_factor=1.15), run_time=0.7)
+        self.sync(T("وَالقَلَّابَاتُ", 0.05))
+        self.play(Rotate(flap, -np.radians(FLAP_DEG), about_point=hinge.get_center()),
+                  cl.animate.set_value(D.CL_TAKEOFF), run_time=1.1, rate_func=smooth)
+        self.sync(T("فَتُقْلِعُ", 0.05))
+        self.play(clsp.animate.set_value(D.CL_TAKEOFF), run_time=1.2, rate_func=smooth)
+
+        # ================= phase B: double the speed, four times the lift =================
+        CELL = 0.95
+        cell = lambda: Square(CELL, color=ACCENT_1, fill_color=ACCENT_1, fill_opacity=0.3, stroke_width=3)
+        sq1 = cell()
+        cells2 = VGroup(*[cell() for _ in range(4)]).arrange_in_grid(2, 2, buff=0)
+        VGroup(sq1, cells2).arrange(RIGHT, buff=2.6, aligned_edge=DOWN).move_to([0, -1.2, 0])
+        outline2 = Square(2 * CELL, color=ACCENT_1, stroke_width=3).move_to(cells2)
+        dim1 = DoubleArrow(sq1.get_corner(DL) + DOWN * 0.3, sq1.get_corner(DR) + DOWN * 0.3, buff=0, color=INK,
+                           stroke_width=3, tip_length=0.15)
+        dim2 = DoubleArrow(cells2.get_corner(DL) + DOWN * 0.3, cells2.get_corner(DR) + DOWN * 0.3, buff=0, color=INK,
+                           stroke_width=3, tip_length=0.15)
+        v1 = label("V", FS_LABEL).next_to(dim1, DOWN, buff=0.15)
+        v2 = label("2V", FS_LABEL).next_to(dim2, DOWN, buff=0.15)
+        l1 = label("lift L", FS_LABEL, ACCENT_1).next_to(sq1, UP, buff=0.25)
+        l2 = label(f"lift {D.LIFT_RATIO_DOUBLE_SPEED:.0f} L", FS_LABEL, ACCENT_1, weight=BOLD).next_to(cells2, UP, buff=0.25)
+        arr = Arrow(sq1.get_right() + RIGHT * 0.35, [cells2.get_left()[0] - 0.35, sq1.get_center()[1], 0], buff=0, color=INK, stroke_width=4,
+                    tip_length=0.22)
+        x4 = label(f"× {D.LIFT_RATIO_DOUBLE_SPEED:.0f}", FS_TITLE // 2 + 4, ACCENT_1, weight=BOLD).next_to(arr, UP, buff=0.15)
+        self.sync(T("وَلِأَنَّ", 0.1))
+        self.play(FadeOut(VGroup(foil, bnames, ref, chord_ext, arc, a_sym, flap_lbl)), lv.animate.set_value(0.0),
+                  bv.animate.set_value(0.0), run_time=0.5)
+        self.remove(lift_arrow, lift_lbl, bar_cl, bar_sp)
+        self.sync(T("السُّرْعَةَ", 0.1))
+        self.play(FadeIn(sq1, scale=0.8), GrowFromCenter(dim1), FadeIn(v1), FadeIn(l1), run_time=0.6)
+        self.sync(T("مُرَبَّعَةٌ", 0.05))
+        self.play(Indicate(parts[4], color=ACCENT_1, scale_factor=1.25), run_time=0.6)
+        self.sync(T("فَضِعْفُ", 0.05))
+        self.play(FadeIn(outline2), GrowFromCenter(dim2), FadeIn(v2), run_time=0.6)
+        self.sync(T("أَرْبَعَةَ", 0.05))
+        self.play(LaggedStart(*[FadeIn(q) for q in cells2], lag_ratio=0.3), run_time=0.6)
+        self.sync(T("أَضْعَافِ", 0.02))
+        self.play(FadeIn(l2, shift=UP * 0.1), GrowArrow(arr), FadeIn(x4, scale=1.3), run_time=0.5)
+
+        # ================= phase C: the worked example, L = W =================
+        w_grp = VGroup(label("=", E), label("W", E, ACCENT_4, weight=BOLD)).arrange(RIGHT, buff=0.3)
+        w_grp.next_to(parts, RIGHT, buff=0.45)
+        # the formula solved for V, then the same with the numbers (both centred)
+        SZ = 34
+        rho_s, S_s, cl_s = label("ρ", SZ), label("S", SZ), _cl_label(SZ)
+        den_f = VGroup(rho_s, S_s, cl_s).arrange(RIGHT, buff=0.3)
+        num_f = VGroup(label("2", SZ), label("W", SZ, ACCENT_4, weight=BOLD)).arrange(RIGHT, buff=0.1)
+        form = VGroup(label("V =", SZ), _sqrt_frac(num_f, den_f)).arrange(RIGHT, buff=0.3)
+        form.next_to(parts, DOWN, buff=0.55).set_x(0)
+
+        n1 = label(f"2 × {D.WEIGHT:,.0f} N", SZ, ACCENT_4)
+        d1, dx1, d2, dx2, d3 = (label(f"{D.RHO_15:.3f}", SZ), label("×", SZ), label(f"{D.WING_AREA:.0f}", SZ),
+                                label("×", SZ), label(f"{D.CL_TAKEOFF}", SZ))
+        den_v = VGroup(d1, dx1, d2, dx2, d3).arrange(RIGHT, buff=0.25)
+        sub = VGroup(label("V =", SZ), _sqrt_frac(n1, den_v)).arrange(RIGHT, buff=0.3)
+        sub.next_to(form, DOWN, buff=0.45).set_x(0)
+        u1 = label("kg/m³", FS_TAG, GREY_INK).next_to(d1, DOWN, buff=0.15)
+        u2 = label("m²", FS_TAG, GREY_INK).next_to(d2, DOWN, buff=0.15)
+        r1 = label(f"V = {D.V_15:.1f} m/s", FS_LABEL + 12, ACCENT_1, weight=BOLD)
+        r2 = label(f"≈ {D.V_15_KMH:.0f} km/h", FS_LABEL + 12, ACCENT_1, weight=BOLD)
+        res = VGroup(r1, r2).arrange(RIGHT, buff=0.4)
+        res.next_to(sub, DOWN, buff=0.75).set_x(0)
+        box1 = SurroundingRectangle(r1, buff=0.18, color=ACCENT_1, corner_radius=0.1, stroke_width=4)
+        box2 = SurroundingRectangle(res, buff=0.18, color=ACCENT_1, corner_radius=0.1, stroke_width=4)
+
+        self.sync(T("مِثَالٌ", 0.1))
+        self.play(FadeOut(VGroup(sq1, cells2, outline2, dim1, dim2, v1, v2, l1, l2, arr, x4, *names.values())),
+                  Transform(self.sec, label("Worked example", FS_BODY - 6, weight=BOLD).to_corner(UL, buff=0.4)),
+                  run_time=0.6)
+        self.sync(T("الرَّفْعَ مُسَاوِيًا", 0.05))
+        self.play(Indicate(parts[0], color=ACCENT_1, scale_factor=1.3), run_time=0.6)
+        self.sync(T("لِلْوَزْنِ", 0.05))
+        self.play(FadeIn(w_grp, shift=LEFT * 0.15), run_time=0.5)
+        self.sync(T("الكَثَافَةُ", 0.9))
+        self.play(FadeIn(form, shift=DOWN * 0.15), run_time=0.8)
+        self.sync(T("الكَثَافَةُ", 0.1))
+        self.play(FadeIn(sub[0]), FadeIn(sub[1].rad), FadeIn(sub[1].bar), FadeIn(n1), run_time=0.6)
+        self.sync(T("وَاحِدٌ", 0.05))
+        self.play(FadeIn(d1, shift=DOWN * 0.1), FadeIn(u1), run_time=0.5)
+        self.play(Indicate(rho_s, color=ACCENT_1, scale_factor=1.4), run_time=0.5)
+        self.sync(T("وَالمِسَاحَةُ", 0.05))
+        self.play(FadeIn(VGroup(dx1, d2), shift=DOWN * 0.1), FadeIn(u2), run_time=0.5)
+        self.play(Indicate(S_s, color=ACCENT_1, scale_factor=1.4), run_time=0.5)
+        self.sync(T("وَمُعَامِلُ الرَّفْعِ بِالقَلَّابَاتِ", 0.05))
+        self.play(FadeIn(VGroup(dx2, d3), shift=DOWN * 0.1), run_time=0.5)
+        self.play(Indicate(cl_s, color=ACCENT_1, scale_factor=1.4), run_time=0.5)
+        self.sync(T("فَالسُّرْعَةُ", 0.05))
+        self.play(Indicate(form[0], color=ACCENT_1, scale_factor=1.25), run_time=0.6)
+        self.sync(T("سِتَّةٌ", 0.05))
+        self.play(FadeIn(r1, shift=DOWN * 0.1), Create(box1), run_time=0.7)
+        self.sync(T("أَيْ نَحْوُ", 0.05))
+        self.play(FadeIn(r2, shift=DOWN * 0.1), Transform(box1, box2), run_time=0.7)
+        self.sync(t_end)
 
 
 if __name__ == "__main__":
