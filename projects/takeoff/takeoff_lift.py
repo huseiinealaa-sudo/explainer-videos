@@ -1871,7 +1871,9 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         Y_END = -2.0
         path_fn = lambda s: np.array([X1 + (X2 - X1) * s, RY + (Y_END - RY) * s ** 1.7, 0])
         plane_ic = icon("plane-departure", INK, 0.9)
-        off = plane_ic.height / 2 + 0.06                   # the wheels' height above the line
+        body_ic = plane_ic.submobjects[1]
+        plane_ic.remove(plane_ic.submobjects[2])           # drop the icon's own ground underline: the runway and the path are the ground
+        off = plane_ic.get_center()[1] - body_ic.get_bottom()[1] + 0.06   # lowest point of the plane above the line / path
         runway = Line([X0 - 0.3, RY, 0], [X1, RY, 0], color=GREY_INK, stroke_width=4)
         climb = DashedVMobject(ParametricFunction(path_fn, t_range=[0, 1], color=GREY_INK, stroke_width=4),
                                num_dashes=22, color=GREY_INK)
