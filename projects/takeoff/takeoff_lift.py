@@ -873,12 +873,12 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.play(FadeIn(ext), GrowFromCenter(dim), FadeIn(chord_lbl), run_time=0.7)
 
         # --- angle of attack: the section pitches nose-up against the wind direction
-        ref = DashedLine(p3(le9) + LEFT * 1.6, p3(le9), dash_length=0.14, color=GREY_INK, stroke_width=3)
-        chord_ext = DashedLine(p3(le9), p3(le9) + 1.6 * np.array([-np.cos(f9.al), np.sin(f9.al), 0]),
+        ref = DashedLine(p3(le9) + LEFT * 2.4, p3(le9), dash_length=0.14, color=GREY_INK, stroke_width=3)
+        chord_ext = DashedLine(p3(le9), p3(le9) + 2.4 * np.array([-np.cos(f9.al), np.sin(f9.al), 0]),
                                dash_length=0.14, color=GREY_INK, stroke_width=3)
-        arc = Arc(radius=1.35, start_angle=PI - f9.al, angle=f9.al, arc_center=p3(le9), color=INK, stroke_width=4)
-        a_sym = label("α", FS_TITLE // 2 + 4, INK, weight=BOLD).move_to(
-            p3(le9) + 1.95 * np.array([-np.cos(f9.al / 2), np.sin(f9.al / 2), 0]))
+        arc = Arc(radius=2.0, start_angle=PI - f9.al, angle=f9.al, arc_center=p3(le9), color=INK, stroke_width=4)
+        a_sym = label("α", FS_TITLE // 2 + 4, INK, weight=BOLD).next_to(       # above the wedge, at the arc's open end
+            p3(le9) + 2.15 * np.array([-np.cos(f9.al), np.sin(f9.al), 0]), UP, buff=0.12)
         a_name = label("Angle of\nattack", FS_LABEL).next_to(ref, DOWN, buff=0.3).align_to(ref, LEFT)
         self.sync(c("وَزَاوِيَةُ") - 0.1)
         self.play(FadeOut(VGroup(edge_l, edge_l_arrow, edge_t, dim, ext, chord_lbl)), alpha.animate.set_value(ALPHA_WORK),
@@ -1116,7 +1116,8 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(c("الحَافَّةِ الخَلْفِيَّةِ") - 0.1)
         self.play(FadeIn(finish_line), FadeIn(finish_lbl), run_time=0.5)
         self.sync(c("هٰذَا غَيْرُ") - 0.1)
-        self.play(FadeIn(no, scale=1.3), myth_grp.animate.set_opacity(0.55), run_time=0.5)
+        self.play(FadeIn(no, scale=1.3), myth.animate.set_opacity(0.45), box_m.animate.set_stroke(opacity=0.45),
+                  run_time=0.5)
         self.add(trail_up, trail_lo)
         first = label("Upper air arrives first", FS_LABEL, ACCENT_1)
         first.next_to(finish_line.get_top(), UP, buff=0.2)
