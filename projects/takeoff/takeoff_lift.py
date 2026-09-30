@@ -1776,8 +1776,8 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         gr_a = Arrow([AX0, yg, 0], [AX0 + K * D.V_GROUND_HEADWIND, yg, 0], buff=0, color=INK, stroke_width=8, tip_length=0.3)
         gr_gap = DashedLine([AX0 + K * D.V_GROUND_HEADWIND, yg, 0], [AX0 + K * D.V_15, yg, 0], dash_length=0.1,
                             color=ACCENT_1, stroke_width=6)
-        gr_gap_t = label(f"{D.HEADWIND:.0f} m/s", FS_AXIS, ACCENT_1).next_to(gr_gap, DOWN, buff=0.2)
-        gr_v = label(f"{D.V_GROUND_HEADWIND:.1f} m/s", FS_LABEL).next_to(gr_gap, RIGHT, buff=0.2)
+        gr_gap_t = label(f"{D.HEADWIND:.0f} m/s", FS_AXIS, ACCENT_1).next_to(gr_gap, UP, buff=0.3)
+        gr_v = label(f"{D.V_GROUND_HEADWIND:.1f} m/s", FS_LABEL).next_to(gr_gap, RIGHT, buff=0.5)
         eq_cap = label("Ground speed = airspeed − wind", FS_AXIS, GREY_INK)
         eq = label(f"{D.V_15:.1f} − {D.HEADWIND:.0f} = {D.V_GROUND_HEADWIND:.1f} m/s", FS_LABEL + 6, INK, weight=BOLD)
         VGroup(eq_cap, eq).arrange(DOWN, buff=0.15).move_to([-0.5, -3.1, 0])
