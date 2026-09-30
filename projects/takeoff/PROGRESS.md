@@ -18,3 +18,9 @@
 ## QA summary
 - Automatic loop (whole video): iteration 1 → seg 1: 11, seg 2: 9 (seg-1 duplicates), seg 5: 144, others 0; iteration 2 → seg 1: 12, seg 2: 9, seg 5: 61, others 0. All open findings are 3D artefacts (world x-y, no camera projection), dismissed by the critic on the frames.
 - Critic: round 1 FIX (1 critical, 1 important, 8 improvements) → all fixed → round 2 PASS (3 improvements left, listed in the PR).
+
+## Episode: takeoff_lift (final render)
+- Duration: 4:46.70 (target 4:30–4:50, under 5:00 limit ✓)
+- Size: 16.37 MB (under 100 MB ✓)
+- Critic: round 2 PASS
+- Published: output/takeoff_lift.mp4
