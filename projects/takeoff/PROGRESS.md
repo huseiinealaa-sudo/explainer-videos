@@ -8,8 +8,8 @@
 | seg 2 | scene-builder | 1 | it1 (1-2 run) 4 own critical → it2 0 | — |
 | seg 3 | scene-builder | 1 | it1 12 → it2 1 → it3 0 | — |
 | seg 4 | scene-builder | 2 (call 1 stopped by the auto-mode classifier before any preview; code kept) | it1 0 → it2 1 → it3 0 | — |
-| seg 5 (3D) | scene-builder | 1 | in progress | — |
-| seg 6 | — | 0 | — | — |
+| seg 5 (3D) | scene-builder | 1 | it1 79 → it2 144 → it3 144 → it4 144 (all 3D artefacts: world x-y of runway, shadow and lift-arrow polygons; checked on sheets) | — |
+| seg 6 | scene-builder | 1 | in progress | — |
 | seg 7 | — | 0 | — | — |
 
 ## Manager notes
