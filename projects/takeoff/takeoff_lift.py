@@ -425,6 +425,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(self.end(4))
 
         # ---------------- Segment 5: the runway run, V1 VR V2 (3D) ----------------
+        self.segment_5()
         self.sync(self.end(5))
 
         # ---------------- Segment 6: heat, wind and weight ----------------
@@ -1253,6 +1254,245 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(T("أَيْ نَحْوُ", 0.05))
         self.play(FadeIn(r2, shift=DOWN * 0.1), Transform(box1, box2), run_time=0.7)
         self.sync(t_end)
+
+    # ---------------- Segment 5 ----------------
+    def segment_5(self):
+        """The runway run (3D): the plane stays at the origin, the ground runs (and later sinks) under it."""
+        c = lambda phrase, nth=1: self.cue(5, phrase, nth)
+        t0, t_end = self.start(5), self.end(5)
+        t_stop = t_end - 0.7                                    # the last 0.6 s clear the screen (2D camera returns)
+        DROP5, PITCH_MAX, K_RUN, H_CLIMB = 0.9, 16.0, 9.0, 5.0
+        t_v1, t_vr, t_v2 = c("قَبْلَهَا"), c("يَرْفَعُ"), c("تَرْتَفِعَ") + 0.3
+        t_rot1 = c("وَيَزِيدُ الرَّفْعُ") + 0.6                 # nose-up finished
+        t_lift = c("وَيَزِيدُ الرَّفْعُ") + 1.4                 # the wheels leave the ground
+
+        # --- 2D leftovers of segment 4 leave, then the 3D scene starts (camera driver first)
+        self.play(*[FadeOut(m) for m in list(self.mobjects)], run_time=0.5)
+        self.caption = VMobject()
+        self.camera.should_apply_shading = False
+        cam = self.camera_path([
+            (t0, 72, -128, 0.95), (t0 + 12, 74, -118, 1.0), (t_vr, 78, -102, 1.05),
+            (t_rot1 + 1.0, 80, -96, 1.05), (t0 + 34, 82, -108, 0.9), (t_end, 84, -122, 0.78)])
+
+        # --- the plane at the origin (nose +x), the ground and its shadow
+        plane = airliner_3d()
+        shadow = plane.shadow
+        body = VGroup(plane.gear, plane.fuselage, plane.wings, plane.tail, plane.engines)
+        body.shift(IN * DROP5)
+        shadow.shift(IN * DROP5)
+        pivot = plane.pivot + IN * DROP5
+        runway = runway_3d(x_start=-12.0, length=122.0)
+        runway.shift(IN * DROP5)
+        n_thr = 8
+        n_dash = len(runway) - 3 - n_thr
+        dashes, thr = list(runway[3:3 + n_dash]), list(runway[3 + n_dash:])
+        PERIOD = 2.6 * n_dash
+        for d in dashes:
+            d.bx = d.get_center()[0]
+            d.cx = d.bx
+        st = dict(X=0.0, pitch=0.0, h=0.0, p=0.0)
+        ground_last = dict(h=0.0, X=0.0)
+
+        # --- speed profile: pointer position p (0..1 of the tape), concave: the acceleration falls with speed
+        from scipy.interpolate import PchipInterpolator
+        pk = [(0.0, 0.0), (0.7, 0.0), (3.0, 0.07), (t_v1 - t0, 0.42), (t_vr - t0, 0.62), (t_v2 - t0, 0.86),
+              (t_end - t0, 0.95)]
+        p_of = PchipInterpolator([k[0] for k in pk], [k[1] for k in pk])
+        grid = np.arange(0, t_end - t0 + 0.05, 0.02)
+        x_of = np.concatenate([[0.0], np.cumsum(K_RUN * p_of(grid[1:]) * 0.02)])
+        smooth01 = lambda u: float(rate_functions.smooth(min(max(u, 0.0), 1.0)))
+
+        # --- the tape (fixed in frame)
+        TX0, TX1, TY, BH = -5.5, 5.5, 2.85, 0.44
+        tx = lambda p: TX0 + (TX1 - TX0) * p
+        P_V1, P_VR, P_V2 = 0.42, 0.62, 0.86
+        base = Rectangle(width=TX1 - TX0, height=BH, color=GREY_INK, fill_color=PANEL_FILL, fill_opacity=1,
+                         stroke_width=2).move_to([0, TY, 0])
+        speed_lbl = label("Speed", FS_NOTE, GREY_INK).next_to(base, UP, buff=0.12).align_to(base, LEFT)
+        pointer = Polygon([-0.15, -0.24, 0], [0.15, -0.24, 0], [0, 0, 0], color=INK, fill_color=INK,
+                          fill_opacity=1, stroke_width=1)
+        marks = []
+        for name, full, p in [("V1", "Decision speed", P_V1), ("VR", "Rotation", P_VR),
+                              ("V2", "Takeoff safety speed", P_V2)]:
+            tick = Line([tx(p), TY + BH / 2, 0], [tx(p), TY + BH / 2 + 0.2, 0], color=INK, stroke_width=4)
+            sym = label(name, FS_LABEL, INK, weight=BOLD).next_to(tick, UP, buff=0.06)
+            nm = label(full, FS_AXIS, GREY_INK).move_to([tx(p), TY - BH / 2 - 0.24 - 0.15 - 0.2, 0])
+            marks.append(dict(p=p, tick=tick, sym=sym, name=nm, lit=False))
+        red = Rectangle(width=tx(P_V1) - TX0, height=BH, color=ACCENT_4, fill_color=ACCENT_4, fill_opacity=0.9,
+                        stroke_width=0).move_to([(TX0 + tx(P_V1)) / 2, TY, 0])
+        green = Rectangle(width=TX1 - tx(P_V1), height=BH, color=ACCENT_3, fill_color=ACCENT_3, fill_opacity=0.9,
+                          stroke_width=0).move_to([(TX1 + tx(P_V1)) / 2, TY, 0])
+        z_rej = VGroup(icon("hand-stop", WHITE, 0.32), label("Reject", FS_AXIS, WHITE, weight=BOLD)).arrange(RIGHT, buff=0.15)
+        z_rej.move_to(red)
+        z_con = VGroup(icon("check", WHITE, 0.32), label("Continue", FS_AXIS, WHITE, weight=BOLD)).arrange(RIGHT, buff=0.15)
+        z_con.move_to(green)
+
+        # --- angle of attack (3D lines that follow the nose) and its label; lift arrow above the wing
+        av, lg = ValueTracker(0.0), ValueTracker(0.0)
+        NOSE = np.array([PLANE_LENGTH / 2 - 0.0, 0.0, _HULL_Z]) + IN * DROP5
+        NOSE[0] = 3.3
+
+        def rot(pt):
+            d = np.asarray(pt, dtype=float) - pivot
+            a = st["pitch"] * DEGREES
+            return pivot + np.array([d[0] * np.cos(a) - d[2] * np.sin(a), d[1], d[0] * np.sin(a) + d[2] * np.cos(a)])
+
+        def line3(a, b, color, width):
+            m = VMobject(color=color, stroke_width=width, stroke_opacity=av.get_value())
+            m.set_points_as_corners([a, b])
+            m.set_shade_in_3d(True)
+            return m
+
+        def aoa_geom():
+            cn, a, r = rot(NOSE), st["pitch"] * DEGREES + 1e-3, 1.8
+            wind = line3(cn, cn + np.array([2.4, 0, 0]), ACCENT_1, 5)
+            axis = line3(cn, cn + 2.4 * np.array([np.cos(a), 0, np.sin(a)]), GREY_INK, 5)
+            arc = VMobject(color=INK, stroke_width=6, stroke_opacity=av.get_value())
+            arc.set_points_as_corners([cn + r * np.array([np.cos(u), 0, np.sin(u)]) for u in np.linspace(0, a, 12)])
+            arc.set_shade_in_3d(True)
+            return VGroup(wind, axis, arc)
+        aoa = always_redraw(aoa_geom)
+        aoa_mid = lambda: rot(NOSE) + 1.8 * np.array([np.cos(st["pitch"] * DEGREES / 2), 0,
+                                                       np.sin(st["pitch"] * DEGREES / 2)])
+        aoa_txt = label("Angle of attack", FS_NOTE, INK)
+        aoa_box = SurroundingRectangle(aoa_txt, buff=0.15, color=INK, fill_color=WHITE, fill_opacity=0.95, stroke_width=2)
+        aoa_grp = VGroup(aoa_box, aoa_txt).move_to([5.0, 0.15, 0])
+        aoa_leader = Line(ORIGIN, RIGHT, color=INK, stroke_width=2.5)
+        aoa_dot = Dot(color=INK, radius=0.06)
+
+        B0 = np.array([0.3, -1.6, _HULL_Z - 0.18 + 0.14]) + IN * DROP5
+
+        def lift_geom():
+            b, L = rot(B0), 0.25 + 1.0 * lg.get_value()
+            w, hw, hl = 0.09, 0.22, 0.36
+            pts = [[b[0] - w, b[1], b[2]], [b[0] + w, b[1], b[2]], [b[0] + w, b[1], b[2] + L - hl],
+                   [b[0] + hw, b[1], b[2] + L - hl], [b[0], b[1], b[2] + L], [b[0] - hw, b[1], b[2] + L - hl],
+                   [b[0] - w, b[1], b[2] + L - hl]]
+            return _flat(pts, fill=ACCENT_1, opacity=min(1.0, 5 * lg.get_value()), stroke=ACCENT_1, width=1)
+        lift = always_redraw(lift_geom)
+        lift_txt = label("Lift", FS_LABEL, ACCENT_1, weight=BOLD)
+        lift_txt.set_opacity(0.0)
+
+        # --- the driver of the scene state (added right after the camera driver)
+        state = Mobject()
+        state.clock = self.renderer.time
+
+        def drive(m, dt):
+            m.clock += dt
+            T = m.clock - t0
+            st["p"] = float(p_of(min(max(T, 0.0), t_end - t0)))
+            st["X"] = float(np.interp(T, grid, x_of))
+            pitch = PITCH_MAX * smooth01((m.clock - t_vr) / (t_rot1 - t_vr))
+            st["h"] = H_CLIMB * min(max((m.clock - t_lift) / (t_stop - t_lift), 0.0), 1.0) ** 1.5
+            body.rotate(-(pitch - st["pitch"]) * DEGREES, axis=UP, about_point=pivot)
+            st["pitch"] = pitch
+            # ground: the dashes run cyclically, the threshold bars leave, everything sinks with h
+            dz = -(st["h"] - ground_last["h"])
+            for d in dashes:
+                nx = -12.0 + ((d.bx + 12.0 - st["X"]) % PERIOD)
+                d.shift([nx - d.cx, 0, dz])
+                d.cx = nx
+            for k in thr:
+                k.shift([-(st["X"] - ground_last["X"]), 0, dz])
+                k.set_opacity(max(0.0, 1.0 - st["X"] / 9.0))
+            for k in list(runway[:3]) + [shadow]:
+                k.shift([0, 0, dz])
+            ground_last.update(h=st["h"], X=st["X"])
+            # the tape
+            pointer.move_to([tx(st["p"]), TY - BH / 2 - 0.12 - 0.02, 0])
+            for mk in marks:
+                lit = st["p"] >= mk["p"]
+                if lit != mk["lit"]:
+                    mk["lit"] = lit
+                    for part in (mk["tick"], mk["sym"], mk["name"]):
+                        part.set_color(ACCENT_2 if lit else (INK if part is not mk["name"] else GREY_INK))
+            # labels that follow 3D points
+            proj = lambda pt: self.camera.project_point(pt)
+            aoa_leader.put_start_and_end_on(aoa_box.get_top() + UP * 0.02, proj(aoa_mid()))
+            aoa_dot.move_to(proj(aoa_mid()))
+            b = rot(B0)
+            lift_txt.move_to(proj(b + np.array([0, 0, 0.25 + 1.0 * lg.get_value()])) + LEFT * 0.62 + UP * 0.05)
+            lift_txt.set_opacity(min(1.0, 3 * lg.get_value()))
+        state.add_updater(drive)
+        self.add(state)
+        drive(state, 0)
+
+        _play = self.play
+
+        def synced_play(*a, **k):
+            """Manim's first frame of every play has dt = 0: put the drivers back on the clock."""
+            _play(*a, **k)
+            cam.clock = state.clock = self.renderer.time
+        self.play = synced_play
+
+        # --- fade the scene in under a white cover
+        cover = Rectangle(width=15, height=9, color=WHITE, fill_color=WHITE, fill_opacity=1, stroke_width=0)
+        self.fixed(cover)
+        self.add(runway, shadow, body)
+        self.add(cover)
+        self.play(FadeOut(cover), run_time=0.8)
+
+        # --- the tape and the three speeds
+        self.fixed(base, speed_lbl, pointer, red, green, z_rej, z_con, aoa_grp, aoa_leader, aoa_dot, lift_txt)
+        self.fixed(*[part for mk in marks for part in (mk["tick"], mk["sym"], mk["name"])])
+        self.add(lift_txt)
+        self.sync(c("وَالآنَ") + 1.5)
+        self.play(FadeIn(base), FadeIn(speed_lbl), FadeIn(pointer), run_time=0.6)
+        m1, m2, m3 = marks
+        self.sync(c("أَوَّلًا") - 0.1)
+        self.play(FadeIn(VGroup(m1["tick"], m1["sym"])), run_time=0.4)
+        self.sync(c("سُرْعَةُ القَرَارِ") - 0.1)
+        self.play(FadeIn(m1["name"], shift=DOWN * 0.1), run_time=0.5)
+
+        # V1: reject before it, continue after it
+        self.sync(c("قَبْلَهَا") - 0.2)
+        self.play(FadeIn(red), FadeIn(z_rej), run_time=0.6)
+        self.sync(c("وَبَعْدَهَا") - 0.2)
+        self.play(FadeIn(green), FadeIn(z_con), run_time=0.6)
+
+        # VR: the nose goes up, the angle of attack and the lift grow
+        self.sync(c("ثُمَّ فِي آرْ") - 0.1)
+        self.play(FadeIn(VGroup(m2["tick"], m2["sym"])), run_time=0.4)
+        self.sync(c("سُرْعَةُ الدَّوَرَانِ") - 0.1)
+        self.play(FadeIn(m2["name"], shift=DOWN * 0.1), run_time=0.5)
+        self.sync(c("فَتَزِيدُ زَاوِيَةُ") - 0.1)
+        self.add(aoa)
+        self.play(av.animate.set_value(1.0), FadeIn(aoa_grp), FadeIn(aoa_leader), FadeIn(aoa_dot), run_time=0.6)
+        self.sync(c("وَيَزِيدُ الرَّفْعُ") - 0.1)
+        self.add(lift)
+        self.play(lg.animate.set_value(1.0), run_time=1.0)
+
+        # V2: reached after lift-off
+        self.sync(c("ثُمَّ فِي تُو") - 0.1)
+        self.play(FadeIn(VGroup(m3["tick"], m3["sym"])), FadeOut(VGroup(aoa_grp, aoa_leader, aoa_dot)),
+                  av.animate.set_value(0.0), run_time=0.5)
+        self.remove(aoa)
+        self.sync(c("سُرْعَةُ الأَمَانِ") - 0.1)
+        self.play(FadeIn(m3["name"], shift=DOWN * 0.1), run_time=0.5)
+
+        # the order V1 <= VR, then V2
+        o_v1, o_le, o_vr, o_then, o_v2 = [label(t, FS_SUBTITLE, INK, weight=BOLD) for t in ("V1", "≤", "VR", "then", "V2")]
+        order = VGroup(o_v1, o_le, o_vr, o_then, o_v2).arrange(RIGHT, buff=0.25, aligned_edge=DOWN)
+        o_comma = label(",", FS_SUBTITLE, INK, weight=BOLD).next_to(o_vr, RIGHT, buff=0.04).align_to(o_vr, DOWN).shift(DOWN * 0.1)
+        VGroup(o_then, o_v2).shift(RIGHT * 0.2)
+        order.add(o_comma)
+        o_box = SurroundingRectangle(order, buff=0.25, color=ACCENT_2, fill_color=WHITE, fill_opacity=0.95,
+                                     corner_radius=0.1, stroke_width=3)
+        order_grp = VGroup(o_box, order).to_edge(DOWN, buff=0.45)
+        self.fixed(o_box, order)
+        self.sync(c("التَّرْتِيبُ") - 0.1)
+        self.play(FadeIn(order_grp, shift=UP * 0.15), run_time=0.6)
+        for word, part in [(c("فِي وَنْ", 2), o_v1), (c("ثُمَّ فِي آرْ", 2), o_vr), (c("ثُمَّ فِي تُو", 2), o_v2)]:
+            self.sync(word - 0.05)
+            self.play(Indicate(part, color=ACCENT_2, scale_factor=1.35), run_time=0.6)
+        self.sync(c("لَا تَتَجَاوَزُ") - 0.1)
+        self.play(Indicate(o_le, color=ACCENT_2, scale_factor=1.6), run_time=0.7)
+
+        # clear the screen and give segment 6 the default top-down camera
+        self.sync(t_stop)
+        del self.play
+        self.reset_camera_2d(cam)
+        state.clear_updaters()
 
 
 if __name__ == "__main__":
