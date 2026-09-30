@@ -479,6 +479,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(self.end(6))
 
         # ---------------- Segment 7: conclusion ----------------
+        self.segment_7()
         self.sync(self.end(7) + 1.0)
 
     # ---------------- 3D camera helpers ----------------
@@ -1806,6 +1807,61 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.sync(T("تِسْعَةٍ", 0.05))
         self.play(FadeIn(v_plus, shift=RIGHT * 0.1), run_time=0.5)
         self.sync(t_end)
+
+    # ---------------- Segment 7 ----------------
+    def segment_7(self):
+        """Conclusion: three summary lines at their words, then a plane runs along a runway and climbs a dashed path."""
+        c = lambda phrase, nth=1: self.cue(7, phrase, nth)
+        t_end = self.end(7)
+
+        # --- the plane, its runway and the dashed climb path (built now, shown at the second sentence)
+        RY, X0, X1, X2 = -3.3, -5.6, -0.6, 5.6            # runway height, run start, take-off point, path end
+        Y_END = -2.0
+        path_fn = lambda s: np.array([X1 + (X2 - X1) * s, RY + (Y_END - RY) * s ** 1.7, 0])
+        plane_ic = icon("plane-departure", INK, 0.9)
+        off = plane_ic.height / 2 + 0.06                   # the wheels' height above the line
+        runway = Line([X0 - 0.3, RY, 0], [X1, RY, 0], color=GREY_INK, stroke_width=4)
+        climb = DashedVMobject(ParametricFunction(path_fn, t_range=[0, 1], color=GREY_INK, stroke_width=4),
+                               num_dashes=22, color=GREY_INK)
+        plane_ic.move_to([X0, RY + off, 0])
+
+        # --- the box: heading, then the lines at their words (library)
+        self.clear(run_time=0.3)
+        box = summary_box(self, "Summary",
+                          ["The wing makes lift", "Lift grows with V²", "Air density sets the speed needed"],
+                          cues=[c("الجَنَاحُ"), c("وَالرَّفْعُ"), c("وَكَثَافَةُ")], pos=[0, 0.75, 0])
+        lines = box[1][1]                                   # the three body lines
+
+        # --- second sentence: each factor pulses at its word while the plane rolls
+        t_roll, t_lift = c("الجَنَاحُ", 2), c("لَحْظَةَ")
+
+        def move(m):
+            t = self.renderer.time
+            if t < t_lift:
+                s = min(max((t - t_roll) / (t_lift - t_roll), 0.0), 1.0)
+                m.move_to([X0 + (X1 - X0) * s ** 2, RY + off, 0])
+            else:
+                s = min((t - t_lift) / (t_end - 0.2 - t_lift), 1.0)
+                s = s * s * (3 - 2 * s) * 0.5 + s * 0.5     # ease, but keep moving to the end
+                m.move_to(path_fn(s) + UP * off)
+        plane_ic.add_updater(move)
+
+        def hold(t):                                        # like sync(), but the plane's updater keeps running while we wait
+            rem = t - self.renderer.time
+            if rem > 1e-3:
+                self.wait(rem, frozen_frame=False)
+
+        hold(c("مِنْهَا"))
+        self.play(Create(runway), FadeIn(plane_ic), run_time=0.6)
+        hold(c("الجَنَاحُ", 2) - 0.05)
+        self.play(Indicate(lines[0], color=ACCENT_1, scale_factor=1.05), run_time=0.5)
+        hold(c("وَالسُّرْعَةُ") - 0.05)
+        self.play(Indicate(lines[1], color=ACCENT_1, scale_factor=1.05), run_time=0.5)
+        hold(c("وَكَثَافَةُ", 2) - 0.05)
+        self.play(Indicate(lines[2], color=ACCENT_1, scale_factor=1.05), run_time=0.5)
+        hold(t_lift - 0.05)
+        self.play(Create(climb), run_time=max(t_end - 0.2 - t_lift, 0.5), rate_func=linear)
+        hold(t_end)
 
 
 if __name__ == "__main__":
