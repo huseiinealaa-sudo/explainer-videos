@@ -77,6 +77,140 @@ assert f"{D.WEIGHT_INCREASE * 100:.0f}" == "10" and f"{D.HEAVY_INCREASE * 100:.1
 
 AUDIO_DIR = audio_dir_for(__file__)
 
+# ---------------- 3D helpers (segments 1 and 5) ----------------
+# World units: x along the runway (nose towards +x), y across it, z up; ground at z = 0.
+PLANE_LENGTH = 6.6
+GEAR_X = -0.2                       # x of the main gear: the pivot of the rotation at VR
+_HULL_R, _HULL_Z = 0.37, 0.95       # fuselage radius and height of its axis above the ground
+SCENE_DROP = 1.7                    # segment 1 sinks the scene so the title fits above it
+_SKIN, _SKIN_LINE = "#fbfbfb", "#3a3a3a"
+_ENGINE_FILL = "#fbe6d3"            # very light orange tint (orange = engines)
+
+
+def _far_anchor(z=-60.0):
+    """A far-below point used as depth key: everything tied to it is painted first."""
+    return Dot(point=[0, 0, z], radius=0.01)
+
+
+def _flat(points, fill=_SKIN, opacity=1.0, stroke=_SKIN_LINE, width=1.4):
+    """A flat polygon in 3D that takes part in the depth sorting of the camera."""
+    poly = Polygon(*points, color=stroke, fill_color=fill, fill_opacity=opacity, stroke_width=width)
+    poly.set_shade_in_3d(True)
+    return poly
+
+
+def _skin(surface):
+    surface.set_style(fill_color=_SKIN, fill_opacity=1, stroke_color=GREY_INK, stroke_width=0.5)
+    return surface
+
+
+def airliner_3d(scale=1.0):
+    """A generic twin-engine airliner from basic shapes: nose towards +x, standing on z = 0.
+
+    Returns a VGroup with the parts as attributes: fuselage, wings (VGroup, both sides), tail,
+    engines, gear, shadow; `pivot` is the point on the ground under the main gear (rotation
+    about it lifts the nose: rotate about the y axis). No type, airline, logo or registration.
+    """
+    x0, x1, x_tail, x_nose = -PLANE_LENGTH / 2, PLANE_LENGTH / 2, -1.7, 2.3
+    r0 = _HULL_R
+
+    def hull(u, v):
+        x = x0 + (x1 - x0) * u
+        z_up = 0.0
+        if x < x_tail:                                  # tail cone, swept up
+            s = (x - x0) / (x_tail - x0)
+            r, z_up = r0 * (0.1 + 0.9 * (1 - (1 - s) ** 2)), 0.32 * (1 - s) ** 2
+        elif x > x_nose:                                # rounded nose
+            q = (x - x_nose) / (x1 - x_nose)
+            r = r0 * np.sqrt(max(1 - q * q, 0.02))          # never a point: a pole breaks the mesh
+        else:
+            r = r0
+        return np.array([x, r * np.cos(v), _HULL_Z + z_up + r * np.sin(v)])
+
+    fuselage = _skin(Surface(hull, u_range=[0, 1], v_range=[0, TAU], resolution=(32, 14),
+                             checkerboard_colors=False))
+    fuselage.set_style(fill_color="#f2f2f2", fill_opacity=1, stroke_color="#a8a8a8", stroke_width=0.35)
+    fuselage.set_shade_in_3d(True)
+
+    wing_z = _HULL_Z - 0.18
+    wings = VGroup()
+    for k in (1, -1):
+        wings.add(_flat([[0.95, k * 0.3, wing_z], [-0.95, k * 3.0, wing_z + 0.22],
+                         [-1.45, k * 3.0, wing_z + 0.22], [-0.75, k * 0.3, wing_z]]))
+    tail = VGroup(*[_flat([[-2.55, k * 0.1, _HULL_Z + 0.25], [-3.15, k * 1.25, _HULL_Z + 0.42],
+                           [-3.45, k * 1.25, _HULL_Z + 0.42], [-3.2, k * 0.1, _HULL_Z + 0.3]])
+                    for k in (1, -1)])
+    tail.add(_flat([[-1.9, 0, _HULL_Z + 0.3], [-3.0, 0, _HULL_Z + 1.15],
+                    [-3.4, 0, _HULL_Z + 1.15], [-3.3, 0, _HULL_Z + 0.4]]))          # the fin
+
+    engines = VGroup()
+    for k in (1, -1):
+        e = Cylinder(radius=0.27, height=1.1, direction=RIGHT, resolution=(6, 14), show_ends=True)
+        e.set_style(fill_color=_ENGINE_FILL, fill_opacity=1, stroke_color=GREY_INK, stroke_width=0.5)
+        e.set_shade_in_3d(True)
+        e.move_to([0.55, k * 1.15, _HULL_Z - 0.5])
+        engines.add(e, _flat([[0.35, k * 1.15, _HULL_Z - 0.28], [-0.1, k * 1.15, _HULL_Z - 0.28],
+                              [-0.3, k * 1.15, wing_z + 0.08], [0.1, k * 1.15, wing_z + 0.08]],
+                             fill=GREY_INK, stroke=GREY_INK, width=1))
+
+    gear = VGroup()
+    for x, y, h in [(GEAR_X, 0.9, 0.45), (GEAR_X, -0.9, 0.45), (1.7, 0.0, 0.5)]:
+        strut = _flat([[x - 0.03, y, 0.17], [x + 0.03, y, 0.17], [x + 0.03, y, h + 0.3], [x - 0.03, y, h + 0.3]],
+                      fill=GREY_INK, stroke=GREY_INK, width=1)
+        wheel = Cylinder(radius=0.17, height=0.14, direction=UP, resolution=(4, 12))
+        wheel.set_style(fill_color=GREY_INK, fill_opacity=1, stroke_color=INK, stroke_width=0.4)
+        wheel.set_shade_in_3d(True)
+        wheel.move_to([x, y, 0.17])
+        gear.add(strut, wheel)
+
+    shadow = Polygon([2.6, 0, 0.02], [0.9, 0.5, 0.02], [-0.9, 3.0, 0.02], [-1.45, 3.0, 0.02],
+                     [-1.6, 0.5, 0.02], [-3.4, 0.9, 0.02], [-3.4, -0.9, 0.02], [-1.6, -0.5, 0.02],
+                     [-1.45, -3.0, 0.02], [-0.9, -3.0, 0.02], [0.9, -0.5, 0.02],
+                     color=PANEL_FILL, fill_color="#e4e4e4", fill_opacity=0.9, stroke_width=0)
+    shadow.set_shade_in_3d(True)
+    shadow.z_index_group = _far_anchor(-50.0)           # after the runway, before the plane
+
+    plane = VGroup(shadow, gear, fuselage, wings, tail, engines)
+    plane.shadow, plane.gear, plane.fuselage, plane.wings, plane.tail, plane.engines = (
+        shadow, gear, fuselage, wings, tail, engines)
+    plane.pivot = np.array([GEAR_X, 0.0, 0.0])
+    if scale != 1.0:
+        plane.scale(scale, about_point=ORIGIN)
+        plane.pivot = plane.pivot * scale
+    return plane
+
+
+def runway_3d(x_start=-9.0, length=70.0, width=4.6):
+    """A long light-grey runway with edge lines, a dashed centreline and threshold bars.
+
+    Painted first whatever the camera angle (one depth key for the whole group).
+    """
+    x_end = x_start + length
+    w = width / 2
+    parts = VGroup(_flat([[x_start, -w, 0], [x_end, -w, 0], [x_end, w, 0], [x_start, w, 0]],
+                         fill="#d2d2d2", stroke=GREY_INK, width=1.5))
+    for k in (1, -1):                                   # edge lines
+        parts.add(_flat([[x_start, k * (w - 0.12), 0.01], [x_end, k * (w - 0.12), 0.01],
+                         [x_end, k * (w - 0.16), 0.01], [x_start, k * (w - 0.16), 0.01]],
+                        fill=LIGHT_INK, stroke=LIGHT_INK, width=0.5))
+    x = x_start + 4.2
+    while x < x_end - 1.0:                              # dashed centreline
+        parts.add(_flat([[x, -0.06, 0.01], [x + 1.4, -0.06, 0.01], [x + 1.4, 0.06, 0.01], [x, 0.06, 0.01]],
+                        fill=WHITE, stroke=WHITE, width=0.5))
+        x += 2.6
+    for i in range(-4, 5):                              # threshold bars ("piano keys")
+        if i == 0:
+            continue
+        y = i * 0.32
+        parts.add(_flat([[x_start + 0.5, y - 0.09, 0.01], [x_start + 2.3, y - 0.09, 0.01],
+                         [x_start + 2.3, y + 0.09, 0.01], [x_start + 0.5, y + 0.09, 0.01]],
+                        fill=WHITE, stroke=WHITE, width=0.5))
+    anchor = _far_anchor()
+    for m in parts:
+        m.z_index_group = anchor
+    parts.anchor = anchor
+    return parts
+
 
 class TakeoffLift(SyncedScene, ThreeDScene):
     """SyncedScene timing on a 3D camera: 2D segments keep the default top-down view."""
@@ -85,6 +219,7 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         self.timeline(NARRATION, AUDIO_DIR)
 
         # ---------------- Segment 1: the question (3D) ----------------
+        self.segment_1()
         self.sync(self.end(1))
 
         # ---------------- Segment 2: the four forces ----------------
@@ -104,6 +239,120 @@ class TakeoffLift(SyncedScene, ThreeDScene):
 
         # ---------------- Segment 7: conclusion ----------------
         self.sync(self.end(7) + 1.0)
+
+    # ---------------- 3D camera helpers ----------------
+    def camera_path(self, keys):
+        """Drive the camera along keyframes [(t, phi_deg, theta_deg, zoom), ...] (the camera always looks at the origin: a moved
+        frame centre is applied twice by ThreeDCamera and throws fixed-in-frame texts off) on the
+        narration clock (smooth through the keys, no stop at each one). The driver is added FIRST so
+        every 3D object after it is redrawn each frame (nothing is cached as a static picture)."""
+        from scipy.interpolate import PchipInterpolator
+        ts = [k[0] for k in keys]
+        spline = PchipInterpolator(ts, np.array([k[1:4] for k in keys], dtype=float))
+        driver = Mobject()
+        driver.clock = self.renderer.time
+
+        def follow(m, dt):
+            m.clock += dt
+            phi, theta, zoom = spline(min(max(m.clock, ts[0]), ts[-1]))
+            self.camera.set_phi(phi * DEGREES)
+            self.camera.set_theta(theta * DEGREES)
+            self.camera.set_zoom(zoom)
+        driver.add_updater(follow)
+        follow(driver, 0)
+        self.add(driver)
+        return driver
+
+    def fixed(self, *mobs):
+        """Put texts and leaders in the frame (they ignore the camera); returns them as a group."""
+        self.add_fixed_in_frame_mobjects(*mobs)
+        self.remove(*mobs)                  # add_fixed_in_frame_mobjects also adds them: show them by FadeIn
+        return VGroup(*mobs)
+
+    def reset_camera_2d(self, driver=None):
+        """Fade the 3D scene and its overlays out and restore the default top-down camera."""
+        self.clear()
+        if driver is not None:
+            driver.clear_updaters()
+        self.camera.fixed_in_frame_mobjects.clear()
+        self.set_camera_orientation(phi=0, theta=-90 * DEGREES, zoom=1)
+        self.camera.should_apply_shading = True
+
+    # ---------------- Segment 1 ----------------
+    def segment_1(self):
+        c = lambda phrase, nth=1: self.cue(1, phrase, nth)
+        runway, plane = runway_3d(), airliner_3d()
+        t0 = self.start(1)
+        driver = self.camera_path([
+            (t0 + 0.0, 30, -62, 0.60),                      # high and wide
+            (t0 + 7.0, 50, -50, 0.78),
+            (t0 + 12.0, 68, -40, 1.05),                     # low three-quarter view beside the plane
+            (t0 + 22.3, 74, -32, 1.12),
+        ])
+        self.camera.should_apply_shading = False            # flat whiteboard fills, exact colours
+        runway.shift(IN * SCENE_DROP)                       # sit lower on screen: room for the title
+        plane.shift(IN * SCENE_DROP)
+        self.add(runway, plane)
+
+        # disclaimer (the first sentence of the narration)
+        note = fit(VGroup(label("Educational material. The binding reference is the official", FS_NOTE),
+                          label("documentation and approved procedures.", FS_NOTE))
+                   .arrange(DOWN, buff=0.12), 12.4)
+        box = SurroundingRectangle(note, buff=0.2, color=LIGHT_INK, fill_color=WHITE,
+                                   fill_opacity=0.92, stroke_width=1.5)
+        disclaimer = self.fixed(box, note).to_edge(UP, buff=0.35)
+        self.sync(t0 + 0.1)
+        self.play(FadeIn(disclaimer, run_time=0.6))
+        self.sync(c("طَائِرَةُ") - 0.7)
+        self.play(FadeOut(disclaimer, run_time=0.6))
+
+        # "m = 70 t" with a leader that follows the plane while the camera moves
+        tag = label(f"m = {D.MASS / 1000:.0f} t", FS_LABEL)
+        tag_box = SurroundingRectangle(tag, buff=0.15, color=ACCENT_4, fill_color=WHITE,
+                                       fill_opacity=0.95, stroke_width=2)
+        tag_grp = self.fixed(tag_box, tag).move_to([5.3, 0.9, 0])
+        leader = Line(ORIGIN, RIGHT, color=ACCENT_4, stroke_width=2.5)
+        dot = Dot(color=ACCENT_4, radius=0.07)
+
+        def track(_):
+            a = plane.fuselage.get_center() + np.array([1.2, 0, 0.42])
+            end = self.camera.project_point(a)
+            leader.put_start_and_end_on(tag_box.get_left(), end)
+            dot.move_to(end)
+        leader.add_updater(track)
+        track(leader)
+        self.fixed(leader, dot)
+        self.sync(c("سَبْعُونَ") - 0.1)
+        self.play(FadeIn(tag_grp, run_time=0.5), FadeIn(leader, run_time=0.5), FadeIn(dot, run_time=0.5))
+
+        # the question and the answer as a title
+        title = fit(label("How does an airplane take off?", FS_TITLE), 12.4).to_edge(UP, buff=0.35)
+        self.fixed(title)
+        self.sync(c("فَكَيْفَ") - 0.1)
+        self.play(FadeIn(title, shift=DOWN * 0.15, run_time=0.6))
+        sub = label("Lift and takeoff speeds", FS_SUBTITLE, GREY_INK)
+        ic = icon("plane-departure", ACCENT_1, 0.6)
+        sub_grp = VGroup(ic, sub).arrange(RIGHT, buff=0.25).next_to(title, DOWN, buff=0.25)
+        self.fixed(ic, sub)
+        self.sync(c("الجَوَابُ") - 0.1)
+        self.play(FadeIn(sub_grp, run_time=0.5))
+
+        # the wing, then the speed
+        self.sync(c("الجَنَاحِ") - 0.05)
+        self.play(plane.wings.animate(run_time=0.8).set_fill(ACCENT_1, 0.95).set_stroke(ACCENT_1))
+        self.sync(c("وَالسُّرْعَةِ") - 0.05)
+        streaks = VGroup()
+        for i, (y, z, x) in enumerate([(-2.1, 0.6, 5), (-1.2, 1.5, 7), (-0.5, 0.35, 9), (0.4, 1.7, 6),
+                                       (1.1, 0.5, 8), (1.9, 1.3, 5.5), (-1.7, 1.0, 10), (2.3, 0.4, 9.5)]):
+            ln = Line([x, y, z - SCENE_DROP], [x + 2.2, y, z - SCENE_DROP], color=ACCENT_1, stroke_width=3.5)
+            ln.set_shade_in_3d(True)
+            streaks.add(ln)
+        self.add(streaks)
+        roll = self.end(1) - 0.65 - self.renderer.time
+        self.play(FadeOut(VGroup(tag_grp, leader, dot), run_time=0.4),
+                  streaks.animate(run_time=roll, rate_func=linear).shift(LEFT * 16),
+                  plane.animate(run_time=roll, rate_func=rate_functions.ease_in_quad).shift(RIGHT * 2.5))
+        self.reset_camera_2d(driver)
 
 
 if __name__ == "__main__":
