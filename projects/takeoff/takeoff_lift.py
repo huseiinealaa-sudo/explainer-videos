@@ -129,7 +129,8 @@ def airliner_3d(scale=1.0):
 
     fuselage = _skin(Surface(hull, u_range=[0, 1], v_range=[0, TAU], resolution=(32, 14),
                              checkerboard_colors=False))
-    fuselage.set_style(fill_color="#f2f2f2", fill_opacity=1, stroke_color="#a8a8a8", stroke_width=0.35)
+    fuselage.set_style(fill_color="#f2f2f2", fill_opacity=1, stroke_color="#a8a8a8", stroke_width=0.35,
+                       stroke_opacity=0.15)                 # no lat/long mesh lines: a smooth hull
     fuselage.set_shade_in_3d(True)
 
     wing_z = _HULL_Z - 0.18
@@ -145,8 +146,10 @@ def airliner_3d(scale=1.0):
 
     engines = VGroup()
     for k in (1, -1):
-        e = Cylinder(radius=0.27, height=1.1, direction=RIGHT, resolution=(6, 14), show_ends=True)
-        e.set_style(fill_color=_ENGINE_FILL, fill_opacity=1, stroke_color=GREY_INK, stroke_width=0.5)
+        e = Cylinder(radius=0.27, height=1.1, direction=RIGHT, resolution=(6, 14), show_ends=True,
+                     checkerboard_colors=False)
+        e.set_style(fill_color=_ENGINE_FILL, fill_opacity=1, stroke_color=GREY_INK, stroke_width=0,
+                    stroke_opacity=0)                       # no basket pattern on the nacelles
         e.set_shade_in_3d(True)
         e.move_to([0.55, k * 1.15, _HULL_Z - 0.5])
         engines.add(e, _flat([[0.35, k * 1.15, _HULL_Z - 0.28], [-0.1, k * 1.15, _HULL_Z - 0.28],
@@ -576,24 +579,44 @@ class TakeoffLift(SyncedScene, ThreeDScene):
         ic = icon("plane-departure", ACCENT_1, 0.6)
         sub_grp = VGroup(ic, sub).arrange(RIGHT, buff=0.25).next_to(title, DOWN, buff=0.25)
         self.fixed(ic, sub)
-        self.sync(c("الجَوَابُ") - 0.1)
-        self.play(FadeIn(sub_grp, run_time=0.5))
-
-        # the wing, then the speed
-        self.sync(c("الجَنَاحِ") - 0.05)
-        self.play(plane.wings.animate(run_time=0.8).set_fill(ACCENT_1, 0.95).set_stroke(ACCENT_1))
-        self.sync(c("وَالسُّرْعَةِ") - 0.05)
+        # the answer starts the airflow and the roll (slowly, until the end); the wing turns blue at its word
         streaks = VGroup()
         for i, (y, z, x) in enumerate([(-2.1, 0.6, 5), (-1.2, 1.5, 7), (-0.5, 0.35, 9), (0.4, 1.7, 6),
                                        (1.1, 0.5, 8), (1.9, 1.3, 5.5), (-1.7, 1.0, 10), (2.3, 0.4, 9.5)]):
             ln = Line([x, y, z - SCENE_DROP], [x + 2.2, y, z - SCENE_DROP], color=ACCENT_1, stroke_width=3.5)
             ln.set_shade_in_3d(True)
             streaks.add(ln)
-        self.add(streaks)
-        roll = self.end(1) - 0.65 - self.renderer.time
-        self.play(FadeOut(VGroup(tag_grp, leader, dot), run_time=0.4),
-                  streaks.animate(run_time=roll, rate_func=linear).shift(LEFT * 16),
-                  plane.animate(run_time=roll, rate_func=rate_functions.ease_in_quad).shift(RIGHT * 2.5))
+        t_go = c("الجَوَابُ") - 0.1
+        t_stop = self.end(1) - 0.65
+        span = t_stop - t_go
+        STREAK_SHIFT, ROLL_SHIFT = 10.0, 2.0                # units over the whole span
+        clock = dict(t=0.0)
+
+        def drift(_, dt):
+            dt = min(dt, max(span - clock["t"], 0.0))
+            u = clock["t"] / span
+            streaks.shift(LEFT * STREAK_SHIFT / span * dt)
+            plane.shift(RIGHT * ROLL_SHIFT * 2 * u / span * dt)       # ease-in: speed grows with time
+            clock["t"] += dt
+        driver_mob = Mobject()
+        driver_mob.add_updater(drift)
+        self.sync(t_go)
+        self.add(streaks, driver_mob)
+        self.play(FadeIn(sub_grp, run_time=0.5))
+
+        # the wing, then the speed
+        self.sync(c("الجَنَاحِ") - 0.05)
+        wing_from = [(m.get_fill_color(), m.get_stroke_color()) for m in plane.wings]
+
+        def tint(wings, a):                                 # colour only: the roll keeps moving the points
+            for m, (f, s) in zip(wings, wing_from):
+                m.set_fill(interpolate_color(f, ManimColor(ACCENT_1), a), 0.95)
+                m.set_stroke(interpolate_color(s, ManimColor(ACCENT_1), a))
+        self.play(UpdateFromAlphaFunc(plane.wings, tint, run_time=0.8))
+        self.sync(c("وَالسُّرْعَةِ") - 0.05)
+        self.play(FadeOut(VGroup(tag_grp, leader, dot), run_time=0.4))
+        self.sync(t_stop)
+        driver_mob.clear_updaters()
         self.reset_camera_2d(driver)
 
     # ---------------- Segment 2 ----------------
