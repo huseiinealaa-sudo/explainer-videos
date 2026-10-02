@@ -577,6 +577,128 @@ class CouplantRig(VGroup):
         return f.move_to([self.x(), self.surface_y + self.gap / 2, 0])
 
 
+# ---- Segment 5 helpers: the A-scan screen and the thickness gauge (the review reuses both) ----
+class AScan(VGroup):
+    """An A-scan screen: a framed plot with a time axis (µs) and an echo-amplitude axis.
+
+    `peaks` is a list of (time µs, height in units); the signal is the sum of narrow peaks of
+    width `sigma` µs on a flat baseline. Parts of the group: frame, x_axis, y_axis, ticks,
+    tick_labels, x_caption, y_caption. `trace` (the signal drawn up to a time), `cursor` (a short
+    vertical time cursor on the baseline) and `pen` (a dot on the tip of the trace) are not in the group: the scene adds them and calls
+    `update_trace(t)` / `set_cursor(t)` (inside an updater when a clock drives them).
+    Positions are read from the frame at call time, so `shift` / `move_to` the group first;
+    do not scale it. `x_of(t)` is the screen x of time t, `apex(k)` the top of peak k."""
+
+    def __init__(self, peaks, width=6.4, height=2.5, t_min=-0.6, t_max=10.0,
+                 ticks=(0, 2, 4, 6, 8, 10), sigma=0.14, x_caption="Time (µs)",
+                 y_caption="Echo amplitude"):
+        self.peaks, self.t_min, self.t_max, self.sigma = list(peaks), t_min, t_max, sigma
+        self._lx, self._rx = -width / 2 + 0.25, width / 2 - 0.3       # x of t_min / t_max
+        self._by = -height / 2 + 0.55                                 # baseline, from the centre
+        frame = Rectangle(width=width, height=height, color=INK, stroke_width=3)
+        frame.set_fill(PANEL_FILL, 1)
+        x_axis = Arrow([self._lx, self._by, 0], [width / 2 - 0.08, self._by, 0], buff=0,
+                       color=INK, stroke_width=3, tip_length=0.16)
+        y_axis = Arrow([self._lx, self._by, 0], [self._lx, height / 2 - 0.08, 0], buff=0,
+                       color=INK, stroke_width=3, tip_length=0.16)
+        tick_x = [self._lx + (t - t_min) * (self._rx - self._lx) / (t_max - t_min) for t in ticks]
+        tick_marks = VGroup(*[Line([x, self._by, 0], [x, self._by + 0.1, 0], color=INK,
+                                   stroke_width=3) for x in tick_x])
+        tick_labels = VGroup(*[label(f"{t:g}", FS_TAG - 2, GREY_INK).move_to([x, self._by - 0.28, 0])
+                               for t, x in zip(ticks, tick_x)])
+        xc = label(x_caption, FS_TAG, INK).next_to(frame, DOWN, 0.1).align_to(frame, RIGHT)
+        yc = label(y_caption, FS_TAG, INK).rotate(PI / 2).next_to(frame, LEFT, 0.1)
+        super().__init__(frame, x_axis, y_axis, tick_marks, tick_labels, xc, yc)
+        self.frame, self.x_axis, self.y_axis = frame, x_axis, y_axis
+        self.ticks, self.tick_labels, self.x_caption, self.y_caption = tick_marks, tick_labels, xc, yc
+        self.trace = VMobject(color=INK, stroke_width=3)
+        self.trace.set_points_as_corners([[0, 0, 0], [0.01, 0, 0]]).set_stroke(opacity=0)
+        self.cursor = Line(ORIGIN, UP, color=ACCENT_1, stroke_width=3)
+        self.cursor.set_stroke(opacity=0)
+        self.pen = Dot(ORIGIN, radius=0.08, color=ACCENT_1)           # rides the tip of the trace
+        self.pen.set_opacity(0)
+
+    def x_of(self, t):
+        k = (self._rx - self._lx) / (self.t_max - self.t_min)
+        return self.frame.get_center()[0] + self._lx + (t - self.t_min) * k
+
+    def y_base(self):
+        return self.frame.get_center()[1] + self._by
+
+    def signal(self, t):
+        return sum(a * np.exp(-((t - tp) / self.sigma) ** 2) for tp, a in self.peaks)
+
+    def apex(self, k):
+        tp, a = self.peaks[k]
+        return np.array([self.x_of(tp), self.y_base() + a, 0.0])
+
+    def update_trace(self, t_end, step=0.02):
+        """Redraw `trace` from t_min up to t_end (µs)."""
+        t_end = min(t_end, self.t_max)
+        if t_end <= self.t_min + step:
+            self.trace.set_stroke(opacity=0)
+            self.pen.set_opacity(0)
+            return self.trace
+        ts = np.arange(self.t_min, t_end + 1e-9, step)
+        pts = [[self.x_of(t), self.y_base() + self.signal(t), 0.0] for t in ts]
+        self.trace.set_points_as_corners(pts)
+        self.trace.set_stroke(color=INK, width=3, opacity=1)
+        self.pen.set_opacity(1).move_to(pts[-1])
+        return self.trace
+
+    def set_cursor(self, t):
+        """Put the cursor at time t (µs): a short bar standing on the baseline."""
+        x = self.x_of(min(max(t, self.t_min), self.t_max))
+        self.cursor.put_start_and_end_on([x, self.y_base() - 0.08, 0], [x, self.y_base() + 0.5, 0])
+        self.cursor.set_stroke(opacity=1 if t >= self.t_min else 0)
+        return self.cursor
+
+
+class ThicknessGauge(VGroup):
+    """A digital thickness gauge: a case with a display, an echo-time line and a velocity
+    setting (one radio row per option). Parts: case, title, display, value (the reading text),
+    echo (or None), head, rows (one `circle + text` group per option), marker (the filled dot of
+    the selected row). `reading(text, color)` returns a new reading text placed on the display
+    (Transform `value` into it); `marker_pos(k)` is where the marker sits for option k."""
+
+    def __init__(self, reading, options, selected=0, echo_text=None, width=4.8, value_size=56,
+                 reading_color=OK_C):
+        self.value_size = value_size
+        title = label("Thickness gauge", FS_NOTE, INK, weight=BOLD)
+        display = Rectangle(width=width - 0.7, height=1.15, color=INK, stroke_width=3)
+        display.set_fill(BG, 1)
+        value = label(reading, value_size, reading_color, weight=BOLD)
+        echo = label(echo_text, FS_TAG, GREY_INK) if echo_text else None
+        head = label("Velocity setting", FS_TAG, GREY_INK)
+        rows = VGroup()
+        for name, v in options:
+            ring = Circle(radius=0.12, color=INK, stroke_width=3)
+            txt = label(f"{name}  {v:.0f} m/s", FS_LABEL - 4, INK)
+            rows.add(VGroup(ring, txt).arrange(RIGHT, buff=0.25))
+        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.22)
+        stack = VGroup(title, display, *( [echo] if echo else [] ), head, rows)
+        stack.arrange(DOWN, buff=0.28)
+        head.align_to(display, LEFT)
+        rows.align_to(display, LEFT).shift(RIGHT * 0.15)
+        if echo:
+            echo.align_to(display, LEFT)
+        value.move_to(display)
+        case = RoundedRectangle(width=width, height=stack.height + 0.5, corner_radius=0.15,
+                                color=INK, stroke_width=4)
+        case.set_fill(PANEL_FILL, 1).move_to(stack)
+        self._rows = rows
+        marker = Dot(rows[selected][0].get_center(), radius=0.07, color=ACCENT_1)
+        super().__init__(case, stack, value, marker)
+        self.case, self.title, self.display, self.value = case, title, display, value
+        self.echo, self.head, self.rows, self.marker = echo, head, rows, marker
+
+    def marker_pos(self, k):
+        return self.rows[k][0].get_center()
+
+    def reading(self, text, color):
+        return label(text, self.value_size, color, weight=BOLD).move_to(self.display)
+
+
 class UtSeriesEp01(SyncedScene):
     def construct(self):
         self.timeline(NARRATION, AUDIO_DIR)
@@ -1476,6 +1598,278 @@ class UtSeriesEp01(SyncedScene):
 
     # ---------------- Segment 5: pulse-echo and the A-scan (§5) ----------------
     def seg5(self):
+        c = lambda phrase, nth=1: self.cue(5, phrase, nth)
+
+        # ---- geometry and the one shared clock ----
+        PLATE_W, PLATE_H, PLATE_CX, PLATE_TOP = 6.4, 1.9, -3.0, 2.35
+        MM = PLATE_H / D.THICKNESS                    # screen units per mm of depth
+        V = D.V_L_STEEL / 1000.0                      # mm per µs
+        SLOWMO = 0.5                                  # screen seconds per µs of real time
+        T_START, T_END = -0.5, 10.0                   # clock range (µs)
+        t_fl, t_bw = D.T_FLAW_US, D.T_BACKWALL_US
+        COL_X = 4.35                                  # centre of the right-hand column
+        bx = PLATE_CX
+        top_y, bot_y = PLATE_TOP, PLATE_TOP - PLATE_H
+        yz = lambda z: top_y - z * MM                 # screen y of depth z (mm)
+
+        plate = SteelBlock(PLATE_W, PLATE_H).move_to([PLATE_CX, PLATE_TOP - PLATE_H / 2, 0])
+        probe = Probe().next_to(plate, UP, buff=0)
+        flaw = Ellipse(width=0.5, height=0.16, color=ACCENT_4, stroke_width=4)
+        flaw.set_fill(ACCENT_4, 0.5).move_to([bx, yz(D.FLAW_DEPTH), 0])
+        wall = Line(plate.body.get_corner(DL), plate.body.get_corner(DR), color=INK, stroke_width=8)
+        flaw_tag = label("Flaw", FS_TAG, ACCENT_4, weight=BOLD).next_to(flaw, RIGHT, 0.15)
+        wall_tag = label("Back wall", FS_TAG, GREY_INK).move_to(
+            plate.body.get_corner(DL) + UR * 0.28, aligned_edge=DL)
+        steel_tag = label("Steel plate", FS_TAG, GREY_INK).move_to(
+            plate.body.get_corner(DR) + UL * 0.28, aligned_edge=DR)
+
+        asc = AScan([(0.0, 1.6), (t_fl, 0.5), (t_bw, 0.95)])
+        asc.shift(np.array([PLATE_CX, -1.35, 0]) - asc.frame.get_center())   # the frame, not the group
+        asc_tag = label("A-scan screen", FS_TAG, INK, weight=BOLD).next_to(asc.frame, UP, 0.12)
+        asc_tag.align_to(asc.frame, LEFT)
+
+        # ---- 0.3-5 s: the probe sends a short pulse, then listens ----
+        chips = VGroup(chip("Send a short pulse", "bolt", ACCENT_1, 4.4),
+                       chip("Listen for the echoes", "wifi", ACCENT_2, 4.4)
+                       ).arrange(DOWN, buff=0.4).move_to([COL_X, 1.4, 0])
+        self.sync(c("طَرِيقَةِ"))
+        self.play(Create(plate), FadeIn(probe, shift=DOWN * 0.5), run_time=0.8)
+        self.play(FadeIn(flaw), Create(wall), run_time=0.4)
+        self.sync(c("نَبْضَةً"))
+        demo = wave_packet(length=0.55, amp=0.3, cycles=5).move_to([bx, top_y - 0.4, 0])
+        self.play(FadeIn(chips[0], shift=LEFT * 0.2, run_time=0.3), FadeIn(demo, run_time=0.15))
+        self.play(demo.animate(run_time=0.75, rate_func=linear).move_to([bx, top_y - 1.2, 0])
+                  .set_stroke(opacity=0))
+        self.remove(demo)
+        self.sync(c("يَسْتَمِعُ"))
+        demo2 = wave_packet(length=0.55, amp=0.14, cycles=5, color=ACCENT_2, direction=UP)
+        demo2.move_to([bx, top_y - 1.2, 0]).set_stroke(opacity=0)
+        self.add(demo2)
+        self.play(FadeIn(chips[1], shift=LEFT * 0.2),
+                  demo2.animate(run_time=0.7, rate_func=linear).move_to([bx, top_y - 0.4, 0])
+                  .set_stroke(opacity=1))
+        self.play(FadeOut(demo2, run_time=0.2))
+
+        # ---- 5.8-12.4 s: the A-scan screen, its two axes ----
+        self.sync(c("شَاشَةِ"))
+        self.play(FadeIn(asc.frame), FadeIn(asc_tag), run_time=0.5)
+        self.sync(c("الأُفُقِيُّ"))
+        self.play(Create(asc.x_axis), FadeIn(asc.ticks), run_time=0.5)
+        self.sync(c("الزَّمَنُ"))
+        self.play(FadeIn(asc.tick_labels), FadeIn(asc.x_caption), run_time=0.5)
+        self.sync(c("وَالعَمُودِيُّ"))
+        self.play(Create(asc.y_axis), run_time=0.5)
+        self.sync(c("سَعَةُ"))
+        self.play(FadeIn(asc.y_caption), run_time=0.4)
+
+        # ---- 12.5-18.2 s: one clock drives the pulse in the plate and the cursor on the screen ----
+        clock = ValueTracker(T_START)
+        panel = RoundedRectangle(width=4.2, height=1.0, corner_radius=0.12, color=INK,
+                                 stroke_width=3).set_fill(PANEL_FILL, 1).move_to([COL_X, 2.55, 0])
+        clock_anchor = panel.get_left() + RIGHT * 0.5
+        clock_txt = always_redraw(lambda: label(f"t = {max(clock.get_value(), 0):.2f} µs", 40, INK)
+                                  .move_to(clock_anchor, aligned_edge=LEFT))
+        slow = label(f"Slow motion: 1 µs = {SLOWMO:g} s", FS_TAG, GREY_INK)
+        slow.next_to(panel, DOWN, 0.2)
+        sw_pulse = wave_packet(length=0.8, amp=0.13, cycles=4, color=ACCENT_1, direction=RIGHT)
+        sw_echo = wave_packet(length=0.8, amp=0.13, cycles=4, color=ACCENT_2, direction=LEFT)
+        legend = VGroup(
+            VGroup(sw_pulse, label("Pulse", FS_NOTE, INK)).arrange(RIGHT, buff=0.3),
+            VGroup(sw_echo, label("Echo", FS_NOTE, INK)).arrange(RIGHT, buff=0.3),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.45)
+        legend.move_to([COL_X, 0.4, 0]).align_to(panel, LEFT).shift(RIGHT * 0.3)
+
+        def driven(mob, z_fn, t0, t1, z_a, z_b):
+            """Move `mob` along the beam by the clock: depth z_fn(t) while t0 <= t <= t1; it fades
+            in over the first and out over the last 0.4 units of its path (z_a -> z_b, mm)."""
+            mob.set_stroke(opacity=0)
+
+            def upd(m):
+                t = clock.get_value()
+                if t < t0 or t > t1:
+                    m.set_stroke(opacity=0)
+                    return
+                z = z_fn(t)
+                m.move_to([bx, yz(z), 0])
+                op = min(1.0, abs(z - z_a) * MM / 0.4, abs(z - z_b) * MM / 0.4)
+                m.set_stroke(opacity=max(op, 0.0))
+            mob.add_updater(upd)
+            return mob
+
+        def ring_at(point, t_hit, color):
+            ring = Circle(radius=0.2, color=color, stroke_width=4).move_to(point)
+            ring.set_stroke(opacity=0)
+
+            def upd(m):
+                dt = clock.get_value() - t_hit
+                if 0 <= dt <= 0.8:
+                    m.set_width(2 * (0.15 + 0.5 * dt / 0.8)).move_to(point)
+                    m.set_stroke(opacity=1 - dt / 0.8)
+                else:
+                    m.set_stroke(opacity=0)
+            ring.add_updater(upd)
+            return ring
+
+        h_fl = t_fl / 2                                  # the pulse reaches the flaw
+        h_bw = t_bw / 2                                  # ... and the back wall
+        inc = driven(wave_packet(length=0.55, amp=0.3, cycles=5), lambda t: V * t,
+                     0.0, h_fl, 0.0, D.FLAW_DEPTH)
+        thru = driven(wave_packet(length=0.55, amp=0.24, cycles=5),
+                      lambda t: D.FLAW_DEPTH + V * (t - h_fl), h_fl, h_bw, D.FLAW_DEPTH, D.THICKNESS)
+        echo_f = driven(wave_packet(length=0.55, amp=0.14, cycles=5, color=ACCENT_2, direction=UP),
+                        lambda t: D.FLAW_DEPTH - V * (t - h_fl), h_fl, t_fl, D.FLAW_DEPTH, 0.0)
+        echo_b = driven(wave_packet(length=0.55, amp=0.22, cycles=5, color=ACCENT_2, direction=UP),
+                        lambda t: D.THICKNESS - V * (t - h_bw), h_bw, t_bw, D.THICKNESS, 0.0)
+        ring_f = ring_at([bx, yz(D.FLAW_DEPTH), 0], h_fl, ACCENT_4)
+        ring_w = ring_at([bx, bot_y, 0], h_bw, ACCENT_2)
+        asc.trace.add_updater(lambda m: asc.update_trace(clock.get_value()))
+        asc.cursor.add_updater(lambda m: asc.set_cursor(clock.get_value()))
+        movers = [inc, thru, echo_f, echo_b, ring_f, ring_w, asc.trace, asc.cursor, asc.pen]
+
+        dot_i, dot_f, dot_b = (Dot(asc.apex(k), radius=0.07, color=col)
+                               for k, col in enumerate((ACCENT_1, ACCENT_2, ACCENT_2)))
+        tag_i = label("Initial pulse", FS_TAG, ACCENT_1, weight=BOLD).next_to(dot_i, RIGHT, 0.15)
+        tag_f = label("Flaw echo", FS_TAG, ACCENT_2, weight=BOLD).next_to(dot_f, UP, 0.12)
+        tag_b = label("Back-wall echo", FS_TAG, ACCENT_2, weight=BOLD).next_to(dot_b, UP, 0.12)
+        tag_b.shift(LEFT * (tag_b.get_right()[0] - (asc.frame.get_right()[0] - 0.2)))   # inside the frame
+
+        def sweep(t_to, *extra):
+            dt = (t_to - clock.get_value()) * SLOWMO
+            self.play(clock.animate(run_time=dt, rate_func=linear).set_value(t_to), *extra)
+
+        self.sync(c("تَظْهَرُ"))
+        self.play(FadeOut(chips), FadeIn(panel), FadeIn(slow), run_time=0.4)
+        self.add(clock_txt, *movers)
+        self.sync(c("النَّبْضَةُ"))                      # clock = T_START: the pulse is sent
+        sweep(0.5, FadeIn(legend[0], run_time=0.3))                     # the initial pulse rises on the screen
+        self.sync(c("الِابْتِدَائِيَّةُ"))
+        sweep(h_fl, FadeIn(tag_i, run_time=0.3), FadeIn(dot_i, run_time=0.3))         # the pulse runs down to the flaw
+        sweep(t_fl, FadeIn(legend[1], run_time=0.3), FadeIn(flaw_tag, run_time=0.3))                    # part reflects, part goes on; echo returns
+        sweep(6.3, FadeIn(tag_f, run_time=0.3), FadeIn(dot_f, run_time=0.3))          # the flaw echo is on the screen
+        sweep(t_bw)                                       # the back-wall echo travels up
+        sweep(T_END, FadeIn(tag_b, run_time=0.3), FadeIn(dot_b, run_time=0.3),
+              FadeIn(wall_tag, run_time=0.3))
+        for m in movers + [clock_txt]:
+            m.clear_updaters()
+        self.remove(inc, thru, echo_f, echo_b, ring_f, ring_w)
+
+        # ---- 18.9-26 s: depth = speed x time / 2, and why it is halved ----
+        self.sync(c("وَالعُمْقُ") - 0.5)
+        self.play(FadeOut(panel), FadeOut(clock_txt), FadeOut(slow), FadeOut(legend),
+                  FadeOut(asc.cursor), FadeOut(asc.pen), run_time=0.4)
+        EQ_Y = 2.3
+        mk = lambda s, col=INK: Text(s, font_size=48, color=col)
+        eq_d, eq_is, eq_v = mk("d"), mk("="), mk("v", ACCENT_1)
+        eq_x, eq_t, eq_h = mk("×"), mk("t", ACCENT_2), mk("÷ 2", ACCENT_2)
+        eq = VGroup(eq_d, eq_is, eq_v, eq_x, eq_t, eq_h).arrange(RIGHT, buff=0.32)
+        eq.move_to([COL_X, EQ_Y, 0])
+        caps = {k: label(t, FS_TAG, GREY_INK).next_to(m, DOWN, 0.2)
+                for k, m, t in (("d", eq_d, "depth"), ("v", eq_v, "speed"), ("t", eq_t, "time"))}
+        self.sync(c("وَالعُمْقُ"))
+        self.play(FadeIn(eq_d), FadeIn(eq_is), FadeIn(caps["d"]), run_time=0.4)
+        self.sync(c("السُّرْعَةَ"))
+        self.play(FadeIn(eq_v), FadeIn(caps["v"]), run_time=0.35)
+        self.sync(c("ضَرْبَ"))
+        self.play(FadeIn(eq_x), run_time=0.25)
+        self.sync(c("الزَّمَنِ"))
+        self.play(FadeIn(eq_t), FadeIn(caps["t"]), run_time=0.35)
+        self.sync(c("عَلَى", 2))
+        self.play(FadeIn(eq_h, shift=LEFT * 0.15), run_time=0.3)
+        self.sync(c("اثْنَيْنِ"))
+        two_box = emphasize(self, eq_h, color=ACCENT_2, run_time=0.5)
+        self.sync(c("لِأَنَّ"))
+        trip = label("round trip: there and back", FS_NOTE, ACCENT_2)
+        trip.move_to([COL_X, EQ_Y - 1.55, 0])
+        self.play(FadeIn(trip), run_time=0.4)
+        a_dn = Arrow([bx - 0.85, top_y - 0.06, 0], [bx - 0.85, bot_y + 0.06, 0], buff=0,
+                     color=ACCENT_1, stroke_width=4, tip_length=0.2)
+        a_up = Arrow([bx - 1.3, bot_y + 0.06, 0], [bx - 1.3, top_y - 0.06, 0], buff=0,
+                     color=ACCENT_2, stroke_width=4, tip_length=0.2)
+        l_dn = label("there", FS_TAG, ACCENT_1, weight=BOLD).next_to(a_dn, RIGHT, 0.12).shift(UP * 0.45)
+        l_up = label("back", FS_TAG, ACCENT_2, weight=BOLD).next_to(a_up, LEFT, 0.12).shift(UP * 0.45)
+        self.sync(c("ذَهَابًا"))
+        self.play(GrowArrow(a_dn), FadeIn(l_dn), run_time=0.45)
+        self.sync(c("وَإِيَابًا"))
+        self.play(GrowArrow(a_up), FadeIn(l_up), run_time=0.45)
+
+        # ---- 26.9-36 s: the plate, 25 mm; the back-wall echo at 8.45 µs ----
+        self.sync(c("لَوْحُ") - 0.1)
+        self.play(FadeOut(a_dn), FadeOut(a_up), FadeOut(l_dn), FadeOut(l_up), run_time=0.3)
+        dim25 = DoubleArrow([0.5, top_y, 0], [0.5, bot_y, 0], buff=0, color=GREY_INK,
+                            stroke_width=3, tip_length=0.15)
+        lab25 = label(f"{D.THICKNESS:.0f} mm", FS_TAG, INK, weight=BOLD).next_to(dim25, RIGHT, 0.12)
+        self.sync(c("فُولَاذٍ"))
+        self.play(FadeIn(steel_tag), run_time=0.3)
+        self.sync(c("سَمَاكَتُهُ"))
+        self.play(GrowFromCenter(dim25), FadeIn(lab25), run_time=0.45)
+        t_bw_tag = label(f"{D.T_BACKWALL_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(tag_b, UP, 0.08)
+        self.sync(c("يَصِلُ"))
+        self.play(Flash([bx, bot_y, 0], color=ACCENT_2, flash_radius=0.5,
+                                          line_length=0.15, run_time=0.4))
+        self.sync(c("خَمْسَةً"))
+        self.play(FadeIn(t_bw_tag), run_time=0.3)
+
+        # ---- 36-43.5 s: the flaw echo at 4.05 µs gives 12.0 mm ----
+        self.sync(c("وَصَدَى") - 0.4)
+        self.play(FadeOut(eq), FadeOut(VGroup(*caps.values())), FadeOut(two_box), FadeOut(trip),
+                  run_time=0.35)
+        t_fl_tag = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(tag_f, UP, 0.08)
+        self.sync(c("وَصَدَى"))
+        self.play(Flash(flaw.get_center(), color=ACCENT_4, flash_radius=0.45, line_length=0.12,
+                        run_time=0.4))
+        T_TAG = c("خَمْسَةً", 2)                      # the "4.05 µs" tag appears while the calculation plays
+        t_fl_tag.set_opacity(0)
+        t_fl_tag.add_updater(lambda m: m.set_opacity(
+            min(1.0, max(0.0, (self.renderer.time - T_TAG) / 0.3))))
+        self.add(t_fl_tag)
+        calc = worked_calculation(
+            self, ["d", "=", "v", "×", "t", "÷ 2"],
+            ["=", f"{D.V_L_STEEL:.0f} m/s", "×", f"{D.T_FLAW_US:.2f} µs", "÷ 2"],
+            f"d = {D.FLAW_DEPTH_FROM_T:.1f} mm",
+            cues=[c("عَيْبٍ"), c("خَمْسَةً", 2) + 0.2, c("اثْنَيْ")],
+            pos=[COL_X, 0.9, 0], color=ACCENT_4, size=32)
+        t_fl_tag.clear_updaters()
+        t_fl_tag.set_opacity(1)
+        dim12 = DoubleArrow([bx - 1.2, top_y, 0], [bx - 1.2, yz(D.FLAW_DEPTH), 0], buff=0,
+                            color=ACCENT_4, stroke_width=3, tip_length=0.12)
+        guide = DashedLine([bx - 1.2, yz(D.FLAW_DEPTH), 0], [flaw.get_left()[0] - 0.05, yz(D.FLAW_DEPTH), 0],
+                           color=ACCENT_4, stroke_width=2)
+        lab12 = label(f"{D.FLAW_DEPTH_FROM_T:.1f} mm", FS_TAG, ACCENT_4, weight=BOLD)
+        lab12.next_to(dim12, LEFT, 0.12)
+        self.play(GrowFromCenter(dim12), Create(guide), FadeIn(lab12), run_time=0.5)
+
+        # ---- 43.9-57 s: calibration: the wrong velocity setting reads 26.7 mm ----
+        self.sync(c("وَلِهٰذَا") - 0.3)
+        self.play(FadeOut(calc), FadeOut(dim12), FadeOut(guide), FadeOut(lab12), FadeOut(t_fl_tag),
+                  FadeOut(flaw_tag), run_time=0.4)
+        gauge = ThicknessGauge(f"{D.THICKNESS:.1f} mm",
+                               [("Steel", D.V_L_STEEL), ("Aluminium", D.V_L_ALUMINIUM)],
+                               selected=0, echo_text=f"Echo time  {D.T_BACKWALL_US:.2f} µs", width=4.6)
+        gauge.move_to([4.55, -0.05, 0])
+        cable_top = probe.cable.get_top()
+        wire = VMobject(color=GREY_INK, stroke_width=4)
+        wire.set_points_as_corners([cable_top, [4.55, cable_top[1], 0], gauge.case.get_top()])
+        self.sync(c("تَلْزَمُ"))
+        self.play(FadeIn(gauge, shift=LEFT * 0.2), run_time=0.5)
+        self.sync(c("الجِهَازُ"))
+        self.play(Create(wire), run_time=0.6)
+        self.sync(c("الأَلُمْنْيُومِ"))
+        al_box = SurroundingRectangle(gauge.rows[1], color=ACCENT_2, buff=0.1, corner_radius=0.1,
+                                      stroke_width=3)
+        self.play(Create(al_box), run_time=0.4)
+        self.sync(c("نَفْحَصُ"))
+        steel_box = SurroundingRectangle(steel_tag, color=ACCENT_1, buff=0.1, corner_radius=0.1,
+                                         stroke_width=3)
+        self.play(FadeOut(al_box), Create(steel_box), run_time=0.4)
+        self.sync(c("سَمَاكَةَ"))
+        wrong = gauge.reading(f"{D.READING_AL:.1f} mm", ALERT_C)
+        self.play(FadeOut(steel_box), gauge.marker.animate.move_to(gauge.marker_pos(1)),
+                  Transform(gauge.value, wrong), run_time=0.6)
+        true_tag = label(f"True thickness: {D.THICKNESS:.0f} mm", FS_NOTE, OK_C, weight=BOLD)
+        true_tag.next_to(gauge.case, DOWN, 0.25)
+        self.sync(c("بَدَلَ"))
+        self.play(FadeIn(true_tag), run_time=0.4)
+        self.play(Indicate(lab25, color=OK_C, scale_factor=1.2), run_time=0.6)
         self.sync(self.end(5))
         self.clear()
 
