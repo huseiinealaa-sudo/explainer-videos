@@ -204,16 +204,16 @@ def _wrap_two_lines(text, size):
     return best[1], best[2]
 
 
-def chip(text, icon_name, color, width=4.1, size=FS_TAG - 1):
+def chip(text, icon_name, color, width=4.1, size=FS_TAG - 1, line_gap=0.06):
     """A short chip: a rounded frame in `color`, a Tabler icon, the text (wrapped to two lines
-    when it does not fit). Returns a VGroup(frame, icon, text)."""
+    when it does not fit, `line_gap` apart). Returns a VGroup(frame, icon, text)."""
     room = width - 1.05
     one = label(text, size)
     if one.width <= room:
         txt = one
     else:
         a, b = _wrap_two_lines(text, size)
-        txt = VGroup(a, b).arrange(DOWN, aligned_edge=LEFT, buff=0.06)
+        txt = VGroup(a, b).arrange(DOWN, aligned_edge=LEFT, buff=line_gap)
     frame = RoundedRectangle(width=width, height=max(0.62, txt.height + 0.4),
                              corner_radius=0.12, color=color, stroke_width=3).set_fill(PANEL_FILL, 1)
     ic = icon(icon_name, color, 0.42).move_to(frame.get_left() + RIGHT * 0.4)
@@ -2160,21 +2160,119 @@ class UtSeriesEp01(SyncedScene):
         # ---- 27.4-37.3 s: the limits ----
         self.sync(c("وَقُيُودُهَا") - 0.35)
         self.clear(run_time=0.45)
-        lim_head = label("Limits", FS_HEADING, ALERT_C, weight=BOLD).move_to([0, 3.0, 0])
+        lim_head = label("Limits", FS_HEADING, ALERT_C, weight=BOLD).move_to([0, 2.9, 0])
         lim_rule = Line(LEFT * 1.4, RIGHT * 1.4, color=ALERT_C, stroke_width=5)
         lim_rule.next_to(lim_head, DOWN, 0.15)
-        chips = [chip("Couplant needed", "droplet", ALERT_C, 6.0, FS_LABEL),
-                 chip("Flaw parallel to the beam may not be seen", "eye", ALERT_C, 6.0, FS_LABEL),
-                 chip("Coarse grains scatter the sound", "wind", ALERT_C, 6.0, FS_LABEL),
-                 chip("No measurement without calibration", "scale", ALERT_C, 6.0, FS_LABEL)]
-        for ch, (px, py) in zip(chips, ((-3.3, 1.2), (3.3, 1.2), (-3.3, -0.9), (3.3, -0.9))):
-            ch.move_to([px, py, 0])
+        chips = [chip("Couplant needed", "droplet", ALERT_C, 6.0, FS_LABEL, 0.12),
+                 chip("Flaw parallel to the beam may not be seen", "eye", ALERT_C, 6.0, FS_LABEL, 0.12),
+                 chip("Coarse grains scatter the sound", "wind", ALERT_C, 6.0, FS_LABEL, 0.12),
+                 chip("No measurement without calibration", "scale", ALERT_C, 6.0, FS_LABEL, 0.12)]
+        LCX = (-3.5, 3.5)
+        Y_CHIP = (1.8, -1.15)                     # chip centre heights of the two rows
+        Y_DRAW = (0.4, -2.55)                   # centre of the small drawing under each chip
+        pos = [(0, 0), (1, 0), (0, 1), (1, 1)]   # (column, row) of each limit
+        for ch, (ci, ri) in zip(chips, pos):
+            ch.move_to([LCX[ci], Y_CHIP[ri], 0])
+
+        BW, BH = 2.8, 0.9                        # the little steel block of each drawing
+
+        def mini_probe(color=ACCENT_1):
+            house = RoundedRectangle(width=0.8, height=0.36, corner_radius=0.07, color=color,
+                                     stroke_width=4).set_fill(BG, 1)
+            crystal = Rectangle(width=0.68, height=0.09, color=color, stroke_width=3)
+            crystal.set_fill(color, 1).next_to(house, DOWN, buff=0)
+            return VGroup(house, crystal)
+
+        def mini_block(ci, ri, gap=0.0):
+            """A block with its probe above it (face `gap` over the top)."""
+            cx, cy = LCX[ci], Y_DRAW[ri]
+            blk = Rectangle(width=BW, height=BH, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1)
+            blk.move_to([cx, cy - 0.3, 0])
+            pr = mini_probe().next_to(blk, UP, buff=gap)
+            return blk, pr
+
+        # 1 couplant: the probe over the block with a thin air gap, then the couplant fills it
+        b1, pr1 = mini_block(0, 0, 0.16)
+        coup = Rectangle(width=0.68, height=0.16, color=ACCENT_1, stroke_width=0)
+        coup.set_fill(ACCENT_1, 0.5).move_to([pr1.get_center()[0], b1.get_top()[1] + 0.08, 0])
+        draw1 = VGroup(b1, pr1)
+        # 2 flaw parallel to the beam: a thin flaw inside the beam, the pulse runs along it
+        b2, pr2 = mini_block(1, 0)
+        beam2 = Rectangle(width=0.68, height=BH, color=ACCENT_1, stroke_width=0)
+        beam2.set_fill(ACCENT_1, 0.2).move_to(b2)
+        beam2.move_to([b2.get_center()[0], b2.get_center()[1], 0])
+        fl2 = Ellipse(width=0.09, height=0.56, color=ACCENT_4, stroke_width=3)
+        fl2.set_fill(ACCENT_4, 0.6).move_to([b2.get_center()[0] - 0.12, b2.get_center()[1], 0])
+        draw2 = VGroup(b2, beam2, pr2, fl2)
+        # 3 coarse grains: scattered dots in the block, the sound spreads out of one of them
+        b3, pr3 = mini_block(0, 1)
+        rng = np.random.RandomState(7)
+        grains = VGroup()
+        for gi in range(7):
+            for gj in range(2):
+                gx0 = b3.get_left()[0] + 0.25 + gi * (BW - 0.5) / 6 + rng.uniform(-0.1, 0.1)
+                gy0 = b3.get_center()[1] + (0.17 if gj == 0 else -0.17) + rng.uniform(-0.07, 0.07)
+                grains.add(Dot([gx0, gy0, 0], radius=0.05, color=GREY_INK))
+        hub = grains[6]
+        scatter = VGroup(*[Arrow(hub.get_center(), hub.get_center() + 0.3 * np.array(
+            [np.cos(a), np.sin(a), 0]), buff=0.06, color=ACCENT_1, stroke_width=3, tip_length=0.1,
+            max_tip_length_to_length_ratio=0.5)
+            for a in np.radians((20, 80, 140, 200, 260, 320))])
+        draw3 = VGroup(b3, grains, pr3)
+        # 4 calibration: a dial with no numbers; the needle never settles on a value
+        dcx, dcy = LCX[1], Y_DRAW[1]
+        dial_f = RoundedRectangle(width=1.9, height=1.25, corner_radius=0.12, color=INK,
+                                  stroke_width=4).set_fill(PANEL_FILL, 1).move_to([dcx, dcy, 0])
+        pivot = np.array([dcx, dcy - 0.4, 0])
+        arc = Arc(radius=0.68, start_angle=np.radians(150), angle=-np.radians(120), color=INK,
+                  stroke_width=3, arc_center=pivot)
+        ticks = VGroup(*[Line(pivot + 0.68 * np.array([np.cos(a), np.sin(a), 0]),
+                              pivot + 0.8 * np.array([np.cos(a), np.sin(a), 0]), color=INK,
+                              stroke_width=3)
+                         for a in np.radians(np.linspace(150, 30, 7))])
+        needle = Line(pivot, pivot + 0.6 * np.array([np.cos(np.radians(120)),
+                                                      np.sin(np.radians(120)), 0]),
+                      color=ACCENT_4, stroke_width=5)
+        hubd = Dot(pivot, radius=0.06, color=INK)
+        draw4 = VGroup(dial_f, arc, ticks, needle, hubd)
+        draws = [draw1, draw2, draw3, draw4]
+
         self.sync(c("وَقُيُودُهَا"))
         self.play(FadeIn(lim_head), Create(lim_rule), run_time=0.5)
-        for ch, phrase in zip(chips, (c("الوَسِيطُ"), c("المُوَازِي"), c("الخَشِنَةُ"), c("قِيَاسَ"))):
-            self.sync(phrase)
-            self.play(FadeIn(ch, shift=UP * 0.2), run_time=0.4)
-            self.play(Indicate(ch[1], color=ALERT_C, scale_factor=1.3), run_time=0.5)
+
+        def pulse_down(cx, y0, y1, rt, amp=0.14, dx=0.0, length=0.4):
+            pk = wave_packet(length=length, amp=amp, cycles=4, color=ACCENT_1, direction=DOWN,
+                             stroke_width=3)
+            pk.move_to([cx + dx, y0, 0])
+            self.add(pk)
+            self.play(pk.animate(run_time=rt, rate_func=linear).move_to([cx + dx, y1, 0]))
+            self.remove(pk)
+
+        # --- couplant ---
+        self.sync(c("الوَسِيطُ"))
+        self.play(FadeIn(chips[0], shift=UP * 0.2), FadeIn(draw1), run_time=0.4)
+        self.play(Indicate(chips[0][1], color=ALERT_C, scale_factor=1.3),
+                  FadeIn(coup), run_time=0.5)
+        pulse_down(LCX[0], b1.get_top()[1] + 0.3, b1.get_bottom()[1] + 0.2, 0.45)
+        # --- flaw parallel to the beam ---
+        self.sync(c("المُوَازِي"))
+        self.play(FadeIn(chips[1], shift=UP * 0.2), FadeIn(draw2), run_time=0.4)
+        self.play(Indicate(chips[1][1], color=ALERT_C, scale_factor=1.3), run_time=0.5)
+        pulse_down(LCX[1], b2.get_top()[1] - 0.12, b2.get_bottom()[1] + 0.12, 0.7, dx=0.2)
+        # --- coarse grains ---
+        self.sync(c("الخَشِنَةُ"))
+        self.play(FadeIn(chips[2], shift=UP * 0.2), FadeIn(draw3), run_time=0.4)
+        self.play(Indicate(chips[2][1], color=ALERT_C, scale_factor=1.3), run_time=0.5)
+        pulse_down(LCX[0] + 0.0, b3.get_top()[1] - 0.12, hub.get_center()[1] + 0.02, 0.45, dx=0.0)
+        self.play(*[GrowArrow(a) for a in scatter], run_time=0.4)
+        # --- calibration ---
+        self.sync(c("قِيَاسَ"))
+        self.play(FadeIn(chips[3], shift=UP * 0.2), FadeIn(draw4), run_time=0.4)
+        self.play(Indicate(chips[3][1], color=ALERT_C, scale_factor=1.3),
+                  Rotate(needle, -np.radians(80), about_point=pivot, run_time=0.35),
+                  run_time=0.5)
+        self.play(Rotate(needle, np.radians(55), about_point=pivot, run_time=0.3))
+        self.play(Rotate(needle, -np.radians(35), about_point=pivot, run_time=0.3))
         self.sync(self.end(6))
         self.clear()
 
