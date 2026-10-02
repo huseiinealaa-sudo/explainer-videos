@@ -1551,13 +1551,14 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("ثَلَاثُ"))
         self.play(FadeIn(head), run_time=0.4)
         t_top, g = 0.3, 0.9
-        part = SteelBlock(7.6, 2.9).move_to([-2.2, t_top - 1.45, 0])
+        DX = -0.45      # the whole board shifts left: equal margins at the left and right edges
+        part = SteelBlock(7.6, 2.9).move_to([-2.2 + DX, t_top - 1.45, 0])
         wall_line = Line(part.body.get_corner(DL), part.body.get_corner(DR), color=INK, stroke_width=8)
         wall_tag = label("Back wall", FS_TAG, GREY_INK).next_to(wall_line, DOWN, 0.15)
         wall_tag.align_to(wall_line, LEFT).shift(RIGHT * 0.3)
         steel_name = label("Steel part", FS_TAG, GREY_INK).move_to(
             part.body.get_corner(DL) + UR * 0.2, aligned_edge=DL)
-        rig = CouplantRig(-4.0, t_top, gap=g)
+        rig = CouplantRig(-4.0 + DX, t_top, gap=g)
         px0 = rig.x()
         gap_dim = DoubleArrow([px0 + 0.65, t_top, 0], [px0 + 0.65, t_top + g, 0], buff=0,
                               color=GREY_INK, stroke_width=3, tip_length=0.12)
@@ -1566,7 +1567,7 @@ class UtSeriesEp01(SyncedScene):
             chip("Air gap blocks the sound; couplant drives it out", "wind", ACCENT_2, 4.6),
             chip("Air-filled flaws reflect strongly, so they show", "search", ACCENT_4, 4.6),
             chip("The back wall gives a strong echo", "arrows-exchange", ACCENT_2, 4.6),
-        ).arrange(DOWN, buff=0.35, aligned_edge=LEFT).move_to([4.5, 0.4, 0])
+        ).arrange(DOWN, buff=0.35, aligned_edge=LEFT).move_to([4.5 + DX, 0.4, 0])
 
         self.play(Create(part), FadeIn(rig), run_time=0.6)
         self.play(FadeIn(wall_line), FadeIn(steel_name), run_time=0.3)
@@ -1621,7 +1622,7 @@ class UtSeriesEp01(SyncedScene):
         # 2. an air-filled flaw reflects
         crack = Ellipse(width=1.0, height=0.16, color=ACCENT_4, stroke_width=4)
         crack.set_fill(ACCENT_4, 0.6)
-        px1 = -2.0
+        px1 = -2.0 + DX
         crack.move_to([px1, t_top - 1.0, 0])
         crack_tag = label("Air-filled crack", FS_TAG, ACCENT_4, weight=BOLD).next_to(crack, DOWN, 0.2)
         self.sync(c("وَالعُيُوبُ"))
@@ -1643,7 +1644,7 @@ class UtSeriesEp01(SyncedScene):
                   Flash(crack, color=ACCENT_4, flash_radius=0.7, line_length=0.18, run_time=0.5))
 
         # 3. the back wall gives a strong echo
-        px2 = -0.5
+        px2 = -0.5 + DX
         self.sync(c("وَالجِدَارُ") - 0.9)
         self.play(rig.animate(run_time=0.8).shift(RIGHT * (px2 - px1)), FadeOut(crack_tag, run_time=0.4))
         self.sync(c("وَالجِدَارُ"))
