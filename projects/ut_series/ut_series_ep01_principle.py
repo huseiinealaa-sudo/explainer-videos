@@ -68,7 +68,7 @@ import numpy as np
 
 # Numbers that only this segment speaks (not derived, not in the data module): the frequency
 # range of the narration («عِشْرِينَ كِيلُوهِرْتْز», «نِصْفِ مِيغَاهِرْتْز … عِشْرِينَ مِيغَاهِرْتْز»,
-# «سِتَّةَ أَمْتَارٍ إِلَى سَبْعَةٍ»). They are inputs, typed once here and used for every label.
+# «سِتَّةَ أَمْتَارٍ إِلَى سَبْعَةٍ»). They come from the data module and are used for every label.
 AUDIBLE_MIN_HZ, AUDIBLE_MAX_KHZ = D.AUDIBLE_MIN_HZ, D.AUDIBLE_MAX_KHZ
 UT_MIN_MHZ, UT_MAX_MHZ = D.UT_MIN_MHZ, D.UT_MAX_MHZ
 PENETRATION_M = D.PENETRATION_M      # penetration in steel, metres
