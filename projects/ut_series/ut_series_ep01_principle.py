@@ -661,13 +661,14 @@ class ThicknessGauge(VGroup):
     the selected row). `reading(text, color)` returns a new reading text placed on the display
     (Transform `value` into it); `marker_pos(k)` is where the marker sits for option k."""
 
-    def __init__(self, reading, options, selected=0, echo_text=None, width=4.8, value_size=56,
+    def __init__(self, reading, options, selected=0, echo_text=None, width=4.8, value_size=44,
                  reading_color=OK_C):
         self.value_size = value_size
         title = label("Thickness gauge", FS_NOTE, INK, weight=BOLD)
         display = Rectangle(width=width - 0.7, height=1.15, color=INK, stroke_width=3)
         display.set_fill(BG, 1)
-        value = label(reading, value_size, reading_color, weight=BOLD)
+        self.room = display.width - 0.5               # the reading never touches the display frame
+        value = fit(label(reading, value_size, reading_color, weight=BOLD), self.room)
         echo = label(echo_text, FS_TAG, GREY_INK) if echo_text else None
         head = label("Velocity setting", FS_TAG, GREY_INK)
         rows = VGroup()
@@ -696,7 +697,7 @@ class ThicknessGauge(VGroup):
         return self.rows[k][0].get_center()
 
     def reading(self, text, color):
-        return label(text, self.value_size, color, weight=BOLD).move_to(self.display)
+        return fit(label(text, self.value_size, color, weight=BOLD), self.room).move_to(self.display)
 
 
 # ---- Segment 6 helpers: the three method panels ----
@@ -1724,8 +1725,10 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(asc.frame), FadeIn(asc_tag), run_time=0.5)
         self.sync(c("الأُفُقِيُّ"))
         self.play(Create(asc.x_axis), FadeIn(asc.ticks), run_time=0.5)
+        time_tag = label("time ↔ depth (d = v·t ÷ 2)", FS_TAG, GREY_INK)
+        time_tag.next_to(asc.x_caption, DOWN, 0.1).align_to(asc.frame, RIGHT)
         self.sync(c("الزَّمَنُ"))
-        self.play(FadeIn(asc.tick_labels), FadeIn(asc.x_caption), run_time=0.5)
+        self.play(FadeIn(asc.tick_labels), FadeIn(asc.x_caption), FadeIn(time_tag), run_time=0.5)
         self.sync(c("وَالعَمُودِيُّ"))
         self.play(Create(asc.y_axis), run_time=0.5)
         self.sync(c("سَعَةُ"))
@@ -1891,12 +1894,23 @@ class UtSeriesEp01(SyncedScene):
         t_fl_tag.add_updater(lambda m: m.set_opacity(
             min(1.0, max(0.0, (self.renderer.time - T_TAG) / 0.3))))
         self.add(t_fl_tag)
-        calc = worked_calculation(
-            self, ["d", "=", "v", "×", "t", "÷ 2"],
-            ["=", f"{D.V_L_STEEL:.0f} m/s", "×", f"{D.T_FLAW_US:.2f} µs", "÷ 2"],
-            f"d = {D.FLAW_DEPTH_FROM_T:.1f} mm",
-            cues=[c("عَيْبٍ"), c("خَمْسَةً", 2) + 0.2, c("اثْنَيْ")],
-            pos=[COL_X, 0.9, 0], color=ACCENT_4, size=32)
+        # worked_calculation with a roomier result box (buff 0.32), as in seg 2
+        f_ = VGroup(*[Text(p_, font_size=32) for p_ in ["d", "=", "v", "×", "t", "÷ 2"]]
+                    ).arrange(RIGHT, buff=0.18)
+        v_ = VGroup(*[Text(p_, font_size=28, color=GREY_INK) for p_ in
+                      ["=", f"{D.V_L_STEEL:.0f} m/s", "×", f"{D.T_FLAW_US:.2f} µs", "÷ 2"]]
+                    ).arrange(RIGHT, buff=0.18)
+        r_ = Text(f"d = {D.FLAW_DEPTH_FROM_T:.1f} mm", font_size=36, color=ACCENT_4, weight=BOLD)
+        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.55)).move_to([COL_X, 0.9, 0])
+        calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.32, corner_radius=0.1,
+                                          stroke_width=4)
+        for cue_t, anims in zip([c("عَيْبٍ"), c("خَمْسَةً", 2) + 0.2, c("اثْنَيْ")],
+                                [[Write(f_, run_time=1.0)],
+                                 [FadeIn(v_, shift=DOWN * 0.15, run_time=1.0)],
+                                 [Write(r_, run_time=1.0), Create(calc_frame, run_time=1.0)]]):
+            self.sync(cue_t)
+            self.play(*anims)
+        calc.add(calc_frame)
         t_fl_tag.clear_updaters()
         t_fl_tag.set_opacity(1)
         dim12 = DoubleArrow([bx - 1.2, top_y, 0], [bx - 1.2, yz(D.FLAW_DEPTH), 0], buff=0,
