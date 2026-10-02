@@ -1296,25 +1296,26 @@ class UtSeriesEp01(SyncedScene):
                 width=max(0.01, s_px * v.get_value()), height=bar_h, color=ACCENT_1, stroke_width=3
             ).set_fill(ACCENT_1, fill).move_to([bx0, y, 0], aligned_edge=LEFT))
 
-        def make_val(v, y):
-            return always_redraw(lambda: label(f"{v.get_value():.0f} m/s", FS_NOTE, INK, weight=BOLD)
-                                 .move_to([bx0 + max(0.01, s_px * v.get_value()) + 0.2, y, 0],
-                                          aligned_edge=LEFT))
+        def make_val(v, y):     # fixed label at the bar's end, faded in when the number is spoken
+            return label(f"{v:.0f} m/s", FS_NOTE, INK, weight=BOLD).move_to(
+                [bx0 + s_px * v + 0.2, y, 0], aligned_edge=LEFT)
         head_b = label("Wave speed in steel", FS_BODY, INK, weight=BOLD).move_to([0, 3.2, 0])
         lab_s = label("Transverse (shear)", FS_NOTE, INK).move_to([bx0 + 0.2, bar_s_y + 0.65, 0], aligned_edge=LEFT)
         lab_l = label("Longitudinal", FS_NOTE, INK).move_to([bx0 + 0.2, bar_l_y + 0.65, 0], aligned_edge=LEFT)
         axis_b = Line([bx0, bar_l_y + 0.4, 0], [bx0, bar_s_y - 0.4, 0], color=INK, stroke_width=4)
-        bar_s, val_s = make_bar(v_s, bar_s_y, 0.3), make_val(v_s, bar_s_y)
-        bar_l, val_l = make_bar(v_l, bar_l_y, 0.55), make_val(v_l, bar_l_y)
+        bar_s, val_s = make_bar(v_s, bar_s_y, 0.3), make_val(D.V_S_STEEL, bar_s_y)
+        bar_l, val_l = make_bar(v_l, bar_l_y, 0.55), make_val(D.V_L_STEEL, bar_l_y)
         self.play(FadeIn(head_b), FadeIn(lab_s), Create(axis_b), run_time=0.5)
-        self.add(bar_s, val_s)
+        self.add(bar_s)
         self.sync(c("ثَلَاثَةُ"))
         self.play(v_s.animate(rate_func=linear).set_value(D.V_S_STEEL),
-                  run_time=c("مِتْرًا") + 0.3 - self.renderer.time)
+                  run_time=c("وَخَمْسُونَ") - self.renderer.time)
+        self.play(FadeIn(val_s, shift=RIGHT * 0.1), run_time=0.3)
         self.sync(c("أَيْ") - 0.05)
-        self.add(bar_l, val_l)
+        self.add(bar_l)
         self.play(FadeIn(lab_l, run_time=0.2), v_l.animate(rate_func=smooth).set_value(D.V_L_STEEL),
                   run_time=0.5)
+        self.play(FadeIn(val_l, shift=RIGHT * 0.1), run_time=0.3)
         x_end = bx0 + s_px * D.V_S_STEEL
         ratio_line = DashedLine([x_end, bar_s_y + bar_h / 2, 0], [x_end, bar_l_y + bar_h / 2, 0],
                                 color=INK, stroke_width=3)
@@ -1331,7 +1332,7 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("بِالمِئَةِ"))
         self.play(FadeIn(pct), run_time=0.4)
         self.sync(c("وَالسَّطْحِيَّةُ") - 0.5)
-        for m in (bar_s, val_s, bar_l, val_l):
+        for m in (bar_s, bar_l):
             m.clear_updaters()
         self.clear(run_time=0.4)
 
