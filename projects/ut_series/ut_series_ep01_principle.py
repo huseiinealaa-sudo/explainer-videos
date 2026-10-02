@@ -1165,9 +1165,9 @@ class UtSeriesEp01(SyncedScene):
         # ---- A, 0-20 s: two panels run side by side; the solid / liquid / gas table ----
         PW, P_TOP, P_BOT = 6.5, 3.8, 0.05
         xc_l, xc_t = -3.5, 3.5
-        frames = VGroup(*[RoundedRectangle(width=PW, height=P_TOP - P_BOT, corner_radius=0.12,
-                                           color=GREY_INK, stroke_width=3).set_fill(PANEL_FILL, 1)
-                          .move_to([x, (P_TOP + P_BOT) / 2, 0]) for x in (xc_l, xc_t)])
+        fr_l, fr_t = [RoundedRectangle(width=PW, height=P_TOP - P_BOT, corner_radius=0.12,
+                                       color=GREY_INK, stroke_width=3).set_fill(PANEL_FILL, 1)
+                      .move_to([x, (P_TOP + P_BOT) / 2, 0]) for x in (xc_l, xc_t)]
 
         def lattice(x_c, transverse):
             """Three rows of 15 particles; the middle row carries the tagged particle."""
@@ -1189,7 +1189,7 @@ class UtSeriesEp01(SyncedScene):
 
         rows_l, rows_t = lattice(xc_l, False), lattice(xc_t, True)
         tag_l, tag_t = rows_l[1], rows_t[1]
-        for r in rows_l + rows_t:
+        for r in rows_l:        # the transverse rows start moving when «المُسْتَعْرِضَةِ» is spoken
             r.add_updater(lambda m, dt: m.advance(dt))
 
         def panel_head(x_c, title, sub):
@@ -1208,8 +1208,8 @@ class UtSeriesEp01(SyncedScene):
         prop_l, prop_t = prop_arrow(xc_l), prop_arrow(xc_t)
 
         self.sync(S + 0.1)
-        self.play(FadeIn(frames), *[FadeIn(r) for r in rows_l + rows_t], run_time=0.6)
-        for r in rows_l + rows_t:            # the pulses run from here on (updaters set after FadeIn)
+        self.play(FadeIn(fr_l), *[FadeIn(r) for r in rows_l], run_time=0.6)
+        for r in rows_l:                     # the pulses run from here on (updaters set after FadeIn)
             r.update()
         self.sync(c("الطُّولِيَّةِ"))
         self.play(FadeIn(head_l), run_time=0.4)
@@ -1255,7 +1255,11 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(fast, shift=LEFT * 0.15), run_time=0.4)
 
         self.sync(c("المُسْتَعْرِضَةِ"))
-        self.play(FadeIn(head_t), FadeIn(row_t), run_time=0.4)
+        self.play(FadeIn(fr_t), *[FadeIn(r) for r in rows_t], FadeIn(head_t), FadeIn(row_t),
+                  run_time=0.5)
+        for r in rows_t:                     # the transverse wave starts here, with its name
+            r.add_updater(lambda m, dt: m.advance(dt))
+            r.update()
         self.sync(c("تَهْتَزُّ", 2))
         self.play(FadeIn(tag_t.ring), Create(tag_t.guide), run_time=0.4)
         self.sync(c("الِاتِّجَاهِ"))
