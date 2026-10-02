@@ -1726,8 +1726,10 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(asc.frame), FadeIn(asc_tag), run_time=0.5)
         self.sync(c("الأُفُقِيُّ"))
         self.play(Create(asc.x_axis), FadeIn(asc.ticks), run_time=0.5)
-        time_tag = label("time ↔ depth (d = v·t ÷ 2)", FS_TAG, GREY_INK)
+        time_tag = label("time ↔ depth", FS_TAG, GREY_INK)
         time_tag.next_to(asc.x_caption, DOWN, 0.1).align_to(asc.frame, RIGHT)
+        time_tag_full = label("time ↔ depth (d = v·t ÷ 2)", FS_TAG, GREY_INK)
+        time_tag_full.next_to(asc.x_caption, DOWN, 0.1).align_to(asc.frame, RIGHT)
         self.sync(c("الزَّمَنُ"))
         self.play(FadeIn(asc.tick_labels), FadeIn(asc.x_caption), FadeIn(time_tag), run_time=0.5)
         self.sync(c("وَالعَمُودِيُّ"))
@@ -1850,6 +1852,7 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(eq_h, shift=LEFT * 0.15), run_time=0.3)
         self.sync(c("اثْنَيْنِ"))
         two_box = emphasize(self, eq_h, color=ACCENT_2, run_time=0.5)
+        self.play(Transform(time_tag, time_tag_full), run_time=0.4)
         self.sync(c("لِأَنَّ"))
         trip = label("round trip: there and back", FS_NOTE, ACCENT_2)
         trip.move_to([COL_X, EQ_Y - 1.55, 0])
@@ -1886,7 +1889,7 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("وَصَدَى") - 0.4)
         self.play(FadeOut(eq), FadeOut(VGroup(*caps.values())), FadeOut(two_box), FadeOut(trip),
                   run_time=0.35)
-        t_fl_tag = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(tag_f, UP, 0.08)
+        t_fl_tag = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(dot_f, RIGHT, 0.15)
         self.sync(c("وَصَدَى"))
         self.play(Flash(flaw.get_center(), color=ACCENT_4, flash_radius=0.45, line_length=0.12,
                         run_time=0.4))
@@ -1902,7 +1905,7 @@ class UtSeriesEp01(SyncedScene):
                       ["=", f"{D.V_L_STEEL:.0f} m/s", "×", f"{D.T_FLAW_US:.2f} µs", "÷ 2"]]
                     ).arrange(RIGHT, buff=0.18)
         r_ = Text(f"d = {D.FLAW_DEPTH_FROM_T:.1f} mm", font_size=36, color=ACCENT_4, weight=BOLD)
-        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.55)).move_to([COL_X, 0.9, 0])
+        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.55), 4.8).move_to([COL_X - 0.2, 0.9, 0])
         calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.32, corner_radius=0.1,
                                           stroke_width=4)
         for cue_t, anims in zip([c("عَيْبٍ"), c("خَمْسَةً", 2) + 0.2, c("اثْنَيْ")],
