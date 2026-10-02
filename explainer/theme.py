@@ -9,7 +9,8 @@ A theme is a set of colour tokens:
     accent1..4      blue / orange / green / red roles (each project gives them a meaning)
     ok, alert       accepted / out-of-limit states
 Three themes ship: "dark" (the default), "blueprint" and "light" (the original white board,
-which the projects made before themes were pinned to, so they render exactly as they did).
+which the projects made before themes were pinned to; only its `faint` and `accent2` were
+darkened to reach the 4.5:1 contrast rule).
 
 The names in explainer.style (INK, BG, ACCENT_1, OK_C ...) are ThemeColor objects: ordinary
 Manim colours whose value is rewritten in place when the theme changes. Code written as
@@ -54,11 +55,13 @@ def _theme(**c):
 
 
 THEMES = {
-    # The original whiteboard: every value is what the library used before themes existed.
+    # The original whiteboard. `faint` (#9e9e9e) and `accent2` (#c25a12) were below 4.5:1 on its
+    # surfaces; they are darkened at the same hue (to 4.52:1 on the tightest surface) and every
+    # other value is what the library used before themes existed.
     "light": {
         "colors": _theme(bg="#ffffff", bg_alt="#f3f3f3", panel="#f3f3f3", ink="#000000",
-                         muted="#555555", faint="#9e9e9e", line="#000000", grid="#e3e3e3",
-                         accent1="#1f5fa8", accent2="#c25a12", accent3="#2e7d32",
+                         muted="#555555", faint="#6f6f6f", line="#000000", grid="#e3e3e3",
+                         accent1="#1f5fa8", accent2="#b45311", accent3="#2e7d32",
                          accent4="#c62828"),
         "background": {"color": "bg"},
     },
