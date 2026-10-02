@@ -1206,28 +1206,27 @@ class UtSeriesEp01(SyncedScene):
         lab_l = label("Longitudinal", FS_NOTE, INK).move_to([bx0 + 0.2, bar_l_y + 0.65, 0], aligned_edge=LEFT)
         axis_b = Line([bx0, bar_l_y + 0.4, 0], [bx0, bar_s_y - 0.4, 0], color=INK, stroke_width=4)
         bar_s, bar_l = make_bar(v_s, bar_s_y, 0.3), make_bar(v_l, bar_l_y, 0.55)
-        self.play(FadeIn(head_b), FadeIn(lab_s), Create(axis_b), run_time=0.5)
+        self.play(FadeIn(head_b), FadeIn(lab_l), Create(axis_b), run_time=0.4)
+        self.add(bar_l)
+        self.play(v_l.animate(rate_func=smooth).set_value(D.V_L_STEEL), run_time=0.6)
+        self.sync(c("نَحْوُ") - 0.2)
+        self.play(FadeIn(lab_s, run_time=0.2))
         self.add(bar_s)
         self.play(v_s.animate(rate_func=linear).set_value(D.V_S_STEEL),
-                  run_time=max(0.3, c("نِصْفِ") - self.renderer.time))
-        self.sync(c("سُرْعَةِ") - 0.05)
-        self.add(bar_l)
-        self.play(FadeIn(lab_l, run_time=0.2), v_l.animate(rate_func=smooth).set_value(D.V_L_STEEL),
-                  run_time=0.8)
+                  run_time=max(0.3, c("نِصْفِ") + 0.3 - self.renderer.time))
         x_end = bx0 + s_px * D.V_S_STEEL
         ratio_line = DashedLine([x_end, bar_s_y + bar_h / 2, 0], [x_end, bar_l_y + bar_h / 2, 0],
                                 color=INK, stroke_width=3)
         ratio_tag = label("about half", FS_LABEL, ACCENT_1, weight=BOLD)
         ratio_tag.next_to(ratio_line, RIGHT, 0.15).match_y(ratio_line)
-        self.sync(c("الطُّولِيَّةِ", 2))
         self.play(Create(ratio_line), FadeIn(ratio_tag), run_time=0.45)
-        self.sync(c("وَالسَّطْحِيَّةُ") - 0.5)
+        self.sync(c("تَسِيرُ") - 0.6)
         for m in (bar_s, bar_l):
             m.clear_updaters()
         self.clear(run_time=0.4)
 
         # ---- C, 29.8-36 s: surface wave: a layer one wavelength deep, elliptical paths ----
-        self.sync(c("وَالسَّطْحِيَّةُ"))
+        self.sync(c("تَسِيرُ") - 0.2)
         sx, s_top, s_h, s_w = -4.0, 2.8, 3.6, 4.9
         s_lam = 3.0
         s_block = Rectangle(width=s_w, height=s_h, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1)
@@ -1405,15 +1404,14 @@ class UtSeriesEp01(SyncedScene):
         self.play(water_blk.animate.set_fill(PANEL_FILL, 0.0), FadeOut(water_n), FadeIn(air_n),
                   run_time=0.4)
         self.sync(c("يَنْعَكِسُ", 3))
-        split_in(ref_a, trn_a, ref_al, trn_al, bar_a)
+        split_in(ref_a, trn_a, ref_al, trn_al, bar_a, GrowFromEdge(bar_a.refl, LEFT))
         self.sync(c("نَحْوُ"))
-        self.play(GrowFromEdge(bar_a.refl, LEFT), run_time=0.9, rate_func=linear)
         self.play(FadeIn(lr_a), run_time=0.3)
-        self.sync(c("الطَّاقَةِ", 2))
+        self.sync(c("كُلِّ"))
         self.play(FadeIn(bar_a.trans), FadeIn(lt_a), run_time=0.4)
 
         # ---- F, 38-54 s: three consequences: air gap and couplant, air-filled flaw, back wall ----
-        self.sync(c("وَلِهٰذَا") - 0.4)
+        self.sync(c("ثَلَاثُ") - 0.5)
         self.clear(run_time=0.4)
         head = label("Three consequences", FS_BODY, INK, weight=BOLD).move_to([0, 3.35, 0])
         self.sync(c("ثَلَاثُ"))
@@ -1519,7 +1517,7 @@ class UtSeriesEp01(SyncedScene):
         wall_y = part.body.get_bottom()[1]
         go3 = hop(ACCENT_1, px2, face - 0.35, wall_y + 0.4, 1.0, DOWN, amp=0.3, length=0.7, cycles=6,
                   extra=(FadeIn(chips[2], shift=LEFT * 0.2, run_time=0.1), FadeIn(wall_tag, run_time=0.1)))
-        echo = wavefront(length=0.9, amp=0.42, cycles=6, color=ACCENT_2, direction=UP,
+        echo = wavefront(length=0.9, amp=0.3, cycles=6, color=ACCENT_2, direction=UP,
                            stroke_width=5)
         echo.move_to([px2, wall_y + 0.45, 0])
         self.play(FadeOut(go3, run_time=0.12), FadeIn(echo, run_time=0.12),
@@ -1550,7 +1548,7 @@ class UtSeriesEp01(SyncedScene):
         flaw = Ellipse(width=0.5, height=0.16, color=ACCENT_4, stroke_width=4)
         flaw.set_fill(ACCENT_4, 0.5).move_to([bx, yz(D.FLAW_DEPTH), 0])
         wall = Line(plate.body.get_corner(DL), plate.body.get_corner(DR), color=INK, stroke_width=8)
-        flaw_tag = label("Flaw", FS_TAG, ACCENT_4, weight=BOLD).next_to(flaw, RIGHT, 0.15)
+        flaw_tag = label("Flaw", FS_TAG, ACCENT_4, weight=BOLD).next_to(flaw, RIGHT, 0.5)
         wall_tag = label("Back wall", FS_TAG, GREY_INK).move_to(
             plate.body.get_corner(DL) + UR * 0.28, aligned_edge=DL)
         steel_tag = label("Steel plate", FS_TAG, GREY_INK).move_to(
@@ -1745,7 +1743,7 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("صَدَى", 3) - 0.4)
         self.play(FadeOut(eq), FadeOut(VGroup(*caps.values())), FadeOut(two_box), FadeOut(trip),
                   run_time=0.35)
-        t_fl_tag = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(dot_f, RIGHT, 0.15)
+        t_fl_tag = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(dot_f, RIGHT, 0.15).shift(DOWN * 0.12)
         self.sync(c("صَدَى", 3))
         self.play(Flash(flaw.get_center(), color=ACCENT_4, flash_radius=0.45, line_length=0.12,
                         run_time=0.4))
@@ -1755,11 +1753,9 @@ class UtSeriesEp01(SyncedScene):
             min(1.0, max(0.0, (self.renderer.time - T_TAG) / 0.3))))
         self.add(t_fl_tag)
         # worked_calculation with a roomier result box (buff 0.32), as in seg 2
-        f_ = VGroup(*[Text(p_, font_size=32) for p_ in ["d", "=", "v", "×", "t", "÷ 2"]]
-                    ).arrange(RIGHT, buff=0.18)
-        v_ = VGroup(*[Text(p_, font_size=28, color=GREY_INK) for p_ in
-                      ["=", f"{D.V_L_STEEL:.0f} m/s", "×", f"{D.T_FLAW_US:.2f} µs", "÷ 2"]]
-                    ).arrange(RIGHT, buff=0.18)
+        f_ = Text("d  =  v  ×  t  ÷ 2", font_size=32)       # one Text per row: one baseline
+        v_ = Text(f"=  {D.V_L_STEEL:.0f} m/s  ×  {D.T_FLAW_US:.2f} µs  ÷ 2", font_size=28,
+                  color=GREY_INK)
         r_ = Text(f"d = {D.FLAW_DEPTH_FROM_T:.1f} mm", font_size=36, color=ACCENT_4, weight=BOLD)
         calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.55), 4.8).move_to([COL_X - 0.2, 0.9, 0])
         calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.32, corner_radius=0.1,
@@ -2309,9 +2305,11 @@ class UtSeriesEp01(SyncedScene):
                     lane.start()
 
             def finish(*extra):
-                box = SurroundingRectangle(VGroup(lane_b, tags[1]), color=OK_C, buff=0.12,
+                box = SurroundingRectangle(VGroup(lane_b, tags[1]), color=OK_C, buff=0.08,
                                            corner_radius=0.1, stroke_width=4)
                 self.play(Create(box), *extra, run_time=0.6)
+                for lane in lanes:
+                    lane.clear_updaters()
             return show, finish
 
         def art4():                       # shear: particles pulled along in steel, loose in water
