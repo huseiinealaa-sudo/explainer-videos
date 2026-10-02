@@ -18,5 +18,10 @@ Critic: round 1 FIX (1 critical, 0 important, 10 improvements); round 2 PASS (0 
 ## Episode
 
 - **Duration:** 7:03.20 (content 5:18.8 + review 1:44.4), final 1080p
-- **Size:** 22.03 MiB
-- **Git hash of the video:** cab18b933bd1 (checked by the manager with `git hash-object`)
+- **Size:** 21.98 MiB (23,045,927 bytes)
+- **Git hash of the video:** 6bce50ccd561 (checked by the manager with `git hash-object`; before: cab18b933bd1)
+
+## Owner review of the first render (2026-10-02)
+
+The owner replaced the zig-zag pulse with wave-front arcs (`projects/ut_series/ut_visuals.py`, function `wavefront`, shared by episodes 2-4): three arcs, convex in the direction of travel, the front one the widest and strongest. It is used for every pulse and echo in segments 1, 2 (the two horizontal pulses), 4, 5, 6 and the review; the sine wave with the lambda bracket, the particle chains, the longitudinal/transverse panels and the A-scan are unchanged. The segment 4 board "Three consequences" was re-centred (left and right margins 0.62 units). Re-render: affected segments 1, 2, 4, 5, 6 and 7-31 re-checked by the automatic loop (0 critical), then the whole video (0 critical, 0 improvements). No third critic round (the change is in the drawing, not in the content). A scan of 1693 frames of the video found no ink touching the frame edges.
+Stills sent for approval before the re-render: `projects/ut_series/frames/`.
