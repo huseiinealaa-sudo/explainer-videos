@@ -28,12 +28,12 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 ## Quality standard
 - The quality reference is the prover series (`projects/prover`). Quality comes before time; time is measured, not targeted.
 - The material sets the length: each main section of the source gets 2–4 minutes, and each segment carries one main idea. The default format is a series of 3–5-minute episodes.
-- Every concept: what it is, why, and a worked example when it involves numbers.
+- Every concept: what it is, why it matters, and what it means for the inspector. Understanding comes first: what happens, why, and what it means. An equation is shown only if the technician uses it in their work. At most ONE step-by-step worked example per episode, for the most important equation in it. Every other number is shown as a visual result (bars, comparisons, a reading on a screen) without calculation steps.
 - Every mechanism, motion or sequence is shown as an animated drawing, drawn from scratch when the library does not have it. Text and table scenes take no more than about a third of an episode's duration.
 - Privacy transforms, it does not delete: site cases, real numbers and screenshots become illustrative examples or simplified drawings.
 - Every video stands on its own: a concept is not shortened because an earlier video explained it.
 - Nothing is dropped for lack of verification or of time without showing it to the owner with a proposal.
-- The narration is presented with a quality gate: the number of worked examples, the number of custom drawings, the share of text-scene time in each episode, and everything left out with its reason.
+- The narration is presented with a quality gate: the number of step-by-step worked examples (at most one), the number of custom drawings, the share of text-scene time in each episode, and everything left out with its reason.
 - In a series, the first episode is produced in full and pushed; the others are completed only after the owner approves its level.
 
 ## Fast workflow (every project)

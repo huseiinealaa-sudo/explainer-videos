@@ -56,7 +56,7 @@ each one like any other finding. If something is not named, find it:
    1 = wrong or missing):
    - **Accuracy**: what is drawn, written and spoken agrees with the narration, the data
      module and the sources; numbers match the data module; no real site data.
-   - **Depth**: each concept has its what, its why, and a worked example when it has numbers.
+   - **Depth**: each concept has its what, its why and what it means for the inspector; at most one step-by-step worked example per episode (never count its absence on other concepts as a fault); other numbers are visual results.
    - **Order**: ideas build on each other; nothing is used before it is introduced.
    - **Drawing–speech fit**: at each moment the screen shows what is being said then (check
      with the word timings); a mechanism, motion or sequence is animated, not only listed.
