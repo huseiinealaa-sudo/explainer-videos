@@ -26,6 +26,13 @@ F_PROBE = 5.0              # MHz
 THICKNESS = 25.0           # mm    steel plate
 FLAW_DEPTH = 12.0          # mm    flaw below the probe surface
 
+# Ranges quoted from TCS-67 (audible range §2.1 p. 99; UT range §1.1.2.6 p. 9; penetration p. 9)
+AUDIBLE_MIN_HZ = 20        # Hz
+AUDIBLE_MAX_KHZ = 20       # kHz
+UT_MIN_MHZ = 0.5           # MHz   most UT is done between UT_MIN_MHZ and UT_MAX_MHZ
+UT_MAX_MHZ = 20            # MHz
+PENETRATION_M = (6, 7)     # m of steel
+
 # ---------------- Derived ----------------
 def derive():
     """Everything computed from the inputs."""
@@ -78,6 +85,8 @@ def self_test():
     assert V_L_ALUMINIUM > V_L_STEEL
     assert RHO_STEEL > RHO_WATER > RHO_AIR > 0
     assert 0 < FLAW_DEPTH < THICKNESS
+    assert AUDIBLE_MIN_HZ < AUDIBLE_MAX_KHZ * 1e3 < UT_MIN_MHZ * 1e6 < F_PROBE * 1e6 < UT_MAX_MHZ * 1e6
+    assert PENETRATION_M == (6, 7)
     # the expected results of the brief, each to its stated precision
     assert abs(LAMBDA_STEEL - 1.184) < 1e-9, LAMBDA_STEEL
     assert abs(LAMBDA_WATER - 0.296) < 1e-9, LAMBDA_WATER

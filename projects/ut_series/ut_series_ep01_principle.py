@@ -69,10 +69,9 @@ import numpy as np
 # Numbers that only this segment speaks (not derived, not in the data module): the frequency
 # range of the narration («عِشْرِينَ كِيلُوهِرْتْز», «نِصْفِ مِيغَاهِرْتْز … عِشْرِينَ مِيغَاهِرْتْز»,
 # «سِتَّةَ أَمْتَارٍ إِلَى سَبْعَةٍ»). They are inputs, typed once here and used for every label.
-AUDIBLE_MAX_KHZ = 20
-UT_MIN_MHZ = 0.5
-UT_MAX_MHZ = 20
-PENETRATION_M = (6, 7)           # penetration in steel, metres
+AUDIBLE_MIN_HZ, AUDIBLE_MAX_KHZ = D.AUDIBLE_MIN_HZ, D.AUDIBLE_MAX_KHZ
+UT_MIN_MHZ, UT_MAX_MHZ = D.UT_MIN_MHZ, D.UT_MAX_MHZ
+PENETRATION_M = D.PENETRATION_M      # penetration in steel, metres
 
 
 class FrequencyRuler(VGroup):
@@ -285,7 +284,7 @@ class UtSeriesEp01(SyncedScene):
                                 for t, l in zip(ruler.ticks, ruler.tick_labels)],
                               lag_ratio=0.15), FadeIn(ruler.caption), run_time=0.9)
         self.sync(c("عِشْرِينَ"))
-        audible = ruler.band_rect(20, AUDIBLE_MAX_KHZ * 1e3, GREY_INK)
+        audible = ruler.band_rect(AUDIBLE_MIN_HZ, AUDIBLE_MAX_KHZ * 1e3, GREY_INK)
         audible_tag = ruler.band_label(audible, f"Audible: up to {AUDIBLE_MAX_KHZ} kHz")
         self.play(GrowFromEdge(audible, LEFT), run_time=0.8)
         self.play(FadeIn(audible_tag), run_time=0.4)
