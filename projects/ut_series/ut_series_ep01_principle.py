@@ -1061,9 +1061,10 @@ class UtSeriesEp01(SyncedScene):
             """worked_calculation with a roomier result box (buff 0.32) and extra animations
             that run together with the first step."""
             size = 30
-            f = VGroup(*[Text(p, font_size=size) for p in formula]).arrange(RIGHT, buff=0.18)
-            v = VGroup(*[Text(p, font_size=size - 4, color=GREY_INK) for p in values])
-            v.arrange(RIGHT, buff=0.18)
+            # one Text per row: every glyph shares the row's baseline ("=" and "÷" stay centred
+            # on the x-height instead of sitting on the baseline like aligned pieces would)
+            f = Text("  ".join(formula), font_size=size)
+            v = Text("  ".join(values), font_size=size - 4, color=GREY_INK)
             r = Text(result, font_size=size + 4, color=ACCENT_1, weight=BOLD)
             group = fit(VGroup(f, v, r).arrange(DOWN, buff=0.55)).move_to(pos)
             frame = SurroundingRectangle(r, color=ACCENT_1, buff=0.32, corner_radius=0.1,
