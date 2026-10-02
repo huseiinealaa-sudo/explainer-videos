@@ -18,7 +18,7 @@ Only episode 1 is produced in the first session; the others wait for the owner's
 
 ## Source
 - Official reference (priority 1): IAEA-TCS-67, *Training Guidelines in Non-destructive Testing Techniques: Manual for Ultrasonic Testing at Level 2*, IAEA 2017, free at https://www-pub.iaea.org/MTCD/Publications/PDF/TCS-67web.pdf (printed page = PDF page − 13). Supporting source: IAEA-TCS-10 (1999), not reachable from the container.
-- Primary reference for the content: `projects/ut_series/sources/ut_series_source.md` (cleaned; verbatim as the owner supplied it; the corrections found by verification are in the research notes below and are applied in the narration).
+- Primary reference for the content: `projects/ut_series/sources/ut_series_source.md`: the owner's cleaned text with the verification corrections merged in, each marked [+] with its TCS-67 section and page. It is the approved reference for episodes 2–4. Items moved to a later episode are under «مرحّل إلى الحلقة 3».
 - Research notes per video: `projects/ut_series/sources/ut_series_<video>.md` (claim → source → note).
 
 ## Narration
@@ -48,16 +48,18 @@ Only episode 1 is produced in the first session; the others wait for the owner's
 
 ## Data
 - All numbers come from `projects/ut_series/ut_series_data.py`, which runs `self_test()` on import (python projects/ut_series/ut_series_data.py prints the table).
-- Inputs (the owner's values; TCS-67 Table 2.1, p. 104, differs slightly on three of them, see `TCS67_ALTERNATIVES` and the episode-1 research notes):
+- Inputs: all from IAEA-TCS-67 Table 2.1 (p. 104), owner decision 2026-10-02:
   | Item | Value |
   |---|---|
-  | longitudinal velocity, steel | 5920 m/s (TCS-67: "steel, calibration block") |
-  | shear velocity, steel | 3240 m/s (TCS-67: 3250) |
-  | velocity, water / air / aluminium (L) | 1480 / 343 / 6320 m/s (air in TCS-67: 330) |
-  | density steel / water / air | 7850 / 1000 / 1.2 kg/m³ (air in TCS-67: 1.3) |
+  | longitudinal velocity, steel | 5920 m/s (row "steel (calibration block)") |
+  | shear velocity, steel | 3250 m/s |
+  | velocity, water / air / aluminium (L) | 1480 / 330 / 6320 m/s |
+  | density steel / water / air | 7850 / 1000 / 1.3 kg/m³ |
   | probe frequency, plate thickness, flaw depth | 5 MHz, 25 mm, 12 mm |
+  Derived (computed in the module): Z air 429 Rayl, R steel–air 0.999963 (99.996 %), shear ratio 0.549 (about 0.55).
 
 ## Owner decisions
 - 2026-10-02: new project `ut_series`, 4 episodes; this session produces episode 1 only; theme light, 1080p.
 - 2026-10-02: tool fix allowed in this session: the light theme's `faint` and `accent2` raised to 4.5:1 contrast (may change old projects when they are re-rendered).
 - 2026-10-02: the two known failing tests (`test_seg3_tag_touching_the_rays_is_found`, the `small round badge '10'` case) are not fixed here.
+- 2026-10-02: approved the episode-1 narration with changes: TCS-67 values for the shear and air figures; the R formula spoken as the square of the quotient and drawn with its brackets; the full calibration sentence in segment 5; all advantages and limits spoken in segment 1 (no grey chips) with the material-properties sentence; 4:53 accepted; multiple echoes and t = v ÷ 2f moved to episode 3; review questions in English on screen and Arabic in the voice; the corrections merged into the source file; `CLAUDE.md` line 161 corrected.

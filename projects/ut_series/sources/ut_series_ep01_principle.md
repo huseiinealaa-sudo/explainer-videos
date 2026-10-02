@@ -26,12 +26,12 @@ Supporting source IAEA-TCS-10 (1999): not used, the INIS record is behind a Clou
 | Through transmission: two probes, a defect lowers the received amplitude, needs both sides | §3.1.1, p. 133 | |
 | Computed values: λ steel/water, Z, R steel–water and steel–air, echo times, depth, aluminium reading | formulas above | computed in `ut_series_data.py` with `self_test()`; not printed in TCS-67 |
 
-## B. Corrections and conflicts (all listed in the approval message)
+## B. Corrections and conflicts (all listed in the approval message; rows 6–8 decided by the owner on 2026-10-02: TCS-67 Table 2.1 values are adopted, and every correction is merged into `ut_series_source.md` with [+])
 | # | Claim in the source file | Correction / conflict | Source |
 |---|---|---|---|
 | 1 | [تحقق] smallest detectable flaw "about half a wavelength" | TCS-67 says flaws "of the order of λ/2 or λ/3 can be detected"; its example uses λ/3. The narration says "half or a third of the wavelength". | §2.2.4, p. 102; example p. 103 |
 | 2 | Lamb waves travel in plates "whose thickness approaches the wavelength" | A plate of thickness equal to three wavelengths or less. The narration says "not more than three wavelengths". | §2.3.4, p. 107 |
-| 3 | Couplant "water, oil, gel or glycerine" | TCS-67 lists glycerine, water, oils, petroleum greases, silicon grease, wall-paper paste and commercial pastes; "gel" is not named. Question 2 and segment 4 speak of "a couplant" without the list. | §5.9, p. 203 |
+| 3 | Couplant "water, oil, gel or glycerine" | TCS-67 lists glycerine, water, oils, petroleum greases, silicon grease, wall-paper paste and commercial pastes; "gel" is not named. Question 2 and segment 4 speak of "a couplant" without the list; the source file lists the TCS-67 types. | §5.9, p. 203 |
 | 4 | Through-transmission "does not give the flaw depth" | It gives neither the size nor the location. Narration: "does not give the location of the flaw". | §3.1.1, p. 133 |
 | 5 | Resonance: "a standing wave forms in the thickness" | Resonance occurs when the thickness equals half a wavelength or a multiple of it; t = v / 2f; now largely superseded by pulse-echo. Narration: "until the thickness equals half the wavelength". | §3.1.3, pp. 135–136 |
 | 6 | Shear velocity in steel 3240 m/s | Table 2.1 gives 3250 m/s for both steels. The ratio shown, 0.55, equals TCS-67's own eq. 2.13. | Table 2.1, p. 104; p. 108 |
