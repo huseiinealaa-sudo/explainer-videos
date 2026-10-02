@@ -261,12 +261,14 @@ class ParticleChain(VGroup):
 
     def __init__(self, n=19, spacing=0.6, amp=0.17, wavelength=3.6, pulse_width=1.6, speed=2.6,
                  tag=9, y=0.0, radius=0.11, tag_radius=0.16, tag_color=ACCENT_1,
-                 x_start=-9.0, launches=()):
+                 x_start=-9.0, launches=(), x0=0.0, transverse=False, guide_dir=None,
+                 guide_len=0.55):
         self.n, self.spacing, self.amp, self.wavelength = n, spacing, amp, wavelength
+        self.transverse = transverse
         self.pulse_width, self.speed, self.tag, self.y = pulse_width, speed, tag, y
         self.radius, self.tag_radius = radius, tag_radius
         self.x_start, self.launches, self.t = x_start, list(launches), 0.0
-        self.rest = [(i - (n - 1) / 2) * spacing for i in range(n)]
+        self.rest = [x0 + (i - (n - 1) / 2) * spacing for i in range(n)]
         self.dots = VGroup(*[Dot([x, y, 0], radius=tag_radius if i == tag else radius,
                                  color=tag_color if i == tag else INK)
                              for i, x in enumerate(self.rest)])
@@ -275,8 +277,9 @@ class ParticleChain(VGroup):
         self.update_to(0.0)
         self.ring = DashedVMobject(Circle(radius=tag_radius, color=GREY_INK, stroke_width=3)
                                    .move_to([self.rest[tag], y, 0]), num_dashes=14)
-        self.guide = DashedLine([self.rest[tag], y - 0.55, 0], [self.rest[tag], y + 0.55, 0],
-                                color=GREY_INK, stroke_width=2)
+        g = np.array(guide_dir if guide_dir is not None else UP, dtype=float) * guide_len
+        centre = np.array([self.rest[tag], y, 0.0])
+        self.guide = DashedLine(centre - g, centre + g, color=GREY_INK, stroke_width=2)
 
     def pulse_x(self, k=0):
         return self.x_start + self.speed * (self.t - self.launches[k])
@@ -285,11 +288,21 @@ class ParticleChain(VGroup):
         u = 0.0
         for tl in self.launches:
             s = x0 - (self.x_start + self.speed * (self.t - tl))
+            if abs(s) > 4 * self.pulse_width:
+                continue
             u += self.amp * np.exp(-(s / self.pulse_width) ** 2) * np.sin(TAU * s / self.wavelength)
         return u
 
     def update_to(self, t):
         self.t = t
+        if self.transverse:                    # particles move across the row; straight links
+            ys = [self.y + self.displacement(x) for x in self.rest]
+            for d, x, y_ in zip(self.dots, self.rest, ys):
+                d.move_to([x, y_, 0])
+            for i, sp in enumerate(self.springs):
+                sp.set_points_as_corners([[self.rest[i], ys[i], 0], [self.rest[i + 1], ys[i + 1], 0]])
+                sp.set_stroke(GREY_INK, 3)
+            return
         xs = [x + self.displacement(x) for x in self.rest]
         for i, (d, x) in enumerate(zip(self.dots, xs)):
             d.move_to([x, self.y, 0])
@@ -396,6 +409,64 @@ class ScatterLane(VGroup):
         else:
             self._curve(self.ref, [], 0, self.y, lambda x: 0)
 
+
+
+class WaveField(VGroup):
+    """A grid of particles in a part (surface wave) or a plate (Lamb wave) with live motion.
+
+    kind="surface": the grid hangs below the free surface `y_top`; the motion is an ellipse
+    whose size dies away with depth (`wavelength` is the depth scale: about one wavelength).
+    kind="lamb": a plate of thickness `plate_h` whose two faces move in opposite sense across
+    the plate (symmetric mode). Columns are `dx` apart and centred on `x_c`; `depths` are the
+    row depths below `y_top`. The scene adds `field.add_updater(lambda m, dt: m.advance(dt))`.
+    `tag_col` is the column of the tagged particle on the top row; `path` is the dashed
+    ellipse it follows (not part of the group, so the scene can show it at its cue)."""
+
+    def __init__(self, kind, x_c, y_top, cols=8, dx=0.6, depths=(0.4, 0.9, 1.4, 1.9),
+                 wavelength=2.4, amp=0.24, speed=1.2, plate_h=1.5, tag_col=3):
+        self.kind, self.y_top, self.plate_h = kind, y_top, plate_h
+        self.k = TAU / wavelength
+        self.omega = self.k * speed
+        self.amp, self.wavelength, self.t = amp, wavelength, 0.0
+        self.xs = [x_c + (j - (cols - 1) / 2) * dx for j in range(cols)]
+        self.depths = list(depths)
+        self.cells = [(j, i) for i in range(len(self.depths)) for j in range(cols)]
+        self.tag_col = tag_col
+        dots = []
+        for j, i in self.cells:
+            tagged = (i == 0 and j == tag_col)
+            dots.append(Dot(radius=0.14 if tagged else 0.075,
+                            color=ACCENT_1 if tagged else INK))
+        self.dots = VGroup(*dots)
+        super().__init__(self.dots)
+        ax, az = self._axes(0)
+        self.path = DashedVMobject(
+            Ellipse(width=2 * ax, height=2 * az, color=GREY_INK, stroke_width=3)
+            .move_to([self.xs[tag_col], y_top - self.depths[0], 0]), num_dashes=24)
+        self.update_to(0.0)
+
+    def _amps(self, i):
+        """Horizontal and vertical amplitude of row i."""
+        if self.kind == "surface":
+            f = float(np.exp(-2.2 * self.depths[i] / self.wavelength))
+            return self.amp * f, 1.4 * self.amp * f
+        s = (self.plate_h / 2 - self.depths[i]) / (self.plate_h / 2)     # +1 top face, -1 bottom
+        return 0.6 * self.amp, 1.3 * self.amp * s
+
+    def _axes(self, i):
+        ax, az = self._amps(i)
+        return ax, abs(az)
+
+    def update_to(self, t):
+        self.t = t
+        for d, (j, i) in zip(self.dots, self.cells):
+            x = self.xs[j]
+            phi = self.k * x - self.omega * t
+            ax, az = self._amps(i)
+            d.move_to([x - ax * np.sin(phi), self.y_top - self.depths[i] + az * np.cos(phi), 0])
+
+    def advance(self, dt):
+        self.update_to(self.t + dt)
 
 
 class UtSeriesEp01(SyncedScene):
@@ -794,7 +865,243 @@ class UtSeriesEp01(SyncedScene):
 
     # ---------------- Segment 3: wave types (§3) ----------------
     def seg3(self):
+        c = lambda phrase, nth=1: self.cue(3, phrase, nth)
+        S = self.start(3)
+        ratio = D.SHEAR_RATIO
+
+        # ---- A, 0-20 s: two panels run side by side; the solid / liquid / gas table ----
+        PW, P_TOP, P_BOT = 6.5, 3.8, 0.05
+        xc_l, xc_t = -3.5, 3.5
+        frames = VGroup(*[RoundedRectangle(width=PW, height=P_TOP - P_BOT, corner_radius=0.12,
+                                           color=GREY_INK, stroke_width=3).set_fill(PANEL_FILL, 1)
+                          .move_to([x, (P_TOP + P_BOT) / 2, 0]) for x in (xc_l, xc_t)])
+
+        def lattice(x_c, transverse):
+            """Three rows of 15 particles; the middle row carries the tagged particle."""
+            if transverse:      # same frequency as the other panel, so slower and shorter
+                lam, spd, amp, pw = 3.0 * ratio, 2.0 * ratio, 0.22, 1.7 * ratio
+            else:
+                lam, spd, amp, pw = 3.0, 2.0, 0.25, 1.7
+            back = 6.6 / spd + 0.3                  # pre-roll: the wave already fills the row
+            launches = [-back + 1.5 * k for k in range(int((back + 30) / 1.5) + 1)]
+            rows = []
+            for y in (2.3, 1.6, 0.9):
+                tagged = abs(y - 1.6) < 1e-6
+                rows.append(ParticleChain(
+                    n=15, spacing=0.4, amp=amp, wavelength=lam, pulse_width=pw, speed=spd,
+                    tag=7 if tagged else -1, y=y, radius=0.07, tag_radius=0.15,
+                    x0=x_c, x_start=x_c - 3.6, launches=launches, transverse=transverse,
+                    guide_dir=UP if transverse else RIGHT, guide_len=0.32 if transverse else 0.4))
+            return rows
+
+        rows_l, rows_t = lattice(xc_l, False), lattice(xc_t, True)
+        tag_l, tag_t = rows_l[1], rows_t[1]
+        for r in rows_l + rows_t:
+            r.add_updater(lambda m, dt: m.advance(dt))
+
+        def panel_head(x_c, title, sub):
+            t = label(title, FS_NOTE, INK, weight=BOLD).move_to([x_c, 3.4, 0])
+            u = fit(label(sub, FS_TAG, GREY_INK), PW - 0.5).move_to([x_c, 3.0, 0])
+            return VGroup(t, u)
+
+        def prop_arrow(x_c):
+            a = Arrow([x_c - 2.7, 0.4, 0], [x_c - 1.2, 0.4, 0], buff=0, color=INK, stroke_width=5,
+                      tip_length=0.22)
+            t = label("propagation", FS_TAG, INK).next_to(a, RIGHT, 0.2)
+            return VGroup(a, t)
+
+        head_l = panel_head(xc_l, "Longitudinal wave", "blue particle moves along the travel direction")
+        head_t = panel_head(xc_t, "Transverse (shear) wave", "blue particle moves across the travel direction")
+        prop_l, prop_t = prop_arrow(xc_l), prop_arrow(xc_t)
+
+        self.sync(S + 0.1)
+        self.play(FadeIn(frames), *[FadeIn(r) for r in rows_l + rows_t], run_time=0.6)
+        for r in rows_l + rows_t:            # the pulses run from here on (updaters set after FadeIn)
+            r.update()
+        self.sync(c("الطُّولِيَّةِ"))
+        self.play(FadeIn(head_l), run_time=0.4)
+        self.sync(c("الجُسَيْمَاتُ"))
+        self.play(FadeIn(tag_l.ring), Create(tag_l.guide), run_time=0.4)
+        self.sync(c("الِانْتِشَارِ"))
+        self.play(GrowArrow(prop_l[0]), FadeIn(prop_l[1]), run_time=0.5)
+
+        # the solid / liquid / gas table, longitudinal row first
+        col_w = [3.3, 2.1, 2.1, 2.1]
+        tx0, ty0, row_h = -4.8, -0.3, 0.75
+        xs_edge = [tx0 + sum(col_w[:i]) for i in range(5)]
+        cx = [(xs_edge[i] + xs_edge[i + 1]) / 2 for i in range(4)]
+        cy = [ty0 - row_h * (i + 0.5) for i in range(3)]
+        tbl_frame = Rectangle(width=sum(col_w), height=3 * row_h, color=INK, stroke_width=3)
+        tbl_frame.set_fill(PANEL_FILL, 1).move_to([tx0 + sum(col_w) / 2, ty0 - 1.5 * row_h, 0])
+        rules = VGroup(*[Line([tx0, ty0 - row_h * k, 0], [tx0 + sum(col_w), ty0 - row_h * k, 0],
+                              color=GREY_INK, stroke_width=2) for k in (1, 2)],
+                       *[Line([xs_edge[k], ty0, 0], [xs_edge[k], ty0 - 3 * row_h, 0],
+                              color=GREY_INK, stroke_width=2) for k in (1, 2, 3)])
+        solid_mark = Square(0.34, color=INK, stroke_width=3).set_fill(INK, 0.25)
+        heads = []
+        for k, (name, mark) in enumerate([("Solid", solid_mark), ("Liquid", icon("droplet", ACCENT_1, 0.45)),
+                                          ("Gas", icon("wind", GREY_INK, 0.45))]):
+            h = VGroup(mark, label(name, FS_NOTE, INK, weight=BOLD)).arrange(RIGHT, buff=0.15)
+            heads.append(h.move_to([cx[k + 1], cy[0], 0]))
+        row_l = label("Longitudinal", FS_NOTE, INK).move_to([cx[0], cy[1], 0])
+        row_t = label("Transverse", FS_NOTE, INK).move_to([cx[0], cy[2], 0])
+        row_l.align_to([xs_edge[0] + 0.25, 0, 0], LEFT)
+        row_t.align_to([xs_edge[0] + 0.25, 0, 0], LEFT)
+        yes = lambda k, r: icon("check", ACCENT_3, 0.5).move_to([cx[k + 1], cy[r], 0])
+        no = lambda k, r: icon("x", ACCENT_4, 0.5).move_to([cx[k + 1], cy[r], 0])
+
+        self.sync(c("وَتَنْتَقِلُ"))
+        self.play(FadeIn(tbl_frame), FadeIn(rules), *[FadeIn(h) for h in heads], FadeIn(row_l),
+                  run_time=0.5)
+        for k, w in enumerate(("الصُّلْبِ", "وَالسَّائِلِ", "وَالغَازِ")):
+            self.sync(c(w))
+            self.play(GrowFromCenter(yes(k, 1), run_time=0.3))
+        fast = label("fastest", FS_TAG, ACCENT_1, weight=BOLD)
+        fast.next_to(tbl_frame, RIGHT, 0.15).match_y(row_l)
+        self.sync(c("الأَسْرَعُ"))
+        self.play(FadeIn(fast, shift=LEFT * 0.15), run_time=0.4)
+
+        self.sync(c("المُسْتَعْرِضَةِ"))
+        self.play(FadeIn(head_t), FadeIn(row_t), run_time=0.4)
+        self.sync(c("تَهْتَزُّ", 2))
+        self.play(FadeIn(tag_t.ring), Create(tag_t.guide), run_time=0.4)
+        self.sync(c("الِاتِّجَاهِ"))
+        self.play(GrowArrow(prop_t[0]), FadeIn(prop_t[1]), run_time=0.5)
+        self.sync(c("فَلَا"))
+        qs = [label("?", FS_NOTE, GREY_INK, weight=BOLD).move_to([cx[k + 1], cy[2], 0]) for k in range(3)]
+        self.play(*[FadeIn(q) for q in qs], run_time=0.3)
+
+        def flip(q, mark):
+            self.play(q.animate(run_time=0.12).stretch(0.02, 0))
+            self.remove(q)
+            self.play(GrowFromCenter(mark, run_time=0.25))
+            return mark
+        self.sync(c("الصُّلْبَةِ"))
+        flip(qs[0], yes(0, 2))
+        self.sync(c("السَّوَائِلَ"))
+        x_liq = flip(qs[1], no(1, 2))
+        self.sync(c("وَالغَازَاتِ"))
+        x_gas = flip(qs[2], no(2, 2))
+        shear_note = label("liquids and gases do not resist shear", FS_LABEL, ACCENT_4, weight=BOLD)
+        shear_note.next_to(tbl_frame, DOWN, 0.3)
+        self.sync(c("تُقَاوِمُ"))
+        self.play(FadeIn(shear_note, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("القَصَّ"))
+        self.play(Indicate(x_liq, color=ACCENT_4, scale_factor=1.3),
+                  Indicate(x_gas, color=ACCENT_4, scale_factor=1.3), run_time=0.6)
+
+        # ---- B, 20.9-29.4 s: the speeds in steel: shear is about 55 % of longitudinal ----
+        self.sync(self.cue(3, "سُرْعَتُهَا") - 0.55)
+        for r in rows_l + rows_t:
+            r.clear_updaters()
+        self.clear(run_time=0.5)
+        self.sync(c("سُرْعَتُهَا"))
+        bx0, s_px = -6.2, 8.6 / D.V_L_STEEL
+        v_l, v_s = ValueTracker(0), ValueTracker(0)
+        bar_l_y, bar_s_y, bar_h = 1.5, -0.6, 0.7
+
+        def make_bar(v, y, fill):
+            return always_redraw(lambda: Rectangle(
+                width=max(0.01, s_px * v.get_value()), height=bar_h, color=ACCENT_1, stroke_width=3
+            ).set_fill(ACCENT_1, fill).move_to([bx0, y, 0], aligned_edge=LEFT))
+
+        def make_val(v, y):
+            return always_redraw(lambda: label(f"{v.get_value():.0f} m/s", FS_NOTE, INK, weight=BOLD)
+                                 .move_to([bx0 + max(0.01, s_px * v.get_value()) + 0.2, y, 0],
+                                          aligned_edge=LEFT))
+        head_b = label("Wave speed in steel", FS_BODY, INK, weight=BOLD).move_to([0, 3.2, 0])
+        lab_s = label("Transverse (shear)", FS_NOTE, INK).move_to([bx0 + 0.2, bar_s_y + 0.65, 0], aligned_edge=LEFT)
+        lab_l = label("Longitudinal", FS_NOTE, INK).move_to([bx0 + 0.2, bar_l_y + 0.65, 0], aligned_edge=LEFT)
+        axis_b = Line([bx0, bar_l_y + 0.4, 0], [bx0, bar_s_y - 0.4, 0], color=INK, stroke_width=4)
+        bar_s, val_s = make_bar(v_s, bar_s_y, 0.3), make_val(v_s, bar_s_y)
+        bar_l, val_l = make_bar(v_l, bar_l_y, 0.55), make_val(v_l, bar_l_y)
+        self.play(FadeIn(head_b), FadeIn(lab_s), Create(axis_b), run_time=0.5)
+        self.add(bar_s, val_s)
+        self.sync(c("ثَلَاثَةُ"))
+        self.play(v_s.animate(rate_func=linear).set_value(D.V_S_STEEL),
+                  run_time=c("مِتْرًا") + 0.3 - self.renderer.time)
+        self.sync(c("أَيْ") - 0.05)
+        self.add(bar_l, val_l)
+        self.play(FadeIn(lab_l, run_time=0.2), v_l.animate(rate_func=smooth).set_value(D.V_L_STEEL),
+                  run_time=0.5)
+        x_end = bx0 + s_px * D.V_S_STEEL
+        ratio_line = DashedLine([x_end, bar_s_y + bar_h / 2, 0], [x_end, bar_l_y + bar_h / 2, 0],
+                                color=INK, stroke_width=3)
+        ratio_tag = label(f"× {ratio:.2f}", FS_LABEL, ACCENT_1, weight=BOLD)
+        ratio_tag.next_to(ratio_line, RIGHT, 0.15).match_y(ratio_line)
+        self.sync(c("خَمْسَةٍ"))
+        self.play(Create(ratio_line), FadeIn(ratio_tag), run_time=0.45)
+        calc = label(f"{D.V_S_STEEL:.0f} ÷ {D.V_L_STEEL:.0f} = {ratio:.2f}", FS_LABEL + 2, INK, weight=BOLD)
+        calc.move_to([0, -2.0, 0])
+        self.sync(c("وَخَمْسِينَ"))
+        self.play(FadeIn(calc), run_time=0.4)
+        pct = label(f"≈ {ratio * 100:.0f} % of the longitudinal speed", FS_LABEL, ACCENT_1)
+        pct.next_to(calc, DOWN, 0.25)
+        self.sync(c("بِالمِئَةِ"))
+        self.play(FadeIn(pct), run_time=0.4)
+        self.sync(c("وَالسَّطْحِيَّةُ") - 0.5)
+        for m in (bar_s, val_s, bar_l, val_l):
+            m.clear_updaters()
+        self.clear(run_time=0.4)
+
+        # ---- C, 29.8-36 s: surface wave: a layer one wavelength deep, elliptical paths ----
+        self.sync(c("وَالسَّطْحِيَّةُ"))
+        sx, s_top, s_h, s_w = -4.0, 2.8, 3.6, 4.9
+        s_lam = 3.0
+        s_block = Rectangle(width=s_w, height=s_h, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1)
+        s_block.move_to([sx, s_top - s_h / 2, 0])
+        surf = WaveField("surface", sx, s_top, cols=8, dx=0.6, depths=(0.5, 1.1, 1.7, 2.3),
+                         wavelength=s_lam, amp=0.3, speed=1.2)
+        surf_t = label("Surface wave", FS_NOTE, INK, weight=BOLD).next_to(s_block, UP, 0.3)
+        self.play(FadeIn(s_block), FadeIn(surf), FadeIn(surf_t), run_time=0.5)
+        surf.add_updater(lambda m, dt: m.advance(dt))
+        surf_cap = label("elliptical particle paths", FS_TAG, GREY_INK).next_to(s_block, DOWN, 0.2)
+        self.sync(c("تَسِيرُ"))
+        self.play(FadeIn(surf.path), FadeIn(surf_cap), run_time=0.4)
+        d_line = DashedLine([sx - s_w / 2, s_top - s_lam, 0], [sx + s_w / 2, s_top - s_lam, 0],
+                            color=INK, stroke_width=3)
+        d_br = DoubleArrow([sx + s_w / 2 + 0.3, s_top, 0], [sx + s_w / 2 + 0.3, s_top - s_lam, 0],
+                           buff=0, color=INK, stroke_width=3, tip_length=0.15)
+        d_lab = label("≈ 1 λ", FS_NOTE, INK).next_to(d_br, RIGHT, 0.1)
+        self.sync(c("بِعُمْقِ"))
+        self.play(Create(d_line), GrowFromCenter(d_br), run_time=0.5)
+        self.sync(c("وَاحِدٍ"))
+        self.play(FadeIn(d_lab), run_time=0.3)
+
+        # ---- D, 35.2-45 s: Lamb wave: a thin plate, thickness at most 3 wavelengths ----
+        self.sync(c("وَمَوْجَاتُ"))
+        lx, l_top, l_h, l_w = 2.85, 2.8, 1.8, 4.6
+        l_plate = Rectangle(width=l_w, height=l_h, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1)
+        l_plate.move_to([lx, l_top - l_h / 2, 0])
+        lamb = WaveField("lamb", lx, l_top, cols=8, dx=0.55, depths=(0.25, 0.7, 1.15, 1.55),
+                         wavelength=2.2, amp=0.2, speed=1.1, plate_h=l_h, tag_col=3)
+        lamb_t = label("Lamb wave", FS_NOTE, INK, weight=BOLD).next_to(l_plate, UP, 0.3)
+        lamb_t.match_y(surf_t)
+        self.play(FadeIn(l_plate), FadeIn(lamb), FadeIn(lamb_t), FadeIn(lamb.path), run_time=0.5)
+        lamb.add_updater(lambda m, dt: m.advance(dt))
+        lamb_cap = label("thin plate", FS_TAG, GREY_INK).next_to(l_plate, DOWN, 0.2)
+        self.sync(c("الصَّفَائِحِ"))
+        self.play(FadeIn(lamb_cap), run_time=0.3)
+        t_br = DoubleArrow([lx + l_w / 2 + 0.3, l_top, 0], [lx + l_w / 2 + 0.3, l_top - l_h, 0],
+                           buff=0, color=INK, stroke_width=3, tip_length=0.15)
+        t_lab = label("≤ 3 λ", FS_NOTE, INK).next_to(t_br, RIGHT, 0.1)
+        self.sync(c("سَمَاكَتُهَا"))
+        self.play(GrowFromCenter(t_br), run_time=0.4)
+        self.sync(c("ثَلَاثَةِ"))
+        self.play(FadeIn(t_lab), run_time=0.3)
+        self.sync(c("وَنُفَصِّلُهُمَا"))
+        pills = VGroup()
+        for tgt in (s_block, l_plate):
+            txt = label("Next episodes", FS_NOTE, ACCENT_1, weight=BOLD)
+            pill = RoundedRectangle(width=txt.width + 0.5, height=0.6, corner_radius=0.3,
+                                    color=ACCENT_1, stroke_width=3).set_fill(PANEL_FILL, 1)
+            pills.add(VGroup(pill, txt))
+        pills[0].move_to([sx, -2.2, 0])
+        pills[1].move_to([lx, -2.2, 0])
+        self.play(*[FadeIn(p_, shift=UP * 0.15) for p_ in pills], run_time=0.5)
         self.sync(self.end(3))
+        surf.clear_updaters()
+        lamb.clear_updaters()
         self.clear()
 
     # ---------------- Segment 4: impedance and reflection (§4) ----------------
