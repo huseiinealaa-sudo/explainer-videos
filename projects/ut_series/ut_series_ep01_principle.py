@@ -2164,7 +2164,7 @@ class UtSeriesEp01(SyncedScene):
         # ---- 27.4-37.3 s: the limits ----
         self.sync(c("وَقُيُودُهَا") - 0.35)
         self.clear(run_time=0.45)
-        lim_head = label("Limits", FS_HEADING, ALERT_C, weight=BOLD).move_to([0, 2.9, 0])
+        lim_head = label("Limits", FS_HEADING, ALERT_C, weight=BOLD).move_to([0, 3.3, 0])
         lim_rule = Line(LEFT * 1.4, RIGHT * 1.4, color=ALERT_C, stroke_width=5)
         lim_rule.next_to(lim_head, DOWN, 0.15)
         chips = [chip("Couplant needed", "droplet", ALERT_C, 6.0, FS_LABEL, 0.12),
@@ -2177,6 +2177,10 @@ class UtSeriesEp01(SyncedScene):
         pos = [(0, 0), (1, 0), (0, 1), (1, 1)]   # (column, row) of each limit
         for ch, (ci, ri) in zip(chips, pos):
             ch.move_to([LCX[ci], Y_CHIP[ri], 0])
+        # top row: equal top edges, 0.35 under the heading rule (a two-line chip grows downward)
+        top_y = lim_rule.get_bottom()[1] - 0.35
+        for ch in chips[:2]:
+            ch.align_to([0, top_y, 0], UP)
 
         BW, BH = 2.8, 0.9                        # the little steel block of each drawing
 
@@ -2197,8 +2201,8 @@ class UtSeriesEp01(SyncedScene):
 
         # 1 couplant: the probe over the block with a thin air gap, then the couplant fills it
         b1, pr1 = mini_block(0, 0, 0.16)
-        coup = Rectangle(width=0.68, height=0.16, color=ACCENT_1, stroke_width=0)
-        coup.set_fill(ACCENT_1, 0.5).move_to([pr1.get_center()[0], b1.get_top()[1] + 0.08, 0])
+        coup = Rectangle(width=0.68, height=0.16, color=ACCENT_3, stroke_width=0)
+        coup.set_fill(ACCENT_3, 0.5).move_to([pr1.get_center()[0], b1.get_top()[1] + 0.08, 0])
         draw1 = VGroup(b1, pr1)
         # 2 flaw parallel to the beam: a thin flaw inside the beam, the pulse runs along it
         b2, pr2 = mini_block(1, 0)
