@@ -9,7 +9,7 @@ from manim import (BOLD, DL, DOWN, DR, LEFT, ORIGIN, PI, RIGHT, UL, UP, UR, Arro
                    DashedLine, Dot, Line, Rectangle, Square, SurroundingRectangle, VGroup)
 
 from ..scenes import badge
-from ..style import BG, FS_AXIS, FS_BODY, FS_TAG, PANEL_FILL, label
+from ..style import BG, BG_ALT, FS_AXIS, FS_BODY, FS_TAG, INK, LIGHT_INK, PANEL_FILL, label
 from .overlap import analyse, collect
 
 
@@ -48,6 +48,14 @@ def cases():
                                           Line(x.get_corner(DL), x.get_corner(UR))], []
     yield "dashed line through a text", [DashedLine(LEFT * 2, RIGHT * 2), label("dashed")], \
         ["text_over_shape"]
+    # contrast (low_contrast): the colour of a text against what is behind it
+    yield "text close to the background colour", [label("Faint", color=BG_ALT)], ["low_contrast"]
+    yield "inactive text (LIGHT_INK) is exempt", [label("Inactive", color=LIGHT_INK)], []
+    yield "ink text on the theme's panel", [Rectangle(width=4, height=1, stroke_width=0)
+                                            .set_fill(PANEL_FILL, 1), label("Readable")], []
+    yield "ink text on a panel of its own colour", [Rectangle(width=4, height=1, stroke_width=0)
+                                                    .set_fill(INK, 1), label("Lost")], \
+        ["low_contrast"]
     # clearance (text_near_shape): contacts with no overlap area, lines included
     r = label("Near a ray")
     yield "ray ending at a text", [r, Line(r.get_right() + RIGHT * 0.8, r.get_right() + RIGHT * 0.02,

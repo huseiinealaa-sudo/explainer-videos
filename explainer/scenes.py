@@ -32,7 +32,7 @@ from manim import *
 
 from .style import (ACCENT_1, ACCENT_3, ALERT_C, BG, FS_AXIS, FS_BODY, FS_EQUATION,
                     FS_HEADING, FS_LABEL, FS_NOTE, FS_SUBTITLE, FS_SUMMARY, FS_TAG,
-                    FS_TITLE, GREY_INK, INK, LIGHT_INK, MONO, OK_C, PANEL_FILL, SAFE_WIDTH,
+                    FS_TITLE, GREY_INK, INK, LIGHT_INK, LINE_C, MONO, OK_C, PANEL_FILL, SAFE_WIDTH,
                     fit, label)
 
 __all__ = ["title_card", "section_title", "bullet_list", "equation", "worked_calculation",
@@ -289,7 +289,7 @@ def data_table(scene, header, rows, cues=None, pos=ORIGIN, size=FS_TAG + 2,
     body = VGroup()
     for r, line in enumerate(lines[1:], start=1):
         shade = Rectangle(width=total_w + 0.3, height=row_h, stroke_width=0)
-        shade.set_fill(PANEL_FILL if r % 2 else BG, 1)
+        shade.set_fill(PANEL_FILL, 1 if r % 2 else 0)     # plain rows let the background show
         shade.move_to([total_w / 2, -r * row_h, 0])
         body.add(VGroup(shade, line))
     group = VGroup(head, rule, body)
@@ -350,7 +350,7 @@ def line_chart(scene, xs, ys, x_label="", y_label="", band=None, x_range=None,
         pad = (hi - lo) * 0.25 or 1
         y_range = [lo - pad, hi + pad, (hi - lo + 2 * pad) / 4]
     ax = Axes(x_range=x_range, y_range=y_range, x_length=size[0], y_length=size[1],
-              tips=False, axis_config={"color": INK, "stroke_width": 3,
+              tips=False, axis_config={"color": LINE_C, "stroke_width": 3,
                                        "include_ticks": True, "tick_size": 0.05})
     # tick numbers as Text (DecimalNumber needs LaTeX, absent in the container)
     nums = VGroup(*[label(f"{v:.0f}", FS_TAG - 2).next_to(ax.c2p(v, y_range[0]), DOWN, 0.12)
@@ -425,7 +425,7 @@ def checklist(scene, items, cues=None, failed=(), pos=ORIGIN, size=FS_BODY - 2):
     """Empty boxes first, then each item ticked (or crossed if its index is in failed)."""
     rows = VGroup()
     for t in items:
-        sq = Square(side_length=0.42, stroke_width=3, color=INK)
+        sq = Square(side_length=0.42, stroke_width=3, color=LINE_C)
         rows.add(VGroup(sq, label(t, size)).arrange(RIGHT, buff=0.3))
     rows.arrange(DOWN, aligned_edge=LEFT, buff=0.3)
     fit(rows).move_to(pos)
@@ -536,7 +536,7 @@ def image_panel(scene, path, caption=None, credit=None, height=4.6, max_width=10
         show = FadeIn(img)
     if img.width > max_width:
         img.scale_to_fit_width(max_width)
-    frame = SurroundingRectangle(img, buff=0.12, stroke_width=4, color=INK)
+    frame = SurroundingRectangle(img, buff=0.12, stroke_width=4, color=LINE_C)
     group = Group(frame, img)
     texts = VGroup()
     if caption:
@@ -564,7 +564,7 @@ def document_panel(scene, lines, height=5.4, max_width=7.0, pos=ORIGIN, note=Non
                     for t, w in ((x, NORMAL) if isinstance(x, str) else x for x in lines)])
     rows.arrange(DOWN, aligned_edge=LEFT, buff=0.1)
     paper = Rectangle(width=rows.width + 0.5, height=rows.height + 0.4, stroke_width=3,
-                      color=INK).set_fill(BG, 1)
+                      color=LINE_C).set_fill(BG, 1)
     doc = VGroup(paper, rows.move_to(paper))
     doc.scale_to_fit_height(height)
     if doc.width > max_width:

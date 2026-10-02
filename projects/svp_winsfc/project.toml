@@ -4,3 +4,7 @@
 language = "ar"                 # ar | en | ... (a language without a voice gets its default voice)
 voice = "ar-SA-HamedNeural"     # any edge-tts voice, e.g. en-US-GuyNeural
 rate = "+0%"                    # speed: "+0%" normal, "-10%" slower, "+10%" faster
+
+# Colours: pinned to the original white board so this project renders exactly as it was published.
+[style]
+theme = "light"

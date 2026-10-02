@@ -21,13 +21,18 @@ import json
 import os
 import re
 import subprocess
+import unicodedata
 from pathlib import Path
 
-from manim import DOWN, UP, FadeIn, FadeOut, Scene, VMobject, Wait, logger
+from contextlib import contextmanager
+
+from manim import DOWN, UP, FadeIn, FadeOut, ManimColor, Scene, VMobject, Wait, logger
 from manim.constants import DEFAULT_WAIT_TIME
 from manim.utils.exceptions import EndSceneEarlyException
 
-from .style import CAPTION_Y, FS_LABEL, INK, fit, label
+from . import theme as _theme
+from .backgrounds import Background, make_background, theme_background
+from .style import BG, CAPTION_Y, FS_LABEL, INK, fit, label
 
 WINDOW_ENV, QA_ENV, RENDER_LOG_ENV = "EXPLAINER_WINDOW", "EXPLAINER_QA", "EXPLAINER_RENDER_LOG"
 
@@ -110,6 +115,34 @@ def word_coverage(audio_dir, narration):
     return out
 
 
+def _is_word_char(c):
+    """A letter, a digit or a combining mark (Arabic diacritics are marks: 'الدَّفْعُ')."""
+    return c.isalnum() or unicodedata.category(c).startswith("M")
+
+
+def find_phrase(text, phrase, nth=1):
+    """Index of the nth occurrence of `phrase` in `text`, whole words first.
+
+    An occurrence is a whole word when no letter, digit or diacritic touches it on either
+    side, so «الدفع» does not match inside «والدفع» while a lone «الدفع» exists later in the
+    text. Only if the text has fewer than nth whole-word occurrences does the nth partial
+    occurrence count. Returns -1 when the phrase is not there at all."""
+    def hits(whole):
+        i = text.find(phrase)
+        while i >= 0:
+            end = i + len(phrase)
+            before = i > 0 and _is_word_char(text[i - 1]) and _is_word_char(phrase[0])
+            after = end < len(text) and _is_word_char(text[end]) and _is_word_char(phrase[-1])
+            if not whole or not (before or after):
+                yield i
+            i = text.find(phrase, i + 1)
+    for whole in (True, False):
+        found = list(hits(whole))
+        if len(found) >= nth:
+            return found[nth - 1]
+    return -1
+
+
 # ---------------- Scene ----------------
 class SyncedScene(Scene):
     """Scene that places animations on the narration timeline."""
@@ -117,6 +150,8 @@ class SyncedScene(Scene):
     window = None           # (t0, t1) on the narration clock, from EXPLAINER_WINDOW
     first_frame = None      # clock time of the first rendered frame
     qa = None               # explainer.qa.overlap.OverlapChecker in QA mode
+    bg = None               # the Background on screen (None: the camera colour alone)
+    zoomed = False          # True while motion.zoom_on has the content magnified (QA)
 
     # ---------- render window and QA mode (set by the pipeline) ----------
     def setup(self):
@@ -126,6 +161,8 @@ class SyncedScene(Scene):
         if os.environ.get(QA_ENV):
             from .qa.overlap import OverlapChecker
             self.qa = OverlapChecker()
+        self.bg = None
+        self.background()                           # the theme's own, plus the project's motion
 
     def play(self, *args, **kwargs):
         r = self.renderer
@@ -141,6 +178,7 @@ class SyncedScene(Scene):
                     return
         if self.first_frame is None:
             self.first_frame = r.time
+        self._pin_background()
         super().play(*args, **kwargs)
         if self.qa is not None and not (len(args) == 1 and isinstance(args[0], Wait)):
             self.qa.check(self, r.time)             # after every animation (pauses change nothing)
@@ -209,13 +247,12 @@ class SyncedScene(Scene):
     def cue(self, seg, phrase, nth=1):
         """Time at which `phrase` (its nth occurrence) starts in segment seg.
 
-        Uses the word timings when present, else the relative text position.
+        Whole words match before partial ones (find_phrase). Uses the word timings when
+        present, else the relative text position.
         """
         text = self.narration[seg - 1]
-        i = -1
-        for _ in range(nth):
-            i = text.find(phrase, i + 1)
-            assert i >= 0, (seg, phrase)
+        i = find_phrase(text, phrase, nth)
+        assert i >= 0, (seg, phrase)
         marks = self.words[seg - 1]
         if marks:
             # the timed word that contains position i, else the next one
@@ -239,8 +276,92 @@ class SyncedScene(Scene):
         return new
 
     def clear(self, *keep, run_time=0.6):
-        """Fade out everything on screen except `keep`."""
-        gone = [m for m in self.mobjects if m not in keep]
+        """Fade out everything on screen except `keep` (and the background)."""
+        gone = [m for m in self.mobjects if m not in keep and not _is_background(m)]
         if gone:
             self.play(*[FadeOut(m) for m in gone], run_time=run_time)
         self.caption = VMobject()
+
+
+    # ---------- background and theme ----------
+    def background(self, run_time=0.0, motion=None, **spec):
+        """Set the scene's background (explainer/backgrounds.py, make_background): a colour,
+        a gradient or an image, with optional slow motion. Without arguments it is the
+        theme's own, plus the motion the project asks for (`[style] background`). run_time > 0
+        crossfades from the previous one. Returns the Background (None for a plain colour).
+
+        Layers sit at the back of scene.mobjects and carry updaters, so they move in waits too.
+        """
+        if motion is None:
+            motion = _theme.project_motion()
+        new = make_background(motion=motion, **spec) if spec else \
+            theme_background(motion=motion)
+        self._swap_background(new, run_time)
+        return new
+
+    def _camera_colour(self, colour):
+        self.camera.background_color = ManimColor(colour)
+        self.camera.init_background()
+
+    def _swap_background(self, new, run_time):
+        old = self.bg
+        self.bg = new
+        self._camera_colour(BG)             # a plain colour is the camera's own
+        if run_time > 0:
+            if new is None:
+                new = make_background(color=BG)         # a plate to fade in over the old one
+            self.bg = new
+            self.play(FadeIn(new), *([FadeOut(old)] if old is not None else []),
+                      run_time=run_time)
+        elif new is not None:
+            self.add(new)
+            if old is not None:
+                self.remove(old)
+        elif old is not None:
+            self.remove(old)
+        self._pin_background()
+
+    def _pin_background(self):
+        """Keep the background first in scene.mobjects (behind everything)."""
+        if self.bg is not None and (not self.mobjects or self.mobjects[0] is not self.bg):
+            if self.bg in self.mobjects:
+                self.mobjects.remove(self.bg)
+            self.mobjects.insert(0, self.bg)
+
+    def background_color_at(self, x, y):
+        """RGB (0..1) of the surface behind a point of the screen: the QA contrast rule."""
+        if self.bg is not None:
+            return self.bg.color_at(x, y)
+        return _theme._rgb(BG)
+
+    def set_theme(self, name, run_time=1.0, keep=()):
+        """Switch the colours of the video to theme `name` from this point on: the screen is
+        cleared (except `keep`, which keeps its old colours), the colour tokens (INK, BG,
+        ACCENT_1 ...) take the new theme's values and the background crossfades. Everything
+        drawn afterwards uses the new theme; reset_theme() or themed() brings the project's
+        theme back."""
+        if name == _theme.current_theme():
+            return
+        self.clear(*keep, run_time=run_time / 2 if run_time else 0)
+        _theme.set_theme(name)
+        new = theme_background(motion=_theme.project_motion())
+        self._swap_background(new, run_time / 2)
+
+    def reset_theme(self, run_time=1.0):
+        """Back to the project's theme (project.toml)."""
+        self.set_theme(_theme.project_theme(), run_time)
+
+    @contextmanager
+    def themed(self, name, run_time=1.0):
+        """`with self.themed("blueprint"):` the scenes inside use that theme; the project's
+        comes back after."""
+        before = _theme.current_theme()
+        self.set_theme(name, run_time)
+        try:
+            yield
+        finally:
+            self.set_theme(before, run_time)
+
+
+def _is_background(m):
+    return isinstance(m, Background) or getattr(m, "is_background", False)

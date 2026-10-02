@@ -4,3 +4,9 @@
 language = "ar"                 # ar | en | ... (a language without a voice gets its default voice)
 voice = "ar-SA-HamedNeural"     # any edge-tts voice, e.g. en-US-GuyNeural
 rate = "+0%"                    # speed: "+0%" normal, "-10%" slower, "+10%" faster
+
+# Colours: dark (default) | blueprint | light. One line per project; a scene can switch with
+# self.set_theme("blueprint") or `with self.themed("blueprint"):`.
+# Optional slow background motion: background = "gradient" | "grid" | "particles" (or a list).
+[style]
+theme = "dark"

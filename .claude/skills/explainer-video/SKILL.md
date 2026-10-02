@@ -28,7 +28,14 @@ Reference files next to this one:
 ### 0. Session setup
 Run the session setup of the root `CLAUDE.md` (manim, `pip install -e .`, checks).
 
-### a. Intake: source, data, material inventory, outline
+### a. Intake: theme, source, data, material inventory, outline
+0. **Choose the theme first** (a fixed step of every project; root `CLAUDE.md`, Themes and
+   backgrounds): the `[style] theme = "dark" | "blueprint" | "light"` line of
+   `projects/<name>/project.toml`. **Dark is the default.** A scene inside an episode can use
+   another theme (`self.set_theme(...)` / `with self.themed(...)`), and `self.background(...)`
+   sets a colour, gradient or image behind it, with optional slow motion. Write colours only as
+   the theme names (`INK`, `ACCENT_1`, ...), never as literals. The storyboard names the theme
+   (and any scene that switches).
 1. Read the cleaned source `projects/<name>/sources/<name>_source.md` (new project: start
    from `templates/new_project/`, see its `CLAUDE.md`) and the project's data module
    `projects/<name>/<name>_data.py` if the topic has numbers.

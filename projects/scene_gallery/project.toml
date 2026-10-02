@@ -3,3 +3,7 @@
 language = "ar"
 voice = "ar-SA-HamedNeural"
 rate = "+0%"
+
+# Colours: pinned to the original white board so this project renders exactly as it was published.
+[style]
+theme = "light"

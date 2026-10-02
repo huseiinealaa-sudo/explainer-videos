@@ -3,3 +3,7 @@
 language = "ar"                 # ar | en | ... (Modern Standard Arabic by default)
 voice = "ar-SA-HamedNeural"     # any edge-tts voice
 rate = "+0%"                    # speed: "+0%" normal, "-10%" slower, "+10%" faster
+
+# Colours: pinned to the original white board so this project renders exactly as it was published.
+[style]
+theme = "light"
