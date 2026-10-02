@@ -474,53 +474,6 @@ def energy_arrow(tail, head, thickness, color, head_len=0.34, head_extra=0.12):
     return arrow
 
 
-def big_paren(height, side=LEFT, color=INK, stroke_width=4):
-    """A tall round bracket: `side` = LEFT gives "(", RIGHT gives ")"."""
-    sign = 1 if side is LEFT or np.allclose(side, LEFT) else -1
-    arc = ArcBetweenPoints([0, height / 2, 0], [0, -height / 2, 0], angle=sign * 0.95,
-                           color=color, stroke_width=stroke_width)
-    return arc
-
-
-class ReflectionFormula(VGroup):
-    """R = ((Z₂ − Z₁) / (Z₂ + Z₁))²  and  T = 1 − R, built from Text pieces (no LaTeX), with the
-    brackets drawn. Parts, so that a scene can reveal them one after the other:
-    `r_lhs` ("R =") · `parens` (the two big brackets and the square) · `num` · `bar` · `den` ·
-    `t_line` ("T = 1 − R"). The group is built at its final place: add each part with FadeIn."""
-
-    def __init__(self, size=FS_EQUATION + 6, gap=1.1):
-        mk = lambda s, col=INK, sz=size: Text(s, font_size=sz, color=col)
-        r_lhs = VGroup(mk("R", ACCENT_2), mk("=")).arrange(RIGHT, buff=0.25)
-        num, den = mk("(Z₂ − Z₁)"), mk("(Z₂ + Z₁)")
-        w = max(num.width, den.width) + 0.2
-        bar = Line(LEFT * w / 2, RIGHT * w / 2, color=INK, stroke_width=4)
-        frac = VGroup(num, bar, den).arrange(DOWN, buff=0.14)
-        h = frac.height + 0.35
-        lp, rp = big_paren(h, LEFT), big_paren(h, RIGHT)
-        quo = VGroup(lp, frac, rp).arrange(RIGHT, buff=0.14)
-        sq = mk("2", INK, int(size * 0.62)).next_to(rp, UR, buff=0.04).shift(DOWN * 0.12)
-        r_formula = VGroup(r_lhs, quo, sq).arrange(RIGHT, buff=0.28)
-        sq.next_to(rp, UR, buff=0.04).shift(DOWN * 0.12)        # arrange moved it: re-place it
-        t_line = VGroup(mk("T", ACCENT_3), mk("="), mk("1"), mk("−"), mk("R", ACCENT_2)
-                        ).arrange(RIGHT, buff=0.22)
-        t_line.next_to(r_formula, RIGHT, buff=gap)
-        super().__init__(r_formula, t_line)
-        self.r_lhs, self.num, self.bar, self.den, self.t_line = r_lhs, num, bar, den, t_line
-        self.parens = VGroup(lp, rp, sq)
-        self.lp, self.rp, self.sq = lp, rp, sq
-
-
-def medium_tag(name, calc, result, result_color=INK):
-    """The three lines under a medium: its name, the product that gives Z, and Z itself. Parts:
-    `name_`, `calc_`, `result_` (arranged already, so each can be revealed on its own)."""
-    n = label(name, FS_NOTE, INK, weight=BOLD)
-    c = label(calc, FS_TAG, GREY_INK)
-    r = label(result, FS_NOTE, result_color, weight=BOLD)
-    g = VGroup(n, c, r).arrange(DOWN, buff=0.1)
-    g.name_, g.calc_, g.result_ = n, c, r
-    return g
-
-
 class EnergyBar(VGroup):
     """A bar for the split of the energy: the left part is the reflected share (ACCENT_2, from the
     left), the right part the transmitted share (ACCENT_3, from the right). `frame`, `refl`, `trans`;
@@ -1022,72 +975,32 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("وَالطُّولُ") - 0.3)
         self.clear(run_time=0.3)
 
-        # ---- C, 21.7-44 s: wavelength, λ = v ÷ f, steel and water at 5 MHz ----
+        # ---- C, 21.7-31 s: the wavelength is the distance between two crests; it shortens as
+        # the frequency rises (no equation, no values) ----
         self.sync(c("وَالطُّولُ"))
-        steel_lw = LabelledWave(D.LAMBDA_STEEL * UNITS_PER_MM, tag="λ  (wavelength)")
-        steel_lw.shift(UP * 2.35)
-        self.play(Create(steel_lw.wave, run_time=0.55))
-        self.play(FadeIn(steel_lw.dots), FadeIn(steel_lw.guides), GrowFromCenter(steel_lw.bracket),
-                  FadeIn(steel_lw.tag), run_time=0.45)
-        self.sync(c("يُسَاوِي"))
-        eq = equation(self, ["λ", "=", "v", "÷", "f"], colors={0: ACCENT_1}, size=FS_EQUATION + 4,
-                      pos=[0, 0.6, 0], run_time=1.0, buff=0.9)
-        caps = VGroup(*[label(t, FS_TAG, GREY_INK).next_to(eq[k], DOWN, 0.15)
-                        for k, t in ((0, "wavelength"), (2, "speed"), (4, "frequency"))])
-        self.sync(c("السُّرْعَةَ") + 0.55)
-        self.play(FadeIn(caps[0]), FadeIn(caps[1]), run_time=0.4)
-        self.sync(c("التَّرَدُّدِ"))
-        self.play(FadeIn(caps[2]), run_time=0.4)
-        self.sync(c("فَفِي") - 0.35)
-        self.play(FadeOut(eq), FadeOut(caps), run_time=0.35)
-        f_txt = f"{D.F_PROBE:g} MHz"
-        self.sync(c("فَفِي"))
-        steel_name = label("Steel", FS_NOTE, INK).next_to(steel_lw.wave, LEFT, 0.25)
-        self.play(FadeIn(steel_name), run_time=0.3)
-        def calc_block(formula, values, result, cues, pos, extra=()):
-            """worked_calculation with a roomier result box (buff 0.32) and extra animations
-            that run together with the first step."""
-            size = 30
-            # one Text per row: every glyph shares the row's baseline ("=" and "÷" stay centred
-            # on the x-height instead of sitting on the baseline like aligned pieces would)
-            f = Text("  ".join(formula), font_size=size)
-            v = Text("  ".join(values), font_size=size - 4, color=GREY_INK)
-            r = Text(result, font_size=size + 4, color=ACCENT_1, weight=BOLD)
-            group = fit(VGroup(f, v, r).arrange(DOWN, buff=0.55)).move_to(pos)
-            frame = SurroundingRectangle(r, color=ACCENT_1, buff=0.32, corner_radius=0.1,
-                                         stroke_width=4)
-            steps = [[Write(f, run_time=1.0)],
-                     [FadeIn(v, shift=DOWN * 0.15, run_time=1.0)],
-                     [Write(r, run_time=1.0), Create(frame, run_time=1.0)]]
-            steps[0] += list(extra)
-            for cue_t, anims in zip(cues, steps):
-                self.sync(cue_t)
-                self.play(*anims)
-            group.add(frame)
-            return group
-
-        steel_calc = calc_block(
-            ["λ steel", "=", "v", "÷", "f"],
-            ["λ", "=", f"{D.V_L_STEEL:.0f} m/s", "÷", f_txt],
-            f"= {D.LAMBDA_STEEL:.3f} mm",
-            cues=[c("فَفِي") + 0.3, c("وَالسُّرْعَةُ", 2), c("وَاحِدًا")],
-            pos=[0, -1.85, 0])
-        water_lw = LabelledWave(D.LAMBDA_WATER * UNITS_PER_MM, tag=f"λ = {D.LAMBDA_WATER:.3f} mm",
-                                stroke_width=3)
-        water_lw.shift(UP * 0.5)
-        water_name = label("Water", FS_NOTE, INK).next_to(water_lw.wave, LEFT, 0.25)
-        self.sync(c("وَفِي") - 0.65)
-        self.play(steel_calc.animate.shift(LEFT * 3.4), Create(water_lw.wave, run_time=0.5),
-                  FadeIn(water_name, run_time=0.5), run_time=0.5)
-        water_calc = calc_block(
-            ["λ water", "=", "v", "÷", "f"],
-            ["λ", "=", f"{D.V_WATER:.0f} m/s", "÷", f_txt],
-            f"= {D.LAMBDA_WATER:.3f} mm",
-            cues=[c("وَفِي"), c("وَفِي") + 1.0, c("وَفِي") + 2.0],
-            pos=[3.4, -1.85, 0],
-            extra=[FadeIn(water_lw.dots, run_time=0.5), FadeIn(water_lw.guides, run_time=0.5),
-                   GrowFromCenter(water_lw.bracket, run_time=0.5),
-                   FadeIn(water_lw.tag, run_time=0.5)])
+        lw_long = LabelledWave(D.LAMBDA_STEEL * UNITS_PER_MM, tag="λ  (wavelength)")
+        lw_long.shift(UP * 1.9)
+        long_name = label("Lower frequency", FS_NOTE, INK)
+        long_name.next_to(lw_long.wave, DOWN, 0.12).align_to(lw_long.wave, LEFT)
+        self.play(Create(lw_long.wave, run_time=0.55), FadeIn(long_name, run_time=0.4))
+        self.sync(c("المَسَافَةُ"))
+        self.play(FadeIn(lw_long.dots), FadeIn(lw_long.guides), GrowFromCenter(lw_long.bracket),
+                  FadeIn(lw_long.tag), run_time=0.5)
+        self.sync(c("قِمَّتَيْنِ"))
+        self.play(Indicate(lw_long.dots, color=ACCENT_2, scale_factor=1.6), run_time=0.7)
+        lw_short = LabelledWave(D.LAMBDA_WATER * UNITS_PER_MM, tag="shorter λ", stroke_width=3,
+                                tag_size=FS_NOTE)
+        lw_short.shift(DOWN * 0.7)
+        short_name = label("Higher frequency", FS_NOTE, INK)
+        short_name.next_to(lw_short.wave, DOWN, 0.12).align_to(lw_short.wave, LEFT)
+        self.sync(c("وَيَقْصُرُ"))
+        self.play(Create(lw_short.wave, run_time=0.5), FadeIn(short_name, run_time=0.4))
+        self.play(FadeIn(lw_short.dots), FadeIn(lw_short.guides), GrowFromCenter(lw_short.bracket),
+                  FadeIn(lw_short.tag), run_time=0.5)
+        rule = label("Higher frequency  →  shorter wavelength", FS_LABEL, INK, weight=BOLD)
+        rule.move_to([0, -2.9, 0])
+        self.sync(c("ارْتَفَعَ"))
+        self.play(FadeIn(rule, shift=UP * 0.1), run_time=0.4)
         self.sync(c("لِمَاذَا") - 0.4)
         self.clear(run_time=0.4)
 
@@ -1110,13 +1023,12 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(lane_long), FadeIn(lane_short), FadeIn(tags), run_time=0.7)
         lane_long.add_updater(lambda m, dt: m.advance(dt))
         lane_short.add_updater(lambda m, dt: m.advance(dt))
-        self.sync(c("لِأَنَّ") + 0.15)
+        self.sync(c("المَوْجَةُ", 2) - 0.3)
         lane_long.start()
         lane_short.start()
-        note_d = label(f"Smallest flaw seen ≈ λ/2 to λ/3 = {D.MIN_FLAW_HALF:.3f}–"
-                       f"{D.MIN_FLAW_THIRD:.3f} mm (steel, {f_txt})", FS_NOTE, INK)
+        note_d = label("Shorter wavelength  →  smaller flaws are seen", FS_NOTE, INK)
         note_d.move_to([0, -0.55, 0])
-        self.sync(c("نَحْوَ"))
+        self.sync(c("فَالطُّولُ"))
         self.play(FadeIn(note_d), run_time=0.4)
         # trade-off chart: sensitivity rises with f, penetration falls
         ay0 = -3.2
@@ -1274,12 +1186,12 @@ class UtSeriesEp01(SyncedScene):
         self.play(Indicate(x_liq, color=ACCENT_4, scale_factor=1.3),
                   Indicate(x_gas, color=ACCENT_4, scale_factor=1.3), run_time=0.6)
 
-        # ---- B, 20.9-29.4 s: the speeds in steel: shear is about 55 % of longitudinal ----
-        self.sync(self.cue(3, "سُرْعَتُهَا") - 0.55)
+        # ---- B, 20.9-29.4 s: the speeds in steel: shear is about half of longitudinal (no numbers) ----
+        self.sync(self.cue(3, "وَسُرْعَتُهَا") - 0.55)
         for r in rows_l + rows_t:
             r.clear_updaters()
         self.clear(run_time=0.5)
-        self.sync(c("سُرْعَتُهَا"))
+        self.sync(c("وَسُرْعَتُهَا"))
         bx0, s_px = -6.2, 8.6 / D.V_L_STEEL
         v_l, v_s = ValueTracker(0), ValueTracker(0)
         bar_l_y, bar_s_y, bar_h = 1.5, -0.6, 0.7
@@ -1289,41 +1201,26 @@ class UtSeriesEp01(SyncedScene):
                 width=max(0.01, s_px * v.get_value()), height=bar_h, color=ACCENT_1, stroke_width=3
             ).set_fill(ACCENT_1, fill).move_to([bx0, y, 0], aligned_edge=LEFT))
 
-        def make_val(v, y):     # fixed label at the bar's end, faded in when the number is spoken
-            return label(f"{v:.0f} m/s", FS_NOTE, INK, weight=BOLD).move_to(
-                [bx0 + s_px * v + 0.2, y, 0], aligned_edge=LEFT)
         head_b = label("Wave speed in steel", FS_BODY, INK, weight=BOLD).move_to([0, 3.2, 0])
         lab_s = label("Transverse (shear)", FS_NOTE, INK).move_to([bx0 + 0.2, bar_s_y + 0.65, 0], aligned_edge=LEFT)
         lab_l = label("Longitudinal", FS_NOTE, INK).move_to([bx0 + 0.2, bar_l_y + 0.65, 0], aligned_edge=LEFT)
         axis_b = Line([bx0, bar_l_y + 0.4, 0], [bx0, bar_s_y - 0.4, 0], color=INK, stroke_width=4)
-        bar_s, val_s = make_bar(v_s, bar_s_y, 0.3), make_val(D.V_S_STEEL, bar_s_y)
-        bar_l, val_l = make_bar(v_l, bar_l_y, 0.55), make_val(D.V_L_STEEL, bar_l_y)
+        bar_s, bar_l = make_bar(v_s, bar_s_y, 0.3), make_bar(v_l, bar_l_y, 0.55)
         self.play(FadeIn(head_b), FadeIn(lab_s), Create(axis_b), run_time=0.5)
         self.add(bar_s)
-        self.sync(c("ثَلَاثَةُ"))
         self.play(v_s.animate(rate_func=linear).set_value(D.V_S_STEEL),
-                  run_time=c("وَخَمْسُونَ") - self.renderer.time)
-        self.play(FadeIn(val_s, shift=RIGHT * 0.1), run_time=0.3)
-        self.sync(c("أَيْ") - 0.05)
+                  run_time=max(0.3, c("نِصْفِ") - self.renderer.time))
+        self.sync(c("سُرْعَةِ") - 0.05)
         self.add(bar_l)
         self.play(FadeIn(lab_l, run_time=0.2), v_l.animate(rate_func=smooth).set_value(D.V_L_STEEL),
-                  run_time=0.5)
-        self.play(FadeIn(val_l, shift=RIGHT * 0.1), run_time=0.3)
+                  run_time=0.8)
         x_end = bx0 + s_px * D.V_S_STEEL
         ratio_line = DashedLine([x_end, bar_s_y + bar_h / 2, 0], [x_end, bar_l_y + bar_h / 2, 0],
                                 color=INK, stroke_width=3)
-        ratio_tag = label(f"× {ratio:.2f}", FS_LABEL, ACCENT_1, weight=BOLD)
+        ratio_tag = label("about half", FS_LABEL, ACCENT_1, weight=BOLD)
         ratio_tag.next_to(ratio_line, RIGHT, 0.15).match_y(ratio_line)
-        self.sync(c("خَمْسَةٍ"))
+        self.sync(c("الطُّولِيَّةِ", 2))
         self.play(Create(ratio_line), FadeIn(ratio_tag), run_time=0.45)
-        calc = label(f"{D.V_S_STEEL:.0f} ÷ {D.V_L_STEEL:.0f} = {ratio:.2f}", FS_LABEL + 2, INK, weight=BOLD)
-        calc.move_to([0, -2.0, 0])
-        self.sync(c("وَخَمْسِينَ"))
-        self.play(FadeIn(calc), run_time=0.4)
-        pct = label(f"≈ {ratio * 100:.0f} % of the longitudinal speed", FS_LABEL, ACCENT_1)
-        pct.next_to(calc, DOWN, 0.25)
-        self.sync(c("بِالمِئَةِ"))
-        self.play(FadeIn(pct), run_time=0.4)
         self.sync(c("وَالسَّطْحِيَّةُ") - 0.5)
         for m in (bar_s, bar_l):
             m.clear_updaters()
@@ -1393,81 +1290,20 @@ class UtSeriesEp01(SyncedScene):
     def seg4(self):
         c = lambda phrase, nth=1: self.cue(4, phrase, nth)
 
-        # ---- A, 0-4 s: acoustic impedance Z = density x velocity ----
-        self.sync(c("المُعَاوَقَةُ"))
-        eq = equation(self, ["Z", "=", "ρ", "×", "v"], colors={0: ACCENT_1},
-                      size=FS_EQUATION + 16, pos=[0, 0.7, 0], run_time=0.5, buff=0.55)
-        caps = VGroup(*[label(t, FS_LABEL, GREY_INK).next_to(eq[k], DOWN, 0.25)
-                        for k, t in ((0, "acoustic\nimpedance"), (2, "density"), (4, "speed"))])
-        self.sync(c("الصَّوْتِيَّةُ"))
-        self.play(FadeIn(caps[0]), run_time=0.3)
-        self.sync(c("الكَثَافَةُ"))
-        self.play(FadeIn(caps[1]), run_time=0.3)
-        self.sync(c("السُّرْعَةِ"))
-        self.play(FadeIn(caps[2]), run_time=0.3)
-        self.sync(c("وَعِنْدَ") - 0.35)
-        self.play(FadeOut(eq), FadeOut(caps), run_time=0.35)
-
-        # ---- B, 4.2-7.6 s: a wave hits the interface between two media at 90 degrees ----
+        # ---- geometry: a wave meets the interface between two media at 90 degrees ----
         BLK_W, BLK_H, BLK_Y = 5.5, 2.4, 0.8
         Y_INC, Y_REF, Y_TRN, X_ARR, T0 = 1.25, 0.5, 0.85, 3.0, 0.4
         steel_blk = Rectangle(width=BLK_W, height=BLK_H, color=INK, stroke_width=4)
         steel_blk.set_fill(PANEL_FILL, 1).move_to([-BLK_W / 2, BLK_Y, 0])
         water_blk = Rectangle(width=BLK_W, height=BLK_H, color=INK, stroke_width=4)
         water_blk.set_fill(PANEL_FILL, 0.45).move_to([BLK_W / 2, BLK_Y, 0])
-        generic = VGroup(label("Medium 1  (Z₁)", FS_NOTE, GREY_INK).next_to(steel_blk, DOWN, 0.2),
-                         label("Medium 2  (Z₂)", FS_NOTE, GREY_INK).next_to(water_blk, DOWN, 0.2))
+        generic = VGroup(label("Medium 1", FS_NOTE, GREY_INK).next_to(steel_blk, DOWN, 0.2),
+                         label("Medium 2", FS_NOTE, GREY_INK).next_to(water_blk, DOWN, 0.2))
         inc = energy_arrow([-X_ARR, Y_INC, 0], [-0.05, Y_INC, 0], T0, ACCENT_1)
         inc_lab = label("Incident", FS_TAG, ACCENT_1, weight=BOLD).next_to(inc, LEFT, 0.12)
-        normal_lab = label("normal incidence (90°)", FS_TAG, GREY_INK)
-        normal_lab.move_to(water_blk.get_corner(UL) + DR * 0.22, aligned_edge=UL)
         iface_lab = label("Interface", FS_TAG, GREY_INK).move_to([0, steel_blk.get_bottom()[1] - 0.3, 0])
         iface_arr = Arrow(iface_lab.get_top() + UP * 0.03, [0, steel_blk.get_bottom()[1], 0], buff=0,
                           color=GREY_INK, stroke_width=3, tip_length=0.15)
-        self.sync(c("وَعِنْدَ"))
-        self.play(Create(steel_blk), Create(water_blk), FadeIn(generic), run_time=0.75)
-        self.sync(c("المَوْجَةِ"))
-        self.play(GrowFromPoint(inc, [-X_ARR, Y_INC, 0]), FadeIn(inc_lab), run_time=0.5)
-        self.sync(c("عَمُودِيًّا"))
-        self.play(FadeIn(normal_lab), run_time=0.3)
-        self.sync(c("سَطْحٍ"))
-        self.play(FadeIn(iface_lab), GrowArrow(iface_arr),
-                  Flash([0, Y_INC, 0], color=ACCENT_1, flash_radius=0.4, line_length=0.15,
-                        run_time=0.5), run_time=0.5)
-
-        # ---- C, 7.8-14.5 s: the reflection formula, with its brackets, and T = 1 - R ----
-        fm = ReflectionFormula(size=FS_EQUATION + 6)
-        fm.scale_to_fit_height(1.15)
-        fit(fm, 12.4).move_to([0, 3.12, 0])
-        self.sync(c("تَنْعَكِسُ"))
-        self.play(FadeIn(fm.r_lhs), FadeOut(normal_lab), run_time=0.4)
-        self.sync(c("مُرَبَّعُ"))
-        self.play(FadeIn(fm.parens), run_time=0.4)
-        self.sync(c("فَرْقِ"))
-        self.play(FadeIn(fm.num, shift=DOWN * 0.1), run_time=0.4)
-        self.sync(c("عَلَى", 2))
-        self.play(Create(fm.bar), run_time=0.25)
-        self.sync(c("مَجْمُوعِهِمَا"))
-        self.play(FadeIn(fm.den, shift=UP * 0.1), run_time=0.4)
-        self.sync(c("وَيَنْفُذُ"))
-        self.play(FadeIn(fm.t_line), run_time=0.5)
-
-        # ---- D, 15.4-27.5 s: steel against water: 88.0 % reflected, 12.0 % transmitted ----
-        steel_tag = medium_tag("Steel", f"{D.RHO_STEEL:.0f} kg/m³ × {D.V_L_STEEL:.0f} m/s",
-                               f"Z₁ = {D.Z_STEEL:.2f} MRayl").next_to(steel_blk, DOWN, 0.2)
-        water_tag = medium_tag("Water", f"{D.RHO_WATER:.0f} kg/m³ × {D.V_WATER:.0f} m/s",
-                               f"Z₂ = {D.Z_WATER:.2f} MRayl").next_to(water_blk, DOWN, 0.2)
-        self.sync(c("الفُولَاذِ"))
-        self.play(FadeOut(generic[0]), FadeIn(steel_tag.name_), run_time=0.3)
-        self.sync(c("المُعَاوَقَةُ", 2))
-        self.play(FadeIn(steel_tag.calc_), run_time=0.35)
-        self.sync(c("سِتَّةٌ"))
-        self.play(FadeIn(steel_tag.result_, shift=UP * 0.1), run_time=0.4)
-        self.sync(c("المَاءِ"))
-        self.play(FadeOut(generic[1]), FadeIn(water_tag.name_), run_time=0.3)
-        self.sync(c("وَاحِدٌ"))
-        self.play(FadeIn(water_tag.calc_), run_time=0.3)
-        self.play(FadeIn(water_tag.result_, shift=UP * 0.1), run_time=0.4)
 
         def split(r):
             """Reflected and transmitted arrows (+ labels) for the reflected share r."""
@@ -1490,19 +1326,62 @@ class UtSeriesEp01(SyncedScene):
             lt.align_to(bar.frame, RIGHT)
             return lr, lt
 
+        # ---- A, 0-6 s: part of the wave is reflected, the rest goes on ----
+        self.sync(self.start(4) + 0.2)
+        self.play(Create(steel_blk), Create(water_blk), FadeIn(generic), run_time=0.75)
+        self.sync(c("المَوْجَةُ"))
+        self.play(GrowFromPoint(inc, [-X_ARR, Y_INC, 0]), FadeIn(inc_lab), run_time=0.5)
+        self.sync(c("سَطْحٍ"))
+        self.play(FadeIn(iface_lab), GrowArrow(iface_arr),
+                  Flash([0, Y_INC, 0], color=ACCENT_1, flash_radius=0.4, line_length=0.15,
+                        run_time=0.5), run_time=0.5)
+        ref0, trn0, ref0_l, trn0_l = split(0.4)
+        self.sync(c("يَنْعَكِسُ"))
+        self.play(GrowFromPoint(ref0, [-0.05, Y_REF, 0]), FadeIn(ref0_l), run_time=0.5)
+        self.sync(c("وَيَنْفُذُ"))
+        self.play(GrowFromPoint(trn0, [0.05, Y_TRN, 0]), FadeIn(trn0_l), run_time=0.5)
+
+        # ---- B, 6-17 s: acoustic impedance: a concept, not a formula; the bigger the difference
+        # between the two materials, the more is reflected ----
+        imp = fit(label("Acoustic impedance: how strongly a material resists sound", FS_LABEL + 2, INK,
+                        weight=BOLD), 12.0).move_to([0, 3.3, 0])
+        dep = VGroup(label("depends on its density", FS_LABEL, ACCENT_1),
+                     label("and on the sound speed in it", FS_LABEL, ACCENT_1)
+                     ).arrange(RIGHT, buff=0.9).move_to([0, 2.7, 0])
+        self.sync(c("وَالمُعَاوَقَةُ"))
+        self.play(FadeIn(imp), run_time=0.4)
+        self.sync(c("كَثَافَتِهَا"))
+        self.play(FadeIn(dep[0]), run_time=0.35)
+        self.sync(c("وَسُرْعَةِ"))
+        self.play(FadeIn(dep[1]), run_time=0.35)
+        rule = fit(label("Bigger difference between the two materials  →  more reflection", FS_LABEL + 2,
+                         ACCENT_2, weight=BOLD), 12.0).move_to([0, 2.7, 0])
+        ref_big, trn_small, ref_big_l, trn_small_l = split(0.85)
+        self.sync(c("وَكُلَّمَا"))
+        self.play(FadeOut(dep), FadeIn(rule), run_time=0.4)
+        self.sync(c("زَادَ", 2))
+        self.play(ReplacementTransform(ref0, ref_big), ReplacementTransform(trn0, trn_small),
+                  ReplacementTransform(ref0_l, ref_big_l), ReplacementTransform(trn0_l, trn_small_l),
+                  run_time=0.8)
+
+        # ---- C, 17-26 s: steel against water: 88 % reflected ----
+        steel_n = label("Steel", FS_NOTE, INK, weight=BOLD).move_to(generic[0])
+        water_n = label("Water", FS_NOTE, INK, weight=BOLD).move_to(generic[1])
         bar_w = EnergyBar(D.R_STEEL_WATER)
         bar_w.move_to([0, -2.2, 0])
         for part in (bar_w.refl, bar_w.trans):
             part.align_to(bar_w.frame, LEFT if part is bar_w.refl else RIGHT).match_y(bar_w.frame)
-        lr_w, lt_w = bar_labels(bar_w, f"Reflected  {D.R_STEEL_WATER * 100:.1f} %",
-                                f"Transmitted  {D.T_STEEL_WATER * 100:.1f} %")
+        lr_w, lt_w = bar_labels(bar_w, f"Reflected  {D.R_STEEL_WATER * 100:.0f} %",
+                                f"Transmitted  {D.T_STEEL_WATER * 100:.0f} %")
         ref_w, trn_w, ref_wl, trn_wl = split(D.R_STEEL_WATER)
-        sub_w = label(f"R = (({D.Z_WATER:.2f} − {D.Z_STEEL:.2f}) ÷ ({D.Z_WATER:.2f} + {D.Z_STEEL:.2f}))²"
-                      f" = {D.R_STEEL_WATER:.3f}", FS_LABEL, INK)
-        sub_w.next_to(lr_w, DOWN, 0.25).align_to(bar_w.frame, LEFT)
-        self.sync(c("فَيَنْعَكِسُ"))
-        split_in(ref_w, trn_w, ref_wl, trn_wl, bar_w, FadeIn(sub_w))
-        self.sync(c("ثَمَانِيَةٌ", 2))
+        self.sync(c("الفُولَاذِ"))
+        self.play(FadeOut(imp), FadeOut(rule), FadeOut(generic[0]), FadeIn(steel_n), run_time=0.4)
+        self.sync(c("وَالمَاءِ"))
+        self.play(FadeOut(generic[1]), FadeIn(water_n), run_time=0.3)
+        self.sync(c("يَنْعَكِسُ", 2))
+        self.play(*[FadeOut(m) for m in (ref_big, trn_small, ref_big_l, trn_small_l)], run_time=0.2)
+        split_in(ref_w, trn_w, ref_wl, trn_wl, bar_w)
+        self.sync(c("ثَمَانِيَةٌ"))
         self.play(GrowFromEdge(bar_w.refl, LEFT), run_time=0.65)
         self.sync(c("وَثَمَانُونَ"))
         self.play(FadeIn(lr_w), run_time=0.3)
@@ -1511,35 +1390,26 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("الطَّاقَةِ"))
         self.play(FadeIn(lt_w), run_time=0.3)
 
-        # ---- E, 27.9-37.5 s: steel against air: 99.996 % reflected ----
-        air_tag = medium_tag("Air", f"{D.RHO_AIR:g} kg/m³ × {D.V_AIR:.0f} m/s",
-                             f"Z₂ = {D.Z_AIR:.0f} Rayl").next_to(water_blk, DOWN, 0.2)
+        # ---- D, 26-33 s: steel against air: nearly everything is reflected ----
+        air_n = label("Air", FS_NOTE, INK, weight=BOLD).move_to(water_n)
         bar_a = EnergyBar(D.R_STEEL_AIR)
         bar_a.move_to([0, -2.2, 0])
         bar_a.refl.align_to(bar_a.frame, LEFT).match_y(bar_a.frame)
         bar_a.trans.align_to(bar_a.frame, RIGHT).match_y(bar_a.frame)
-        lr_a, lt_a = bar_labels(bar_a, f"Reflected  {D.R_STEEL_AIR * 100:.3f} %",
-                                f"Transmitted  {D.T_STEEL_AIR * 100:.3f} %")
+        lr_a, lt_a = bar_labels(bar_a, "Reflected  ≈ 100 %", "Transmitted  ≈ 0 %")
         ref_a, trn_a, ref_al, trn_al = split(D.R_STEEL_AIR)
-        z_a = D.Z_AIR / 1e6
-        sub_a = label(f"R = (({z_a:.6f} − {D.Z_STEEL:.2f}) ÷ ({z_a:.6f} + {D.Z_STEEL:.2f}))²"
-                      f" = {D.R_STEEL_AIR:.5f}", FS_LABEL, INK)
-        sub_a.next_to(lr_a, DOWN, 0.25).align_to(bar_a.frame, LEFT)
-        self.sync(c("أَمَّا"))
+        self.sync(c("وَبَيْنَ"))
         self.play(*[FadeOut(m) for m in (ref_w, trn_w, ref_wl, trn_wl, bar_w, bar_w.refl,
-                                         bar_w.trans, lr_w, lt_w, sub_w, water_tag)], run_time=0.22)
-        self.sync(c("الهَوَاءُ"))
-        self.play(water_blk.animate.set_fill(PANEL_FILL, 0.0), FadeIn(air_tag.name_), run_time=0.4)
-        self.sync(c("فَمُعَاوَقَتُهُ"))
-        self.play(FadeIn(air_tag.calc_), run_time=0.3)
-        self.sync(c("أَرْبَعُ"))
-        self.play(FadeIn(air_tag.result_, shift=UP * 0.1), run_time=0.4)
-        self.sync(c("فَيَنْعَكِسُ", 2))
-        split_in(ref_a, trn_a, ref_al, trn_al, bar_a, FadeIn(sub_a))
-        self.sync(c("تِسْعَةٌ"))
-        self.play(GrowFromEdge(bar_a.refl, LEFT), run_time=1.0, rate_func=linear)
+                                         bar_w.trans, lr_w, lt_w)], run_time=0.22)
+        self.sync(c("وَالهَوَاءِ"))
+        self.play(water_blk.animate.set_fill(PANEL_FILL, 0.0), FadeOut(water_n), FadeIn(air_n),
+                  run_time=0.4)
+        self.sync(c("يَنْعَكِسُ", 3))
+        split_in(ref_a, trn_a, ref_al, trn_al, bar_a)
+        self.sync(c("نَحْوُ"))
+        self.play(GrowFromEdge(bar_a.refl, LEFT), run_time=0.9, rate_func=linear)
         self.play(FadeIn(lr_a), run_time=0.3)
-        self.sync(c("بِالمِئَةِ", 2))
+        self.sync(c("الطَّاقَةِ", 2))
         self.play(FadeIn(bar_a.trans), FadeIn(lt_a), run_time=0.4)
 
         # ---- F, 38-54 s: three consequences: air gap and couplant, air-filled flaw, back wall ----
@@ -1860,8 +1730,8 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("وَإِيَابًا"))
         self.play(GrowArrow(a_up), FadeIn(l_up), run_time=0.45)
 
-        # ---- 26.9-36 s: the plate, 25 mm; the back-wall echo at 8.45 µs ----
-        self.sync(c("لَوْحُ") - 0.1)
+        # ---- 26.9-33 s: the plate, 25 mm (the back-wall echo stays on the A-scan, no time value) ----
+        self.sync(c("لَوْحِ") - 0.1)
         self.play(FadeOut(a_dn), FadeOut(a_up), FadeOut(l_dn), FadeOut(l_up), run_time=0.3)
         dim25 = DoubleArrow([0.5, top_y, 0], [0.5, bot_y, 0], buff=0, color=GREY_INK,
                             stroke_width=3, tip_length=0.15)
@@ -1870,22 +1740,16 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(steel_tag), run_time=0.3)
         self.sync(c("سَمَاكَتُهُ"))
         self.play(GrowFromCenter(dim25), FadeIn(lab25), run_time=0.45)
-        t_bw_tag = label(f"{D.T_BACKWALL_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(tag_b, UP, 0.08)
-        self.sync(c("يَصِلُ"))
-        self.play(Flash([bx, bot_y, 0], color=ACCENT_2, flash_radius=0.5,
-                                          line_length=0.15, run_time=0.4))
-        self.sync(c("خَمْسَةً"))
-        self.play(FadeIn(t_bw_tag), run_time=0.3)
 
-        # ---- 36-43.5 s: the flaw echo at 4.05 µs gives 12.0 mm ----
-        self.sync(c("وَصَدَى") - 0.4)
+        # ---- 33-41 s: the flaw echo at 4.05 µs gives 12.0 mm (the one worked example) ----
+        self.sync(c("صَدَى", 3) - 0.4)
         self.play(FadeOut(eq), FadeOut(VGroup(*caps.values())), FadeOut(two_box), FadeOut(trip),
                   run_time=0.35)
         t_fl_tag = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, INK, weight=BOLD).next_to(dot_f, RIGHT, 0.15)
-        self.sync(c("وَصَدَى"))
+        self.sync(c("صَدَى", 3))
         self.play(Flash(flaw.get_center(), color=ACCENT_4, flash_radius=0.45, line_length=0.12,
                         run_time=0.4))
-        T_TAG = c("خَمْسَةً", 2)                      # the "4.05 µs" tag appears while the calculation plays
+        T_TAG = c("خَمْسَةً")                      # the "4.05 µs" tag appears while the calculation plays
         t_fl_tag.set_opacity(0)
         t_fl_tag.add_updater(lambda m: m.set_opacity(
             min(1.0, max(0.0, (self.renderer.time - T_TAG) / 0.3))))
@@ -1900,7 +1764,7 @@ class UtSeriesEp01(SyncedScene):
         calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.55), 4.8).move_to([COL_X - 0.2, 0.9, 0])
         calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.32, corner_radius=0.1,
                                           stroke_width=4)
-        for cue_t, anims in zip([c("عَيْبٍ"), c("خَمْسَةً", 2) + 0.2, c("اثْنَيْ")],
+        for cue_t, anims in zip([c("عَيْبٍ"), c("خَمْسَةً") + 0.2, c("اثْنَيْ")],
                                 [[Write(f_, run_time=1.0)],
                                  [FadeIn(v_, shift=DOWN * 0.15, run_time=1.0)],
                                  [Write(r_, run_time=1.0), Create(calc_frame, run_time=1.0)]]):
@@ -1923,7 +1787,7 @@ class UtSeriesEp01(SyncedScene):
                   FadeOut(flaw_tag), run_time=0.4)
         gauge = ThicknessGauge(f"{D.THICKNESS:.1f} mm",
                                [("Steel", D.V_L_STEEL), ("Aluminium", D.V_L_ALUMINIUM)],
-                               selected=0, echo_text=f"Echo time  {D.T_BACKWALL_US:.2f} µs", width=4.6)
+                               selected=0, width=4.6)
         gauge.move_to([4.55, -0.05, 0])
         cable_top = probe.cable.get_top()
         wire = VMobject(color=GREY_INK, stroke_width=4)
@@ -2323,12 +2187,15 @@ class UtSeriesEp01(SyncedScene):
             return VGroup(VGroup(pill, txt), dots).arrange(RIGHT, buff=0.5).move_to([0, 3.3, 0])
 
         def question_text(text):
-            one = label(text, 36, INK)
-            if one.width <= 11.8:
-                g = one
-            else:
-                a, b = _wrap_two_lines(text, 36)
+            for size in (36, 32, 28):       # one line, else two lines, else a smaller size
+                one = label(text, size, INK)
+                if one.width <= 11.8:
+                    g = one
+                    break
+                a, b = _wrap_two_lines(text, size)
                 g = VGroup(a, b).arrange(DOWN, buff=0.1)
+                if g.width <= 12.4:
+                    break
             return g.move_to([0, 2.75 - g.height / 2, 0])
 
         def answer_block(text):
@@ -2420,20 +2287,31 @@ class UtSeriesEp01(SyncedScene):
                 fly(pk(ACCENT_3, DOWN, 0.16), [0, surf - 0.3, 0], [0, surf - 0.75, 0], 0.4)
             return show, finish
 
-        def art3():                       # a wave and its wavelength bracket
-            lw = LabelledWave(D.LAMBDA_STEEL * UNITS_PER_MM, width=9.0, amp=0.5,
-                              tag=f"λ = {D.LAMBDA_STEEL:.3f} mm", tag_size=FS_LABEL + 4)
-            lw.shift(DOWN * 0.3)
-            cap = label(f"{D.F_PROBE:g} MHz probe in steel ({D.V_L_STEEL:.0f} m/s)", FS_LABEL,
-                        INK).move_to([0, ART_CY - 1.15, 0])
+        def art3():                       # a long and a short wave meet a small flaw
+            lane_a = ScatterLane(3.0, transmit=0.95, reflect=0.08)
+            lane_b = ScatterLane(1.0, transmit=0.45, reflect=0.6)
+            lanes = (lane_a, lane_b)
+            for lane, y in ((lane_a, ART_CY + 0.95), (lane_b, ART_CY - 0.95)):
+                lane.shift(UP * y)
+                lane.y = y
+            tags = VGroup(
+                VGroup(label("Long wave", FS_NOTE, INK, weight=BOLD),
+                       label("low frequency", FS_TAG, GREY_INK)).arrange(DOWN, aligned_edge=RIGHT, buff=0.06),
+                VGroup(label("Short wave", FS_NOTE, INK, weight=BOLD),
+                       label("high frequency", FS_TAG, GREY_INK)).arrange(DOWN, aligned_edge=RIGHT, buff=0.06))
+            for tg, lane in zip(tags, lanes):
+                tg.next_to(lane.probe, LEFT, 0.3)
 
             def show():
-                self.play(Create(lw.wave, run_time=1.4, rate_func=linear),
-                          FadeIn(cap, run_time=0.6))
+                self.play(FadeIn(lane_a), FadeIn(lane_b), FadeIn(tags), run_time=0.6)
+                for lane in lanes:
+                    lane.add_updater(lambda m, dt: m.advance(dt))
+                    lane.start()
 
             def finish(*extra):
-                self.play(FadeIn(lw.dots), Create(lw.guides), GrowFromCenter(lw.bracket),
-                          FadeIn(lw.tag), *extra, run_time=0.9)
+                box = SurroundingRectangle(VGroup(lane_b, tags[1]), color=OK_C, buff=0.12,
+                                           corner_radius=0.1, stroke_width=4)
+                self.play(Create(box), *extra, run_time=0.6)
             return show, finish
 
         def art4():                       # shear: particles pulled along in steel, loose in water
@@ -2494,7 +2372,7 @@ class UtSeriesEp01(SyncedScene):
                 self.play(FadeOut(scan.pen, run_time=0.2))
             return show, finish
 
-        def art6():                       # an A-scan with the echo at 4.05 us -> the depth
+        def art6():                       # an A-scan with the flaw echo about halfway -> the depth
             scan = AScan(PEAKS, width=6.2, height=2.7)
             scan.shift(np.array([-2.7, ART_CY + 0.1, 0.0]) - scan.frame.get_center())
             trk = ValueTracker(scan.t_min)
@@ -2512,11 +2390,10 @@ class UtSeriesEp01(SyncedScene):
             guide = DashedLine([xa, y_f, 0], flaw.get_left() + LEFT * 0.05, color=ACCENT_4,
                                stroke_width=2)
             ask = label("?", FS_LABEL, ACCENT_4, weight=BOLD).next_to(dim, LEFT, 0.12)
-            res = label(f"{D.FLAW_DEPTH_FROM_T:.1f} mm", FS_NOTE, ACCENT_4,
+            res = label(f"≈ {D.FLAW_DEPTH_FROM_T:.0f} mm", FS_NOTE, ACCENT_4,
                         weight=BOLD).next_to(dim, LEFT, 0.12)
             dot = Dot(scan.apex(1), radius=0.07, color=ACCENT_2)
-            t_lab = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, ACCENT_2,
-                          weight=BOLD).next_to(dot, UP, 0.12)
+            half = label("about halfway", FS_TAG, ACCENT_2, weight=BOLD).next_to(dot, UP, 0.12)
             bx = block.get_center()[0]
 
             def show():
@@ -2524,10 +2401,11 @@ class UtSeriesEp01(SyncedScene):
                 self.add(scan.trace)
                 self.play(trk.animate(run_time=1.4, rate_func=linear).set_value(scan.t_max))
                 scan.trace.clear_updaters()
-                self.sync(self.cue(23, "مِيكْرُوثَانِيَةٍ"))
-                self.play(FadeIn(dot), FadeIn(t_lab, shift=UP * 0.1), run_time=0.4)
-                self.sync(self.cue(23, "فَمَا"))
+                self.sync(self.cue(23, "مُنْتَصَفِ"))
+                self.play(FadeIn(dot), FadeIn(half, shift=UP * 0.1), run_time=0.4)
+                self.sync(self.cue(23, "سَمَاكَتُهُ"))
                 self.play(Create(block), FadeIn(probe), FadeIn(plate), run_time=0.5)
+                self.sync(self.cue(23, "عُمْقُهُ"))
                 self.play(FadeIn(flaw), Create(dim), Create(guide), FadeIn(ask), run_time=0.5)
 
             def finish(*extra):
@@ -2636,14 +2514,15 @@ class UtSeriesEp01(SyncedScene):
         card(1, "Which frequency range is most UT done in?", art1,
              f"{D.UT_MIN_MHZ:g} to {D.UT_MAX_MHZ:g} MHz")
         card(2, "Why put a couplant between probe and part?", art2,
-             f"To drive the air out: steel to air reflects about {D.R_STEEL_AIR * 100:.3f} % "
-             "of the energy")
-        card(3, f"Wavelength of a {D.F_PROBE:g} MHz probe in steel?", art3, f"{D.LAMBDA_STEEL:.3f} mm")
+             "To drive the air out: steel to air reflects nearly all the energy")
+        card(3, "Why raise the frequency to find small flaws?", art3,
+             "A shorter wavelength finds smaller flaws")
         card(4, "Why can't shear waves travel in water?", art4, "Liquids do not resist shear")
         card(5, "What are the two axes of the A-scan?", art5,
              "Horizontal: time or distance; vertical: echo amplitude")
-        card(6, f"An echo at {D.T_FLAW_US:.2f} µs in steel: how deep is the flaw?", art6,
-             f"{D.FLAW_DEPTH_FROM_T:.1f} mm")
+        card(6, "The flaw echo appears about halfway between the initial pulse and the back-wall "
+                f"echo, in a {D.THICKNESS:.0f} mm plate. About how deep is it?", art6,
+             f"About half the thickness: about {D.FLAW_DEPTH_FROM_T:.0f} mm")
         card(7, "Why divide by 2 in the depth equation?", art7, "The sound goes and comes back")
         card(8, "Advantage of pulse-echo over through-transmission?", art8,
              "One surface is enough, and it gives the flaw depth")
