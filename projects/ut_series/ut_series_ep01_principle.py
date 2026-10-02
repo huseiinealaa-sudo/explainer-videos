@@ -1484,11 +1484,11 @@ class UtSeriesEp01(SyncedScene):
             trn_l = label("Transmitted", FS_TAG, ACCENT_3, weight=BOLD).next_to(trn, RIGHT, 0.12)
             return ref, trn, ref_l, trn_l
 
-        def split_in(ref, trn, ref_l, trn_l, bar):
+        def split_in(ref, trn, ref_l, trn_l, bar, *extra):
             self.play(Flash([0, Y_INC, 0], color=ACCENT_1, flash_radius=0.4, line_length=0.15,
                             run_time=0.4),
                       GrowFromPoint(ref, [-0.05, Y_REF, 0]), GrowFromPoint(trn, [0.05, Y_TRN, 0]),
-                      FadeIn(ref_l), FadeIn(trn_l), FadeIn(bar), run_time=0.7)
+                      FadeIn(ref_l), FadeIn(trn_l), FadeIn(bar), *extra, run_time=0.7)
 
         def bar_labels(bar, r_txt, t_txt):
             lr = label(r_txt, FS_LABEL, ACCENT_2, weight=BOLD).next_to(bar.frame, DOWN, 0.2)
@@ -1504,8 +1504,11 @@ class UtSeriesEp01(SyncedScene):
         lr_w, lt_w = bar_labels(bar_w, f"Reflected  {D.R_STEEL_WATER * 100:.1f} %",
                                 f"Transmitted  {D.T_STEEL_WATER * 100:.1f} %")
         ref_w, trn_w, ref_wl, trn_wl = split(D.R_STEEL_WATER)
+        sub_w = label(f"R = (({D.Z_WATER:.2f} − {D.Z_STEEL:.2f}) ÷ ({D.Z_WATER:.2f} + {D.Z_STEEL:.2f}))²"
+                      f" = {D.R_STEEL_WATER:.3f}", FS_LABEL, INK)
+        sub_w.next_to(lr_w, DOWN, 0.25).align_to(bar_w.frame, LEFT)
         self.sync(c("فَيَنْعَكِسُ"))
-        split_in(ref_w, trn_w, ref_wl, trn_wl, bar_w)
+        split_in(ref_w, trn_w, ref_wl, trn_wl, bar_w, FadeIn(sub_w))
         self.sync(c("ثَمَانِيَةٌ", 2))
         self.play(GrowFromEdge(bar_w.refl, LEFT), run_time=0.65)
         self.sync(c("وَثَمَانُونَ"))
@@ -1525,9 +1528,13 @@ class UtSeriesEp01(SyncedScene):
         lr_a, lt_a = bar_labels(bar_a, f"Reflected  {D.R_STEEL_AIR * 100:.3f} %",
                                 f"Transmitted  {D.T_STEEL_AIR * 100:.3f} %")
         ref_a, trn_a, ref_al, trn_al = split(D.R_STEEL_AIR)
+        z_a = D.Z_AIR / 1e6
+        sub_a = label(f"R = (({z_a:.6f} − {D.Z_STEEL:.2f}) ÷ ({z_a:.6f} + {D.Z_STEEL:.2f}))²"
+                      f" = {D.R_STEEL_AIR:.5f}", FS_LABEL, INK)
+        sub_a.next_to(lr_a, DOWN, 0.25).align_to(bar_a.frame, LEFT)
         self.sync(c("أَمَّا"))
         self.play(*[FadeOut(m) for m in (ref_w, trn_w, ref_wl, trn_wl, bar_w, bar_w.refl,
-                                         bar_w.trans, lr_w, lt_w, water_tag)], run_time=0.22)
+                                         bar_w.trans, lr_w, lt_w, sub_w, water_tag)], run_time=0.22)
         self.sync(c("الهَوَاءُ"))
         self.play(water_blk.animate.set_fill(PANEL_FILL, 0.0), FadeIn(air_tag.name_), run_time=0.4)
         self.sync(c("فَمُعَاوَقَتُهُ"))
@@ -1535,9 +1542,9 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("أَرْبَعُ"))
         self.play(FadeIn(air_tag.result_, shift=UP * 0.1), run_time=0.4)
         self.sync(c("فَيَنْعَكِسُ", 2))
-        split_in(ref_a, trn_a, ref_al, trn_al, bar_a)
+        split_in(ref_a, trn_a, ref_al, trn_al, bar_a, FadeIn(sub_a))
         self.sync(c("تِسْعَةٌ"))
-        self.play(GrowFromEdge(bar_a.refl, LEFT), run_time=2.6, rate_func=linear)
+        self.play(GrowFromEdge(bar_a.refl, LEFT), run_time=1.0, rate_func=linear)
         self.play(FadeIn(lr_a), run_time=0.3)
         self.sync(c("بِالمِئَةِ", 2))
         self.play(FadeIn(bar_a.trans), FadeIn(lt_a), run_time=0.4)
