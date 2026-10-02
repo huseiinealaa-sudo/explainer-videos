@@ -9,6 +9,7 @@ Narration segments: 1-6 are the six sections of the source; 7 is the review intr
 """
 from explainer import *
 import ut_series_data as D
+from ut_visuals import wavefront        # the pulse as Wi-Fi-style wave-front arcs (shared by all episodes)
 
 # Fully diacritized narration (DRAFT, awaiting the owner's approval) — one entry per scene.
 # Decimals are spoken digit by digit after «فَاصِلَةٌ».
@@ -143,18 +144,6 @@ class Probe(VGroup):
 
     def face_point(self):
         return self.crystal.get_top() if self.flip else self.crystal.get_bottom()
-
-
-def wave_packet(length=0.9, amp=0.28, cycles=5, color=ACCENT_1, direction=DOWN,
-                stroke_width=4):
-    """A short pulse (sine under a smooth envelope) centred on ORIGIN, travelling along
-    `direction`. `amp` is its sideways size; `.stretch(k, 0)` shrinks it for attenuation
-    when the direction is vertical."""
-    def f(t):
-        return np.array([amp * np.sin(PI * t) ** 2 * np.sin(TAU * cycles * t),
-                         -(t - 0.5) * length, 0.0])
-    m = ParametricFunction(f, t_range=[0, 1, 0.01], color=color, stroke_width=stroke_width)
-    return m.rotate(angle_of_vector(direction) - angle_of_vector(DOWN))
 
 
 class MethodSketch(VGroup):
@@ -771,7 +760,7 @@ class UtSeriesEp01(SyncedScene):
         self.play(Create(block), FadeIn(probe, shift=DOWN * 0.5), run_time=0.8)
         self.play(FadeIn(probe_tag), FadeIn(block_tag), run_time=0.4)
         self.sync(c("مَوْجَاتٍ"))
-        pulses = [wave_packet(length=0.8, amp=0.3, cycles=7) for _ in range(3)]
+        pulses = [wavefront(length=0.8, amp=0.3, cycles=7) for _ in range(3)]
         for p_ in pulses:
             p_.move_to([x0, top_y - 0.4, 0])
         run = 1.5
@@ -803,7 +792,7 @@ class UtSeriesEp01(SyncedScene):
 
         # ---- 16-21 s: attenuation: the pulse weakens as it travels ----
         self.sync(c("تَفْقِدُ"))
-        run_pulse = wave_packet(length=0.9, amp=0.34, cycles=7)
+        run_pulse = wavefront(length=0.9, amp=0.34, cycles=7)
         run_pulse.move_to([x0, top_y - 0.45, 0])
         self.play(FadeIn(run_pulse, run_time=0.2))
         self.play(run_pulse.animate(run_time=c("وَيُسَمَّى") - self.renderer.time + 0.2,
@@ -811,8 +800,8 @@ class UtSeriesEp01(SyncedScene):
                   .move_to([x0, bottom_y + 0.55, 0]).stretch(0.25, 0).set_stroke(opacity=0.5))
         self.sync(c("التَّوْهِينَ"))
         ghosts = VGroup(
-            wave_packet(length=0.9, amp=0.34, cycles=7).move_to([x0, top_y - 0.45 - 0.15, 0]),
-            wave_packet(length=0.9, amp=0.34 * 0.6, cycles=7)
+            wavefront(length=0.9, amp=0.34, cycles=7).move_to([x0, top_y - 0.45 - 0.15, 0]),
+            wavefront(length=0.9, amp=0.34 * 0.6, cycles=7)
             .move_to([x0, (top_y + bottom_y) / 2 + 0.05, 0]))
         ghosts.set_stroke(opacity=0.45)
         attn = VGroup(label("Attenuation", FS_LABEL, INK, weight=BOLD),
@@ -838,10 +827,10 @@ class UtSeriesEp01(SyncedScene):
         ex = echo.beam_x()
         e_top = echo.block.get_top()[1]
         e_flaw = echo.flaw.get_top()[1]
-        go = wave_packet(length=0.7, amp=0.26, cycles=6).move_to([ex, e_top - 0.35, 0])
+        go = wavefront(length=0.7, amp=0.26, cycles=6).move_to([ex, e_top - 0.35, 0])
         self.play(FadeIn(echo_cap, run_time=0.4), FadeIn(go, run_time=0.15))
         self.play(go.animate(run_time=0.6, rate_func=linear).move_to([ex, e_flaw - 0.35, 0]))
-        back = wave_packet(length=0.7, amp=0.26, cycles=6, color=ACCENT_2, direction=UP)
+        back = wavefront(length=0.7, amp=0.26, cycles=6, color=ACCENT_2, direction=UP)
         back.move_to([ex, e_flaw + 0.35, 0])
         self.play(FadeOut(go, run_time=0.15), FadeIn(back, run_time=0.15),
                   Flash(echo.flaw, color=ACCENT_4, flash_radius=0.45, line_length=0.15,
@@ -852,7 +841,7 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(thru), FadeIn(thru_cap), run_time=0.4)
         tx = thru.beam_x()
         t_top, t_bot = thru.block.get_top()[1], thru.block.get_bottom()[1]
-        sent = wave_packet(length=0.7, amp=0.26, cycles=6, color=ACCENT_3).move_to([tx, t_top - 0.35, 0])
+        sent = wavefront(length=0.7, amp=0.26, cycles=6, color=ACCENT_3).move_to([tx, t_top - 0.35, 0])
         self.sync(c("الوَاصِلَةَ"))
         self.play(FadeIn(sent, run_time=0.15))
         self.play(sent.animate(run_time=1.1, rate_func=linear).move_to([tx, t_bot + 0.35, 0]))
@@ -950,7 +939,7 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeOut(bands), FadeOut(chain), FadeOut(chain.ring), FadeOut(chain.guide), FadeOut(note),
                   FadeOut(matter), FadeOut(energy), run_time=0.6)
         self.sync(c("تَحْتَاجُ"))
-        lone = wave_packet(length=1.1, amp=0.3, cycles=5, direction=RIGHT)
+        lone = wavefront(length=1.1, amp=0.3, cycles=5, direction=RIGHT)
         lone.move_to([-3.5, chain_y, 0])
         none_tag = label("No medium, no wave", FS_HEADING, INK, weight=BOLD).move_to([0, -0.9, 0])
         self.play(FadeIn(lone, run_time=0.2))
@@ -1015,7 +1004,7 @@ class UtSeriesEp01(SyncedScene):
         t_move_w = 3.45
         t_move_s = t_move_w / ratio
         xs0, xs1 = lanes[0].get_left()[0] + 0.7, lanes[0].get_right()[0] - 0.7
-        mk = lambda lane: wave_packet(length=0.9, amp=0.27, cycles=5, direction=RIGHT
+        mk = lambda lane: wavefront(length=0.9, amp=0.27, cycles=5, direction=RIGHT
                                       ).move_to([xs0, lane.get_center()[1], 0])
         steel_runs = []
         for _ in range(round(ratio)):
@@ -1585,7 +1574,7 @@ class UtSeriesEp01(SyncedScene):
         def hop(color, x, y0, y1, run, direction, amp=0.22, length=0.5, cycles=4, extra=()):
             """A pulse of `color` leaves y0 and travels to y1 along x (`extra` animations play
             together with its first appearance)."""
-            p_ = wave_packet(length=length, amp=amp, cycles=cycles, color=color, direction=direction)
+            p_ = wavefront(length=length, amp=amp, cycles=cycles, color=color, direction=direction)
             p_.move_to([x, y0, 0])
             self.play(FadeIn(p_, run_time=0.1), *extra)
             self.play(p_.animate(run_time=run, rate_func=linear).move_to([x, y1, 0]))
@@ -1599,7 +1588,7 @@ class UtSeriesEp01(SyncedScene):
         for t_start in (c("الهَوَاءِ") - 0.05, c("وَالقِطْعَةِ") - 0.1):
             self.sync(t_start)
             down = hop(ACCENT_1, px0, y_a, y_b, 0.35, DOWN)
-            up = wave_packet(length=0.5, amp=0.22, cycles=4, color=ACCENT_2, direction=UP)
+            up = wavefront(length=0.5, amp=0.22, cycles=4, color=ACCENT_2, direction=UP)
             up.move_to([px0, y_b, 0])
             self.play(FadeOut(down, run_time=0.1), FadeIn(up, run_time=0.1),
                       Flash([px0, t_top, 0], color=ACCENT_2, flash_radius=0.3, line_length=0.1,
@@ -1622,7 +1611,7 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeOut(drop, run_time=0.2), FadeOut(gap_dim, run_time=0.3),
                   GrowFromCenter(film), FadeOut(blocked, run_time=0.3), run_time=0.4)
         rig.add(film, coup_lab)
-        go = wave_packet(length=0.6, amp=0.24, cycles=5, color=ACCENT_3, direction=DOWN)
+        go = wavefront(length=0.6, amp=0.24, cycles=5, color=ACCENT_3, direction=DOWN)
         go.move_to([px0, face - 0.35, 0])
         self.play(FadeIn(go, run_time=0.1))
         self.play(go.animate(run_time=0.7, rate_func=linear).move_to([px0, t_top - 0.9, 0])
@@ -1643,7 +1632,7 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("بِالهَوَاءِ") - 0.5)
         y0, y1 = face - 0.35, crack.get_top()[1] + 0.35
         go2 = hop(ACCENT_1, px1, y0, y1, 0.65, DOWN, amp=0.26, length=0.7, cycles=6)
-        back = wave_packet(length=0.7, amp=0.26, cycles=6, color=ACCENT_2, direction=UP)
+        back = wavefront(length=0.7, amp=0.26, cycles=6, color=ACCENT_2, direction=UP)
         back.move_to([px1, y1, 0])
         self.sync(c("تَعْكِسُ"))
         self.play(FadeOut(go2, run_time=0.12), FadeIn(back, run_time=0.12),
@@ -1661,7 +1650,7 @@ class UtSeriesEp01(SyncedScene):
         wall_y = part.body.get_bottom()[1]
         go3 = hop(ACCENT_1, px2, face - 0.35, wall_y + 0.4, 1.0, DOWN, amp=0.3, length=0.7, cycles=6,
                   extra=(FadeIn(chips[2], shift=LEFT * 0.2, run_time=0.1), FadeIn(wall_tag, run_time=0.1)))
-        echo = wave_packet(length=0.9, amp=0.42, cycles=6, color=ACCENT_2, direction=UP,
+        echo = wavefront(length=0.9, amp=0.42, cycles=6, color=ACCENT_2, direction=UP,
                            stroke_width=5)
         echo.move_to([px2, wall_y + 0.45, 0])
         self.play(FadeOut(go3, run_time=0.12), FadeIn(echo, run_time=0.12),
@@ -1711,13 +1700,13 @@ class UtSeriesEp01(SyncedScene):
         self.play(Create(plate), FadeIn(probe, shift=DOWN * 0.5), run_time=0.8)
         self.play(FadeIn(flaw), Create(wall), run_time=0.4)
         self.sync(c("نَبْضَةً"))
-        demo = wave_packet(length=0.55, amp=0.3, cycles=5).move_to([bx, top_y - 0.4, 0])
+        demo = wavefront(length=0.55, amp=0.3, cycles=5).move_to([bx, top_y - 0.4, 0])
         self.play(FadeIn(chips[0], shift=LEFT * 0.2, run_time=0.3), FadeIn(demo, run_time=0.15))
         self.play(demo.animate(run_time=0.75, rate_func=linear).move_to([bx, top_y - 1.2, 0])
                   .set_stroke(opacity=0))
         self.remove(demo)
         self.sync(c("يَسْتَمِعُ"))
-        demo2 = wave_packet(length=0.55, amp=0.14, cycles=5, color=ACCENT_2, direction=UP)
+        demo2 = wavefront(length=0.55, amp=0.14, cycles=5, color=ACCENT_2, direction=UP)
         demo2.move_to([bx, top_y - 1.2, 0]).set_stroke(opacity=0)
         self.add(demo2)
         self.play(FadeIn(chips[1], shift=LEFT * 0.2),
@@ -1750,8 +1739,8 @@ class UtSeriesEp01(SyncedScene):
                                   .move_to(clock_anchor, aligned_edge=LEFT))
         slow = label(f"Slow motion: 1 µs = {SLOWMO:g} s", FS_TAG, GREY_INK)
         slow.next_to(panel, DOWN, 0.2)
-        sw_pulse = wave_packet(length=0.8, amp=0.13, cycles=4, color=ACCENT_1, direction=RIGHT)
-        sw_echo = wave_packet(length=0.8, amp=0.13, cycles=4, color=ACCENT_2, direction=LEFT)
+        sw_pulse = wavefront(length=0.8, amp=0.2, cycles=4, color=ACCENT_1, direction=RIGHT)
+        sw_echo = wavefront(length=0.8, amp=0.2, cycles=4, color=ACCENT_2, direction=LEFT)
         legend = VGroup(
             VGroup(sw_pulse, label("Pulse", FS_NOTE, INK)).arrange(RIGHT, buff=0.3),
             VGroup(sw_echo, label("Echo", FS_NOTE, INK)).arrange(RIGHT, buff=0.3),
@@ -1791,13 +1780,13 @@ class UtSeriesEp01(SyncedScene):
 
         h_fl = t_fl / 2                                  # the pulse reaches the flaw
         h_bw = t_bw / 2                                  # ... and the back wall
-        inc = driven(wave_packet(length=0.55, amp=0.3, cycles=5), lambda t: V * t,
+        inc = driven(wavefront(length=0.55, amp=0.3, cycles=5), lambda t: V * t,
                      0.0, h_fl, 0.0, D.FLAW_DEPTH)
-        thru = driven(wave_packet(length=0.55, amp=0.24, cycles=5),
+        thru = driven(wavefront(length=0.55, amp=0.24, cycles=5),
                       lambda t: D.FLAW_DEPTH + V * (t - h_fl), h_fl, h_bw, D.FLAW_DEPTH, D.THICKNESS)
-        echo_f = driven(wave_packet(length=0.55, amp=0.14, cycles=5, color=ACCENT_2, direction=UP),
+        echo_f = driven(wavefront(length=0.55, amp=0.14, cycles=5, color=ACCENT_2, direction=UP),
                         lambda t: D.FLAW_DEPTH - V * (t - h_fl), h_fl, t_fl, D.FLAW_DEPTH, 0.0)
-        echo_b = driven(wave_packet(length=0.55, amp=0.22, cycles=5, color=ACCENT_2, direction=UP),
+        echo_b = driven(wavefront(length=0.55, amp=0.22, cycles=5, color=ACCENT_2, direction=UP),
                         lambda t: D.THICKNESS - V * (t - h_bw), h_bw, t_bw, D.THICKNESS, 0.0)
         ring_f = ring_at([bx, yz(D.FLAW_DEPTH), 0], h_fl, ACCENT_4)
         ring_w = ring_at([bx, bot_y, 0], h_bw, ACCENT_2)
@@ -2091,15 +2080,15 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("مُتَقَابِلَانِ"))
         self.play(FadeIn(meter), Create(meter_wire), FadeIn(meter_lab), FadeIn(beam1), run_time=0.35)
         self.add(fill)
-        pk = wave_packet(length=0.55, amp=0.28, cycles=5, color=ACCENT_3, direction=DOWN)
+        pk = wavefront(length=0.55, amp=0.28, cycles=5, color=ACCENT_3, direction=DOWN)
         fly(pk, [x1, top1 - 0.3, 0], [x1, bot1 + 0.3, 0], 0.5)
         self.play(Transform(fill, signal_bar(meter, 0.9, ACCENT_3)), run_time=0.3)
         self.sync(c("وَالعَيْبُ"))
         self.play(FadeIn(flaw1, scale=1.3), run_time=0.4)
         self.sync(c("يَحْجُبُ"))
-        pk = wave_packet(length=0.55, amp=0.28, cycles=5, color=ACCENT_3, direction=DOWN)
+        pk = wavefront(length=0.55, amp=0.28, cycles=5, color=ACCENT_3, direction=DOWN)
         fly(pk, [x1, top1 - 0.3, 0], [x1, flaw1.get_top()[1] + 0.25, 0], 0.4)
-        pk2 = wave_packet(length=0.4, amp=0.1, cycles=5, color=ACCENT_3, direction=DOWN)
+        pk2 = wavefront(length=0.4, amp=0.1, cycles=5, color=ACCENT_3, direction=DOWN)
         pk2.move_to([x1, fl_bot - 0.25, 0])
         self.add(pk2)
         self.play(FadeIn(shadow), FadeIn(shadow_lab), pk2.animate(run_time=0.45, rate_func=linear)
@@ -2127,9 +2116,9 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("سَطْحٍ"))
         self.play(Create(surface2), FadeIn(tag2a, shift=UP * 0.15), run_time=0.5)
         self.sync(c("يُعْطِي", 2))
-        pk = wave_packet(length=0.5, amp=0.26, cycles=5, color=ACCENT_1, direction=DOWN)
+        pk = wavefront(length=0.5, amp=0.26, cycles=5, color=ACCENT_1, direction=DOWN)
         fly(pk, [x2, Y_TOP - 0.3, 0], [x2, flaw2.get_top()[1] + 0.22, 0], 0.4)
-        echo = wave_packet(length=0.5, amp=0.13, cycles=5, color=ACCENT_2, direction=UP)
+        echo = wavefront(length=0.5, amp=0.13, cycles=5, color=ACCENT_2, direction=UP)
         echo.move_to([x2, flaw2.get_top()[1] + 0.22, 0])
         self.add(echo)
         self.play(echo.animate(run_time=0.5, rate_func=linear).move_to([x2, Y_TOP - 0.3, 0]),
@@ -2253,7 +2242,7 @@ class UtSeriesEp01(SyncedScene):
         self.play(FadeIn(lim_head), Create(lim_rule), run_time=0.5)
 
         def pulse_down(cx, y0, y1, rt, amp=0.14, dx=0.0, length=0.4):
-            pk = wave_packet(length=length, amp=amp, cycles=4, color=ACCENT_1, direction=DOWN,
+            pk = wavefront(length=length, amp=amp, cycles=4, color=ACCENT_1, direction=DOWN,
                              stroke_width=3)
             pk.move_to([cx + dx, y0, 0])
             self.add(pk)
@@ -2306,7 +2295,7 @@ class UtSeriesEp01(SyncedScene):
             self.remove(mob)
 
         def pk(color, direction, amp=0.2):
-            return wave_packet(length=0.6, amp=amp * 1.2, cycles=4, color=color, direction=direction)
+            return wavefront(length=0.6, amp=amp * 1.2, cycles=4, color=color, direction=direction)
 
         def two_bold(text, size, width):
             """One bold label, or two centred lines split at the best space when too wide."""
