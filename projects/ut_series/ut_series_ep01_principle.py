@@ -699,6 +699,45 @@ class ThicknessGauge(VGroup):
         return label(text, self.value_size, color, weight=BOLD).move_to(self.display)
 
 
+# ---- Segment 6 helpers: the three method panels ----
+def tag_line(text, icon_name, color, width=3.9, size=FS_AXIS):
+    """A short note without a frame: a Tabler icon in `color` and the text (two lines when it
+    does not fit `width`). Parts: icon, txt."""
+    ic = icon(icon_name, color, 0.4)
+    room = width - 0.65
+    one = label(text, size, INK)
+    if one.width <= room:
+        txt = one
+    else:
+        a, b = _wrap_two_lines(text, size)
+        txt = VGroup(a, b).arrange(DOWN, aligned_edge=LEFT, buff=0.06)
+    g = VGroup(ic, txt).arrange(RIGHT, buff=0.2)
+    g.icon, g.txt = ic, txt
+    return g
+
+
+def method_head(text, cx, y_head, y_rule, color, width=3.8):
+    """A panel heading (bold) centred on cx with a coloured rule under it."""
+    head = label(text, FS_NOTE, INK, weight=BOLD)
+    fit(head, width).move_to([cx, y_head, 0])
+    rule = Line(LEFT * width / 2, RIGHT * width / 2, color=color, stroke_width=5)
+    rule.move_to([cx, y_rule, 0])
+    return head, rule
+
+
+def signal_bar(frame, level, color):
+    """The fill of a horizontal meter `frame` up to `level` (0-1)."""
+    r = Rectangle(width=max((frame.width - 0.08) * level, 0.02), height=frame.height - 0.08,
+                  color=color, stroke_width=0).set_fill(color, 1)
+    return r.align_to(frame, LEFT).shift(RIGHT * 0.04).match_y(frame)
+
+
+def resonance_gain(f, width=0.12):
+    """Received amplitude (0-1) of a plate driven at f, in units of its first resonance f1."""
+    return 1.0 / (1.0 + ((f - 1.0) / width) ** 2)
+
+
+
 class UtSeriesEp01(SyncedScene):
     def construct(self):
         self.timeline(NARRATION, AUDIO_DIR)
@@ -1875,6 +1914,223 @@ class UtSeriesEp01(SyncedScene):
 
     # ---------------- Segment 6: the basic methods and the limits (§6) ----------------
     def seg6(self):
+        c = lambda phrase, nth=1: self.cue(6, phrase, nth)
+
+        CX = (-4.5, 0.0, 4.5)                  # column centres of the three panels
+        Y_HEAD, Y_RULE, Y_TOP, Y_TAGS = 3.45, 3.12, 1.85, -2.0
+        BLOCK_W = 3.4
+
+        def fly(mob, p0, p1, run_time, *extra):
+            """A pulse travels from p0 to p1 (and is removed on arrival)."""
+            mob.move_to(p0)
+            self.add(mob)
+            self.play(mob.animate(run_time=run_time, rate_func=linear).move_to(p1), *extra)
+            self.remove(mob)
+
+        # ================= panel 1: through transmission =================
+        x1 = CX[0]
+        head1, rule1 = method_head("Through transmission", x1, Y_HEAD, Y_RULE, ACCENT_3)
+        block1 = SteelBlock(BLOCK_W, 1.8).move_to([x1, Y_TOP - 0.9, 0])
+        top1, bot1 = Y_TOP, Y_TOP - 1.8
+        pa = Probe().next_to(block1, UP, buff=0)
+        pb = Probe(color=ACCENT_3, flip=True).next_to(block1, DOWN, buff=0)
+        sends = label("Sends", FS_TAG, ACCENT_1, weight=BOLD).next_to(pa.housing, RIGHT, 0.2)
+        recvs = label("Receives", FS_TAG, ACCENT_3, weight=BOLD).next_to(pb.housing, RIGHT, 0.2)
+        beam1 = Rectangle(width=0.77, height=1.8, color=ACCENT_3, stroke_width=0)
+        beam1.set_fill(ACCENT_3, 0.25).move_to(block1)
+        meter = Rectangle(width=1.9, height=0.28, color=INK, stroke_width=3)
+        meter.move_to([x1, pb.get_bottom()[1] - 0.32, 0])
+        meter_wire = Line(pb.cable.get_end(), meter.get_top(), color=GREY_INK, stroke_width=4)
+        meter_lab = label("Received signal", FS_TAG, INK).next_to(meter, DOWN, 0.12)
+        fill = signal_bar(meter, 0.02, ACCENT_3)
+        flaw1 = Ellipse(width=0.55, height=0.3, color=ACCENT_4, stroke_width=4)
+        flaw1.set_fill(ACCENT_4, 0.45).move_to([x1, top1 - 0.95, 0])
+        fl_bot = flaw1.get_bottom()[1]
+        shadow = Rectangle(width=0.55, height=fl_bot - bot1, color=GREY_INK, stroke_width=0)
+        shadow.set_fill(GREY_INK, 0.35).move_to([x1, (fl_bot + bot1) / 2, 0])
+        shadow_lab = label("Shadow", FS_TAG - 2, GREY_INK).next_to(shadow, RIGHT, 0.25)
+        ghosts = VGroup(*[DashedVMobject(Ellipse(width=0.55, height=0.3, color=GREY_INK,
+                                                 stroke_width=3).move_to([x1, y, 0]),
+                                         num_dashes=18)
+                          for y in (top1 - 0.4, bot1 + 0.4)])
+        tag1a = tag_line("Needs both sides", "arrows-exchange", ALERT_C)
+        tag1b = tag_line("Does not give the flaw location", "map-pin", ALERT_C)
+        tag1a.move_to([x1, Y_TAGS, 0]).align_to([x1 - 1.9, 0, 0], LEFT).align_to([0, Y_TAGS, 0], UP)
+        tag1b.next_to(tag1a, DOWN, 0.2, aligned_edge=LEFT)
+
+        # ================= panel 2: pulse-echo =================
+        x2 = CX[1]
+        head2, rule2 = method_head("Pulse-echo", x2, Y_HEAD, Y_RULE, ACCENT_1)
+        block2 = SteelBlock(BLOCK_W, 2.6).move_to([x2, Y_TOP - 1.3, 0])
+        probe2 = Probe().next_to(block2, UP, buff=0)
+        flaw2 = Ellipse(width=0.6, height=0.2, color=ACCENT_4, stroke_width=4)
+        flaw2.set_fill(ACCENT_4, 0.45).move_to([x2, Y_TOP - 1.0, 0])
+        surface2 = Line([x2 - BLOCK_W / 2, Y_TOP, 0], [x2 + BLOCK_W / 2, Y_TOP, 0],
+                        color=ACCENT_1, stroke_width=9)
+        dim_d = DoubleArrow([x2 + 0.5, Y_TOP - 0.06, 0], [x2 + 0.5, flaw2.get_center()[1], 0],
+                            buff=0, color=ACCENT_4, stroke_width=3, tip_length=0.14)
+        guide_d = DashedLine(flaw2.get_right() + RIGHT * 0.05, [x2 + 0.5, flaw2.get_center()[1], 0],
+                             color=ACCENT_4, stroke_width=2)
+        lab_d = label("depth", FS_TAG, ACCENT_4, weight=BOLD).next_to(dim_d, RIGHT, 0.1)
+        tag2a = tag_line("One surface", "check", OK_C)
+        tag2b = tag_line("Gives depth", "ruler", OK_C)
+        tag2a.move_to([x2, Y_TAGS, 0]).align_to([x2 - 1.9, 0, 0], LEFT).align_to([0, Y_TAGS, 0], UP)
+        tag2b.next_to(tag2a, DOWN, 0.2, aligned_edge=LEFT)
+        pill_txt = label("Most used", FS_NOTE, INK, weight=BOLD)
+        pill_ic = icon("check", OK_C, 0.42)
+        pill_in = VGroup(pill_ic, pill_txt).arrange(RIGHT, buff=0.2)
+        pill = RoundedRectangle(width=pill_in.width + 0.6, height=0.7, corner_radius=0.35,
+                                color=OK_C, stroke_width=4).set_fill(PANEL_FILL, 1)
+        pill_in.move_to(pill)
+        pill_all = VGroup(pill, pill_in).move_to([x2, -1.45, 0])
+
+        # ================= panel 3: resonance =================
+        x3 = CX[2]
+        PLATE_W, PLATE_T = 3.6, 1.4
+        head3, rule3 = method_head("Resonance", x3, Y_HEAD, Y_RULE, ACCENT_2)
+        plate = SteelBlock(PLATE_W, PLATE_T).move_to([x3, Y_TOP - PLATE_T / 2, 0])
+        probe3 = Probe().next_to(plate, UP, buff=0)
+        centre = DashedLine([x3, Y_TOP, 0], [x3, Y_TOP - PLATE_T, 0], color=GREY_INK, stroke_width=2)
+        f_trk = ValueTracker(0.5)               # drive frequency in units of f1 (the first resonance)
+        zs = np.linspace(0.0, 1.0, 50)
+
+        def lobe_side(sign):
+            def make():
+                f = f_trk.get_value()
+                a = 0.1 + 0.52 * resonance_gain(f)
+                pts = [[x3 + sign * a * np.sin(PI * f * z), Y_TOP - z * PLATE_T, 0] for z in zs]
+                m = VMobject(color=ACCENT_2, stroke_width=5)
+                m.set_points_as_corners(pts)
+                return m
+            return make
+        lobes = VGroup(always_redraw(lobe_side(1)), always_redraw(lobe_side(-1)))
+        # amplitude-versus-frequency graph under the plate
+        G_L, G_W, G_B, G_H = x3 - 1.7, 3.4, -1.3, 1.05
+        F0, F1 = 0.4, 1.6
+        gx = lambda f: G_L + (f - F0) / (F1 - F0) * G_W
+        gy = lambda f: G_B + G_H * (0.06 + 0.94 * resonance_gain(f))
+        ax_x = Arrow([G_L - 0.1, G_B, 0], [G_L + G_W + 0.2, G_B, 0], buff=0, color=INK,
+                     stroke_width=3, tip_length=0.15)
+        ax_y = Arrow([G_L, G_B, 0], [G_L, G_B + G_H + 0.2, 0], buff=0, color=INK,
+                     stroke_width=3, tip_length=0.15)
+        g_title = label("Received amplitude", FS_TAG, INK).move_to([x3, 0.12, 0])
+        g_x = label("Frequency", FS_TAG, INK).next_to(ax_x, DOWN, 0.1).align_to(ax_x, RIGHT)
+        full = np.linspace(F0, F1, 120)
+        ghost = VMobject(color=GREY_INK, stroke_width=3)
+        ghost.set_points_as_corners([[gx(f), gy(f), 0] for f in full]).set_stroke(opacity=0.55)
+        trace = always_redraw(lambda: VMobject(color=ACCENT_2, stroke_width=5).set_points_as_corners(
+            [[gx(f), gy(f), 0] for f in np.linspace(F0, max(f_trk.get_value(), F0 + 0.02), 60)]))
+        knob = always_redraw(lambda: Dot([gx(f_trk.get_value()), gy(f_trk.get_value()), 0],
+                                         radius=0.11, color=ACCENT_1))
+        dim_t = DoubleArrow([x3 - 1.05, Y_TOP - 0.05, 0], [x3 - 1.05, Y_TOP - PLATE_T + 0.05, 0],
+                            buff=0, color=INK, stroke_width=3, tip_length=0.14)
+        lab_t = label("t", FS_LABEL, INK, weight=BOLD).next_to(dim_t, LEFT, 0.12)
+        lab_half = label("λ / 2", FS_TAG, ACCENT_2, weight=BOLD).move_to(
+            [x3 + 0.62 + 0.15 + 0.4, Y_TOP - PLATE_T / 2, 0])
+        tag3 = tag_line("Measures thickness", "ruler", OK_C)
+        tag3.move_to([x3, Y_TAGS, 0]).align_to([x3 - 1.9, 0, 0], LEFT).align_to([0, Y_TAGS, 0], UP)
+
+        # ---- 2.7-12.6 s: through transmission ----
+        self.sync(c("النَّفَاذِ"))
+        self.play(FadeIn(head1), Create(rule1), Create(block1), run_time=0.6)
+        self.sync(c("مِجَسَّانِ"))
+        self.play(FadeIn(pa, shift=DOWN * 0.3), FadeIn(pb, shift=UP * 0.3), FadeIn(sends),
+                  FadeIn(recvs), run_time=0.5)
+        self.sync(c("مُتَقَابِلَانِ"))
+        self.play(FadeIn(meter), Create(meter_wire), FadeIn(meter_lab), FadeIn(beam1), run_time=0.35)
+        self.add(fill)
+        pk = wave_packet(length=0.55, amp=0.28, cycles=5, color=ACCENT_3, direction=DOWN)
+        fly(pk, [x1, top1 - 0.3, 0], [x1, bot1 + 0.3, 0], 0.5)
+        self.play(Transform(fill, signal_bar(meter, 0.9, ACCENT_3)), run_time=0.3)
+        self.sync(c("وَالعَيْبُ"))
+        self.play(FadeIn(flaw1, scale=1.3), run_time=0.4)
+        self.sync(c("يَحْجُبُ"))
+        pk = wave_packet(length=0.55, amp=0.28, cycles=5, color=ACCENT_3, direction=DOWN)
+        fly(pk, [x1, top1 - 0.3, 0], [x1, flaw1.get_top()[1] + 0.25, 0], 0.4)
+        pk2 = wave_packet(length=0.4, amp=0.1, cycles=5, color=ACCENT_3, direction=DOWN)
+        pk2.move_to([x1, fl_bot - 0.25, 0])
+        self.add(pk2)
+        self.play(FadeIn(shadow), FadeIn(shadow_lab), pk2.animate(run_time=0.45, rate_func=linear)
+                  .move_to([x1, bot1 + 0.25, 0]), Indicate(flaw1, color=ACCENT_4, scale_factor=1.2,
+                                                         run_time=0.45))
+        self.remove(pk2)
+        self.sync(c("فَتَنْخَفِضُ"))
+        self.play(Transform(fill, signal_bar(meter, 0.28, ACCENT_4)), run_time=0.6)
+        self.sync(c("وَيَلْزَمُ"))
+        self.play(FadeIn(tag1a, shift=UP * 0.15), run_time=0.4)
+        self.sync(c("الجَانِبَيْنِ"))
+        self.play(Indicate(pa, color=ACCENT_1, scale_factor=1.15),
+                  Indicate(pb, color=ACCENT_3, scale_factor=1.15), run_time=0.7)
+        self.sync(c("وَلَا"))
+        self.play(FadeIn(tag1b, shift=UP * 0.15), run_time=0.4)
+        self.sync(c("مَوْقِعَ"))
+        self.play(FadeIn(ghosts), run_time=0.5)
+
+        # ---- 13.5-20.5 s: pulse-echo ----
+        self.sync(c("وَفِي"))
+        self.play(FadeIn(head2), Create(rule2), Create(block2), FadeIn(flaw2), run_time=0.5)
+        self.sync(c("مِجَسٌّ"))
+        self.play(FadeIn(probe2, shift=DOWN * 0.3), run_time=0.4)
+        self.play(Indicate(probe2, color=ACCENT_1, scale_factor=1.15), run_time=0.5)
+        self.sync(c("سَطْحٍ"))
+        self.play(Create(surface2), FadeIn(tag2a, shift=UP * 0.15), run_time=0.5)
+        self.sync(c("يُعْطِي", 2))
+        pk = wave_packet(length=0.5, amp=0.26, cycles=5, color=ACCENT_1, direction=DOWN)
+        fly(pk, [x2, Y_TOP - 0.3, 0], [x2, flaw2.get_top()[1] + 0.22, 0], 0.4)
+        echo = wave_packet(length=0.5, amp=0.13, cycles=5, color=ACCENT_2, direction=UP)
+        echo.move_to([x2, flaw2.get_top()[1] + 0.22, 0])
+        self.add(echo)
+        self.play(echo.animate(run_time=0.5, rate_func=linear).move_to([x2, Y_TOP - 0.3, 0]),
+                  Flash(flaw2.get_center(), color=ACCENT_4, flash_radius=0.4, line_length=0.1,
+                        run_time=0.4),
+                  GrowFromCenter(dim_d), Create(guide_d), FadeIn(lab_d))
+        self.remove(echo)
+        self.play(FadeIn(tag2b, shift=UP * 0.15), run_time=0.35)
+        self.sync(c("الأَكْثَرُ"))
+        self.play(FadeIn(pill_all, scale=0.8), run_time=0.4)
+        self.sync(c("اسْتِعْمَالًا"))
+        frame2 = SurroundingRectangle(VGroup(head2, rule2, block2, probe2, tag2a, tag2b, pill_all),
+                                      color=OK_C, buff=0.17, corner_radius=0.2, stroke_width=4)
+        self.play(Create(frame2), run_time=0.5)
+
+        # ---- 20.9-27 s: resonance ----
+        self.sync(c("وَفِي", 2))
+        self.play(FadeIn(head3), Create(rule3), run_time=0.4)
+        self.sync(c("الرَّنِينِ"))
+        self.play(Create(plate), FadeIn(probe3, shift=DOWN * 0.3), Create(centre), run_time=0.4)
+        self.add(lobes)
+        self.sync(c("نُغَيِّرُ"))
+        self.play(Create(ax_x), Create(ax_y), FadeIn(g_title), FadeIn(g_x), Create(ghost),
+                  run_time=0.5)
+        self.add(trace, knob)
+        self.sync(c("التَّرَدُّدَ"))
+        self.play(f_trk.animate(run_time=c("السَّمَاكَةُ") - self.renderer.time, rate_func=linear)
+                  .set_value(1.0))
+        self.sync(c("نِصْفَ"))
+        self.play(GrowFromCenter(dim_t), FadeIn(lab_t), FadeIn(lab_half),
+                  Flash([gx(1.0), gy(1.0), 0], color=ACCENT_2, flash_radius=0.4, line_length=0.1,
+                        run_time=0.5), run_time=0.5)
+        self.sync(c("لِنَقِيسَهَا"))
+        self.play(FadeIn(tag3, shift=UP * 0.15), run_time=0.4)
+
+        # ---- 27.4-37.3 s: the limits ----
+        self.sync(c("وَقُيُودُهَا") - 0.35)
+        self.clear(run_time=0.45)
+        lim_head = label("Limits", FS_HEADING, ALERT_C, weight=BOLD).move_to([0, 3.0, 0])
+        lim_rule = Line(LEFT * 1.4, RIGHT * 1.4, color=ALERT_C, stroke_width=5)
+        lim_rule.next_to(lim_head, DOWN, 0.15)
+        chips = [chip("Couplant needed", "droplet", ALERT_C, 6.0, FS_LABEL),
+                 chip("Flaw parallel to the beam may not be seen", "eye", ALERT_C, 6.0, FS_LABEL),
+                 chip("Coarse grains scatter the sound", "wind", ALERT_C, 6.0, FS_LABEL),
+                 chip("No measurement without calibration", "scale", ALERT_C, 6.0, FS_LABEL)]
+        for ch, (px, py) in zip(chips, ((-3.3, 1.2), (3.3, 1.2), (-3.3, -0.9), (3.3, -0.9))):
+            ch.move_to([px, py, 0])
+        self.sync(c("وَقُيُودُهَا"))
+        self.play(FadeIn(lim_head), Create(lim_rule), run_time=0.5)
+        for ch, phrase in zip(chips, (c("الوَسِيطُ"), c("المُوَازِي"), c("الخَشِنَةُ"), c("قِيَاسَ"))):
+            self.sync(phrase)
+            self.play(FadeIn(ch, shift=UP * 0.2), run_time=0.4)
+            self.play(Indicate(ch[1], color=ALERT_C, scale_factor=1.3), run_time=0.5)
         self.sync(self.end(6))
         self.clear()
 
