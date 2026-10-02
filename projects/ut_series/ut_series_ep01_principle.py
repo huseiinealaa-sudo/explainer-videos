@@ -2376,7 +2376,7 @@ class UtSeriesEp01(SyncedScene):
 
         # ------------------------------------------------------------------ the mini drawings
         def art1():                       # the frequency ruler and the band of most UT
-            ruler = FrequencyRuler(width=10.4, size=FS_AXIS).move_to([0, ART_CY - 0.5, 0])
+            ruler = FrequencyRuler(width=11.5, size=FS_TAG - 2).move_to([0, ART_CY - 0.5, 0])
             aud = ruler.band_rect(D.AUDIBLE_MIN_HZ, D.AUDIBLE_MAX_KHZ * 1e3, GREY_INK, 0.9)
             aud_lab = ruler.band_label(
                 aud, f"Audible: {D.AUDIBLE_MIN_HZ} Hz to {D.AUDIBLE_MAX_KHZ} kHz", GREY_INK, FS_AXIS)
