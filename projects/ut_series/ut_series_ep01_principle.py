@@ -994,7 +994,7 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("وَوَحْدَتُهُ"))
         unit = label("Unit: hertz (Hz)", FS_LABEL, ACCENT_1, weight=BOLD).next_to(per_s, DOWN, 0.3)
         self.play(FadeIn(unit, run_time=0.4))
-        self.sync(c("وَالسُّرْعَةُ") - 0.35)
+        self.sync(c("وَالسُّرْعَةُ"))
         self.clear(run_time=0.35)
 
         # ---- B2, 17-21 s: the speed is set by the material, not by f ----
@@ -1056,27 +1056,49 @@ class UtSeriesEp01(SyncedScene):
         self.sync(c("فَفِي"))
         steel_name = label("Steel", FS_NOTE, INK).next_to(steel_lw.wave, LEFT, 0.25)
         self.play(FadeIn(steel_name), run_time=0.3)
-        steel_calc = worked_calculation(
-            self, ["λ steel", "=", "v", "÷", "f"],
+        def calc_block(formula, values, result, cues, pos, extra=()):
+            """worked_calculation with a roomier result box (buff 0.32) and extra animations
+            that run together with the first step."""
+            size = 30
+            f = VGroup(*[Text(p, font_size=size) for p in formula]).arrange(RIGHT, buff=0.18)
+            v = VGroup(*[Text(p, font_size=size - 4, color=GREY_INK) for p in values])
+            v.arrange(RIGHT, buff=0.18)
+            r = Text(result, font_size=size + 4, color=ACCENT_1, weight=BOLD)
+            group = fit(VGroup(f, v, r).arrange(DOWN, buff=0.55)).move_to(pos)
+            frame = SurroundingRectangle(r, color=ACCENT_1, buff=0.32, corner_radius=0.1,
+                                         stroke_width=4)
+            steps = [[Write(f, run_time=1.0)],
+                     [FadeIn(v, shift=DOWN * 0.15, run_time=1.0)],
+                     [Write(r, run_time=1.0), Create(frame, run_time=1.0)]]
+            steps[0] += list(extra)
+            for cue_t, anims in zip(cues, steps):
+                self.sync(cue_t)
+                self.play(*anims)
+            group.add(frame)
+            return group
+
+        steel_calc = calc_block(
+            ["λ steel", "=", "v", "÷", "f"],
             ["λ", "=", f"{D.V_L_STEEL:.0f} m/s", "÷", f_txt],
             f"= {D.LAMBDA_STEEL:.3f} mm",
             cues=[c("فَفِي") + 0.3, c("وَالسُّرْعَةُ", 2), c("وَاحِدًا")],
-            pos=[0, -1.85, 0], size=30)
+            pos=[0, -1.85, 0])
+        water_lw = LabelledWave(D.LAMBDA_WATER * UNITS_PER_MM, tag=f"λ = {D.LAMBDA_WATER:.3f} mm",
+                                stroke_width=3)
+        water_lw.shift(UP * 0.5)
+        water_name = label("Water", FS_NOTE, INK).next_to(water_lw.wave, LEFT, 0.25)
         self.sync(c("وَفِي") - 0.65)
-        self.play(steel_calc.animate.shift(LEFT * 3.4), run_time=0.5)
-        water_calc = worked_calculation(
-            self, ["λ water", "=", "v", "÷", "f"],
+        self.play(steel_calc.animate.shift(LEFT * 3.4), Create(water_lw.wave, run_time=0.5),
+                  FadeIn(water_name, run_time=0.5), run_time=0.5)
+        water_calc = calc_block(
+            ["λ water", "=", "v", "÷", "f"],
             ["λ", "=", f"{D.V_WATER:.0f} m/s", "÷", f_txt],
             f"= {D.LAMBDA_WATER:.3f} mm",
             cues=[c("وَفِي"), c("وَفِي") + 1.0, c("وَفِي") + 2.0],
-            pos=[3.4, -1.85, 0], size=30)
-        water_lw = LabelledWave(D.LAMBDA_WATER * UNITS_PER_MM, tag="λ", stroke_width=3)
-        water_lw.shift(UP * 0.95)
-        water_name = label("Water", FS_NOTE, INK).next_to(water_lw.wave, LEFT, 0.25)
-        self.sync(c("صِفْرًا") + 2.0)
-        self.play(Create(water_lw.wave, run_time=0.5), FadeIn(water_name))
-        self.play(FadeIn(water_lw.dots), FadeIn(water_lw.guides), GrowFromCenter(water_lw.bracket),
-                  FadeIn(water_lw.tag), run_time=0.4)
+            pos=[3.4, -1.85, 0],
+            extra=[FadeIn(water_lw.dots, run_time=0.5), FadeIn(water_lw.guides, run_time=0.5),
+                   GrowFromCenter(water_lw.bracket, run_time=0.5),
+                   FadeIn(water_lw.tag, run_time=0.5)])
         self.sync(c("لِمَاذَا") - 0.4)
         self.clear(run_time=0.4)
 
