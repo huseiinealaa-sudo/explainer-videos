@@ -2136,9 +2136,376 @@ class UtSeriesEp01(SyncedScene):
 
     # ---------------- Segment 7: review (narration entries 7-31) ----------------
     # entry 7 intro; then for k = 1..8: question 8+3(k-1), silent 3 s countdown 9+3(k-1),
-    # answer 10+3(k-1).
+    # answer 10+3(k-1). One card engine (`card`) is used eight times; each question has its own
+    # mini drawing (art1 ... art8) that is built while the question is read and completed when
+    # the answer is read.
     def seg7(self):
-        self.sync(self.end(len(NARRATION)) + 1.0)
+        ART_CY = -0.35                                  # centre height of the mini drawings
+        RING_C = np.array([0.0, -2.95, 0.0])            # countdown ring / answer line
+        PEAKS = [(0.0, 1.5), (D.T_FLAW_US, 1.0), (D.T_BACKWALL_US, 1.2)]   # initial, flaw, back wall
+
+        def fly(mob, p0, p1, run_time):
+            """A pulse travels from p0 to p1 (and is removed on arrival)."""
+            mob.move_to(p0)
+            self.add(mob)
+            self.play(mob.animate(run_time=run_time, rate_func=linear).move_to(p1))
+            self.remove(mob)
+
+        def pk(color, direction, amp=0.2):
+            return wave_packet(length=0.6, amp=amp * 1.2, cycles=4, color=color, direction=direction)
+
+        def two_bold(text, size, width):
+            """One bold label, or two centred lines split at the best space when too wide."""
+            one = label(text, size, INK, weight=BOLD)
+            if one.width <= width:
+                return one
+            words, best = text.split(), None
+            for i in range(1, len(words)):
+                a = label(" ".join(words[:i]), size, INK, weight=BOLD)
+                b = label(" ".join(words[i:]), size, INK, weight=BOLD)
+                w = max(a.width, b.width)
+                if best is None or w < best[0]:
+                    best = (w, a, b)
+            return VGroup(best[1], best[2]).arrange(DOWN, buff=0.1)
+
+        # ------------------------------------------------------------------ the card engine
+        def head_row(k):
+            txt = label(f"Q {k} / 8", FS_LABEL, ACCENT_1, weight=BOLD)
+            pill = RoundedRectangle(width=txt.width + 0.5, height=0.55, corner_radius=0.27,
+                                    color=ACCENT_1, stroke_width=4).set_fill(PANEL_FILL, 1)
+            txt.move_to(pill)
+            dots = VGroup(*[Circle(radius=0.09, stroke_width=3,
+                                   color=ACCENT_1 if i < k else GREY_INK)
+                            .set_fill(ACCENT_1 if i < k else BG, 1) for i in range(8)])
+            dots.arrange(RIGHT, buff=0.18)
+            return VGroup(VGroup(pill, txt), dots).arrange(RIGHT, buff=0.5).move_to([0, 3.3, 0])
+
+        def question_text(text):
+            one = label(text, 36, INK)
+            if one.width <= 11.8:
+                g = one
+            else:
+                a, b = _wrap_two_lines(text, 36)
+                g = VGroup(a, b).arrange(DOWN, buff=0.1)
+            return g.move_to([0, 2.75 - g.height / 2, 0])
+
+        def answer_block(text):
+            t = two_bold(text, 38, 9.8)
+            if t.width > 9.8 or isinstance(t, VGroup):
+                t = two_bold(text, 30, 9.8)
+            tick = icon("check", OK_C, 0.62)
+            return VGroup(tick, t).arrange(RIGHT, buff=0.3).move_to(RING_C)
+
+        def card(k, question, art, answer):
+            sq, sc, sa = 8 + 3 * (k - 1), 9 + 3 * (k - 1), 10 + 3 * (k - 1)
+            head, q = head_row(k), question_text(question)
+            self.sync(self.start(sq))
+            self.play(FadeIn(head, shift=DOWN * 0.2), FadeIn(q, shift=DOWN * 0.2), run_time=0.5)
+            show, finish = art()
+            show()
+            # ---- the silent countdown: the ring empties, the digits 3, 2, 1 each on its second
+            self.sync(self.start(sc))
+            trk = ValueTracker(0.0)
+            track = Circle(radius=0.55, color=LIGHT_INK, stroke_width=8).move_to(RING_C)
+            track.set_fill(PANEL_FILL, 1)
+            arc = always_redraw(lambda: Arc(radius=0.55, start_angle=PI / 2,
+                                            angle=max(TAU * (1 - trk.get_value()), 1e-3),
+                                            arc_center=RING_C, color=INK, stroke_width=8))
+            digit = lambda n: label(str(n), FS_HEADING, INK, weight=BOLD).move_to(RING_C)
+            d = digit(3)
+            self.add(track, arc)
+            self.play(FadeIn(track, run_time=0.2), FadeIn(d, scale=1.5, run_time=0.25),
+                      trk.animate(run_time=1.0, rate_func=linear).set_value(1 / 3))
+            for n, goal, t0 in ((2, 2 / 3, 1.0), (1, 1.0, 2.0)):
+                self.sync(self.start(sc) + t0)
+                nd = digit(n)
+                self.play(FadeOut(d, run_time=0.15), FadeIn(nd, scale=1.5, run_time=0.25),
+                          trk.animate(run_time=self.end(sc) - self.start(sc) - t0
+                                      if n == 1 else 1.0, rate_func=linear).set_value(goal))
+                d = nd
+            # ---- the answer: ring out, answer line with its tick in, the drawing completed
+            self.sync(self.start(sa))
+            arc.clear_updaters()
+            ans = answer_block(answer)
+            finish(FadeOut(track, run_time=0.3), FadeOut(arc, run_time=0.3),
+                   FadeOut(d, run_time=0.3), FadeIn(ans, shift=UP * 0.15, run_time=0.4))
+            self.sync(self.end(sa) - 0.45)
+            self.clear(run_time=0.45)
+
+        # ------------------------------------------------------------------ the mini drawings
+        def art1():                       # the frequency ruler and the band of most UT
+            ruler = FrequencyRuler(width=10.4, size=FS_AXIS).move_to([0, ART_CY - 0.5, 0])
+            aud = ruler.band_rect(D.AUDIBLE_MIN_HZ, D.AUDIBLE_MAX_KHZ * 1e3, GREY_INK, 0.9)
+            aud_lab = ruler.band_label(
+                aud, f"Audible: {D.AUDIBLE_MIN_HZ} Hz to {D.AUDIBLE_MAX_KHZ} kHz", GREY_INK, FS_AXIS)
+            ut = ruler.band_rect(D.UT_MIN_MHZ * 1e6, D.UT_MAX_MHZ * 1e6, ACCENT_1, 0.9)
+            ut_lab = label(f"{D.UT_MIN_MHZ:g} to {D.UT_MAX_MHZ:g} MHz", FS_LABEL + 4, ACCENT_1,
+                           weight=BOLD).next_to(ut, UP, 0.12)
+
+            def show():
+                self.play(Create(ruler.axis), FadeIn(ruler.ticks), FadeIn(ruler.tick_labels),
+                          FadeIn(ruler.caption), run_time=0.8)
+                self.play(GrowFromEdge(aud, LEFT), FadeIn(aud_lab), run_time=0.7)
+
+            def finish(*extra):
+                self.play(GrowFromEdge(ut, LEFT), *extra, run_time=0.7)
+                self.play(FadeIn(ut_lab, shift=UP * 0.1), run_time=0.4)
+            return show, finish
+
+        def art2():                       # probe, air gap, couplant
+            surf = -1.0
+            block = SteelBlock(7.0, 1.0).move_to([0, surf - 0.5, 0])
+            rig = CouplantRig(0.0, surf, gap=1.15)
+            fill = rig.gap_fill()
+            ghost = DashedVMobject(Rectangle(width=fill.width, height=fill.height,
+                                             color=GREY_INK, stroke_width=2).move_to(fill),
+                                   num_dashes=36)
+            steel_tag = label("Steel", FS_TAG, INK).next_to(block, RIGHT, 0.2)
+            air = label("Air gap", FS_TAG, GREY_INK).next_to(fill, LEFT, 0.3)
+            coup = label("Couplant", FS_TAG, ACCENT_3, weight=BOLD).next_to(fill, LEFT, 0.3)
+            face = rig.face_y()
+
+            def show():
+                self.play(Create(block), FadeIn(rig), FadeIn(steel_tag), FadeIn(air), FadeIn(ghost),
+                          run_time=0.8)
+                fly(pk(ACCENT_1, DOWN), [0, face - 0.35, 0], [0, surf + 0.35, 0], 0.5)
+                fly(pk(ACCENT_2, UP), [0, surf + 0.35, 0], [0, face - 0.35, 0], 0.5)
+
+            def finish(*extra):
+                self.play(FadeIn(fill), FadeOut(ghost), ReplacementTransform(air, coup), *extra,
+                          run_time=0.5)
+                fly(pk(ACCENT_1, DOWN), [0, face - 0.35, 0], [0, surf + 0.35, 0], 0.4)
+                fly(pk(ACCENT_3, DOWN, 0.16), [0, surf - 0.3, 0], [0, surf - 0.75, 0], 0.4)
+            return show, finish
+
+        def art3():                       # a wave and its wavelength bracket
+            lw = LabelledWave(D.LAMBDA_STEEL * UNITS_PER_MM, width=9.0, amp=0.5,
+                              tag=f"λ = {D.LAMBDA_STEEL:.3f} mm", tag_size=FS_LABEL + 4)
+            lw.shift(DOWN * 0.3)
+            cap = label(f"{D.F_PROBE:g} MHz probe in steel ({D.V_L_STEEL:.0f} m/s)", FS_LABEL,
+                        INK).move_to([0, ART_CY - 1.15, 0])
+
+            def show():
+                self.play(Create(lw.wave, run_time=1.4, rate_func=linear),
+                          FadeIn(cap, run_time=0.6))
+
+            def finish(*extra):
+                self.play(FadeIn(lw.dots), Create(lw.guides), GrowFromCenter(lw.bracket),
+                          FadeIn(lw.tag), *extra, run_time=0.9)
+            return show, finish
+
+        def art4():                       # shear: particles pulled along in steel, loose in water
+            y_s, y_w = 0.4, -1.2
+            launches = [2.6 * i for i in range(8)]
+            kw = dict(n=13, spacing=0.7, amp=0.3, wavelength=2.8, pulse_width=1.3, speed=2.8,
+                      tag=6, x_start=-5.4, launches=launches, transverse=True, radius=0.15,
+                      tag_radius=0.21)
+            steel = ParticleChain(y=y_s, **kw)
+            water = ParticleChain(y=y_w, **kw)
+            water.remove(water.springs)                  # a liquid: no links between the layers
+            first = water.displacement
+            water.displacement = lambda x0: first(x0) if x0 < water.rest[0] + 0.01 else 0.0
+            lab_s = label("Steel (solid)", FS_AXIS, INK, weight=BOLD)
+            lab_w = label("Water (liquid)", FS_AXIS, INK, weight=BOLD)
+            for lab, y in ((lab_s, y_s), (lab_w, y_w)):
+                lab.move_to([-4.4 + lab.width / 2, y + 0.75, 0])
+            ok = icon("check", OK_C, 0.55).move_to([5.7, y_s, 0])
+            ok_t = label("Carried", FS_TAG, OK_C, weight=BOLD).next_to(ok, DOWN, 0.1)
+            no = icon("x", ALERT_C, 0.55).move_to([5.7, y_w, 0])
+            no_t = label("Not carried", FS_TAG, ALERT_C, weight=BOLD).next_to(no, DOWN, 0.1)
+
+            def show():
+                self.play(FadeIn(steel), FadeIn(water), FadeIn(lab_s), FadeIn(lab_w), run_time=0.6)
+                steel.add_updater(lambda m, dt: m.advance(dt))
+                water.add_updater(lambda m, dt: m.advance(dt))
+
+            def finish(*extra):
+                self.play(FadeIn(ok), FadeIn(ok_t), FadeIn(no), FadeIn(no_t), *extra,
+                          run_time=0.6)
+            return show, finish
+
+        def art5():                       # an A-scan whose axes the answer names
+            scan = AScan([], width=8.0, height=2.7, x_caption="Time or distance",
+                         y_caption="Echo amplitude")
+            scan.shift(np.array([0.3, ART_CY + 0.1, 0.0]) - scan.frame.get_center())
+            cap_x, cap_y = scan.x_caption, scan.y_caption
+            scan.remove(cap_x, cap_y)
+            q_x = label("?", FS_LABEL, ACCENT_2, weight=BOLD).next_to(scan.frame, DOWN, 0.15)
+            q_x.align_to(scan.frame, RIGHT)
+            q_y = label("?", FS_LABEL, ACCENT_2, weight=BOLD).move_to(cap_y)
+            trk = ValueTracker(scan.t_min)
+            scan.trace.add_updater(lambda m: scan.update_trace(trk.get_value()))
+
+            def show():
+                self.play(FadeIn(scan), FadeIn(q_x), FadeIn(q_y), run_time=0.7)
+                self.add(scan.trace)
+                self.play(trk.animate(run_time=0.9, rate_func=linear).set_value(scan.t_max))
+
+            def finish(*extra):
+                self.play(ReplacementTransform(q_x, cap_x), ReplacementTransform(q_y, cap_y),
+                          *extra, run_time=0.5)
+                scan.peaks = list(PEAKS)
+                trk.set_value(scan.t_min)
+                self.add(scan.pen)
+                self.play(trk.animate(run_time=1.4, rate_func=linear).set_value(scan.t_max))
+                scan.trace.clear_updaters()
+                self.play(FadeOut(scan.pen, run_time=0.2))
+            return show, finish
+
+        def art6():                       # an A-scan with the echo at 4.05 us -> the depth
+            scan = AScan(PEAKS, width=6.2, height=2.7)
+            scan.shift(np.array([-2.7, ART_CY + 0.1, 0.0]) - scan.frame.get_center())
+            trk = ValueTracker(scan.t_min)
+            scan.trace.add_updater(lambda m: scan.update_trace(trk.get_value()))
+            block = SteelBlock(3.0, 1.8).move_to([4.6, -0.4, 0])
+            probe = Probe().next_to(block, UP, buff=0)
+            top = block.get_top()[1]
+            y_f = top - D.FLAW_DEPTH / D.THICKNESS * 1.8
+            flaw = Ellipse(width=0.5, height=0.2, color=ACCENT_4, stroke_width=4)
+            flaw.set_fill(ACCENT_4, 0.4).move_to([4.6, y_f, 0])
+            plate = label(f"Steel, {D.THICKNESS:.0f} mm", FS_TAG, INK).next_to(block, DOWN, 0.15)
+            xa = block.get_left()[0] - 0.3
+            dim = DoubleArrow([xa, top, 0], [xa, y_f, 0], buff=0, color=ACCENT_4, stroke_width=3,
+                              tip_length=0.14)
+            guide = DashedLine([xa, y_f, 0], flaw.get_left() + LEFT * 0.05, color=ACCENT_4,
+                               stroke_width=2)
+            ask = label("?", FS_LABEL, ACCENT_4, weight=BOLD).next_to(dim, LEFT, 0.12)
+            res = label(f"{D.FLAW_DEPTH_FROM_T:.1f} mm", FS_NOTE, ACCENT_4,
+                        weight=BOLD).next_to(dim, LEFT, 0.12)
+            dot = Dot(scan.apex(1), radius=0.07, color=ACCENT_2)
+            t_lab = label(f"{D.T_FLAW_US:.2f} µs", FS_TAG, ACCENT_2,
+                          weight=BOLD).next_to(dot, UP, 0.12)
+            bx = block.get_center()[0]
+
+            def show():
+                self.play(FadeIn(scan), run_time=0.6)
+                self.add(scan.trace)
+                self.play(trk.animate(run_time=1.4, rate_func=linear).set_value(scan.t_max))
+                scan.trace.clear_updaters()
+                self.sync(self.cue(23, "مِيكْرُوثَانِيَةٍ"))
+                self.play(FadeIn(dot), FadeIn(t_lab, shift=UP * 0.1), run_time=0.4)
+                self.sync(self.cue(23, "فَمَا"))
+                self.play(Create(block), FadeIn(probe), FadeIn(plate), run_time=0.5)
+                self.play(FadeIn(flaw), Create(dim), Create(guide), FadeIn(ask), run_time=0.5)
+
+            def finish(*extra):
+                fly(pk(ACCENT_1, DOWN), [bx, top - 0.3, 0], [bx, y_f + 0.25, 0], 0.35)
+                self.play(ReplacementTransform(ask, res), *extra, run_time=0.5)
+            return show, finish
+
+        def art7():                       # the sound goes down and comes back: 2 x d
+            block = SteelBlock(4.4, 2.2).move_to([-2.2, -0.6, 0])
+            probe = Probe().next_to(block, UP, buff=0)
+            top, bx = block.get_top()[1], block.get_center()[0]
+            y_f = top - 1.2
+            flaw = Ellipse(width=0.6, height=0.2, color=ACCENT_4, stroke_width=4)
+            flaw.set_fill(ACCENT_4, 0.4).move_to([bx, y_f, 0])
+            xl, xr = block.get_left()[0] - 0.45, block.get_right()[0] + 0.45
+            down = Arrow([xl, top, 0], [xl, y_f, 0], buff=0, color=ACCENT_1, stroke_width=5,
+                         tip_length=0.2)
+            up = Arrow([xr, y_f, 0], [xr, top, 0], buff=0, color=ACCENT_2, stroke_width=5,
+                       tip_length=0.2)
+            g_l = DashedLine([xl, y_f, 0], flaw.get_left() + LEFT * 0.05, color=GREY_INK,
+                             stroke_width=2)
+            g_r = DashedLine(flaw.get_right() + RIGHT * 0.05, [xr, y_f, 0], color=GREY_INK,
+                             stroke_width=2)
+            lab_l = label("out: d", FS_TAG, ACCENT_1, weight=BOLD).next_to(down, LEFT, 0.12)
+            lab_r = label("back: d", FS_TAG, ACCENT_2, weight=BOLD).next_to(up, RIGHT, 0.12)
+            mk = lambda s, col=INK: label(s, FS_EQUATION + 2, col)
+            eq = VGroup(mk("d"), mk("="), mk("v"), mk("×"), mk("t"), mk("÷ 2", ACCENT_2))
+            eq.arrange(RIGHT, buff=0.22).move_to([4.1, 0.2, 0])
+            path = label("Path = d + d = 2d", FS_LABEL, INK).next_to(eq, DOWN, 0.5)
+
+            def show():
+                self.play(Create(block), FadeIn(probe), FadeIn(flaw), run_time=0.6)
+                self.play(FadeIn(eq, shift=LEFT * 0.2), run_time=0.5)
+                self.sync(self.cue(26, "فِي"))
+                self.play(Indicate(eq[5], color=ACCENT_2, scale_factor=1.25), run_time=0.6)
+
+            def finish(*extra):
+                self.play(GrowArrow(down), FadeIn(lab_l), Create(g_l), *extra, run_time=0.5)
+                fly(pk(ACCENT_1, DOWN), [bx, top - 0.3, 0], [bx, y_f + 0.25, 0], 0.5)
+                self.play(GrowArrow(up), FadeIn(lab_r), Create(g_r), run_time=0.4)
+                fly(pk(ACCENT_2, UP, 0.16), [bx, y_f + 0.25, 0], [bx, top - 0.3, 0], 0.5)
+                self.play(FadeIn(path, shift=UP * 0.1), run_time=0.4)
+            return show, finish
+
+        def art8():                       # one probe on one side against two probes
+            ms_e = MethodSketch("echo", 3.8, 1.3).shift(LEFT * 3.6)
+            ms_t = MethodSketch("through", 3.8, 1.3).shift(RIGHT * 3.4)
+            h_e = label("Pulse-echo", FS_NOTE, INK, weight=BOLD)
+            h_t = label("Through-transmission", FS_NOTE, INK, weight=BOLD)
+            h_e.move_to([ms_e.block.get_center()[0], ms_e.get_top()[1] + 0.4, 0])
+            h_t.move_to([ms_t.block.get_center()[0], ms_t.get_top()[1] + 0.4, 0])
+            art = VGroup(ms_e, ms_t, h_e, h_t).scale(0.9).move_to([0, ART_CY - 0.1, 0])
+
+            def finish(*extra):
+                blk = ms_e.block
+                xa = blk.get_left()[0] - 0.3
+                y_top, y_f = blk.get_top()[1], ms_e.flaw.get_center()[1]
+                dim = DoubleArrow([xa, y_top, 0], [xa, y_f, 0], buff=0, color=ACCENT_4,
+                                  stroke_width=3, tip_length=0.14)
+                guide = DashedLine([xa, y_f, 0], ms_e.flaw.get_left() + LEFT * 0.05,
+                                   color=ACCENT_4, stroke_width=2)
+                d_lab = label("depth", FS_TAG, ACCENT_4, weight=BOLD).next_to(dim, LEFT, 0.1)
+                chk = icon("check", OK_C, 0.45).next_to(h_e, RIGHT, 0.2)
+                crs = icon("x", ALERT_C, 0.45).next_to(h_t, RIGHT, 0.2)
+                t_e = tag_line("One surface", "check", OK_C, width=3.4)
+                t_e.next_to(blk, DOWN, 0.3)
+                t_t = tag_line("Both surfaces", "x", ALERT_C, width=3.4)
+                t_t.next_to(ms_t.probe_b.housing, LEFT, 0.3).align_to(t_e, UP)
+                self.play(Create(dim), Create(guide), FadeIn(d_lab), FadeIn(chk), FadeIn(crs),
+                          FadeIn(t_e), FadeIn(t_t), *extra, run_time=0.8)
+
+            def show():
+                self.play(Create(ms_e), Create(ms_t), FadeIn(h_e), FadeIn(h_t), run_time=1.0)
+            return show, finish
+
+        # ------------------------------------------------------------------ intro (entry 7)
+        self.sync(self.start(7))
+        r_head = label("Review", FS_TITLE, INK, weight=BOLD).move_to([0, 2.3, 0])
+        r_rule = Line(LEFT * 1.8, RIGHT * 1.8, color=ACCENT_1, stroke_width=5)
+        r_rule.next_to(r_head, DOWN, 0.2)
+        self.play(FadeIn(r_head, shift=DOWN * 0.2), Create(r_rule), run_time=0.6)
+        r_badges = VGroup(*[badge(n, ACCENT_1, 0.34) for n in range(1, 9)]).arrange(RIGHT, buff=0.45)
+        r_badges.move_to([0, 0.5, 0])
+        self.sync(self.cue(7, "بِثَمَانِيَةِ"))
+        self.play(LaggedStart(*[FadeIn(b, scale=0.6) for b in r_badges], lag_ratio=0.25,
+                              run_time=1.6))
+        r_ring = Circle(radius=0.55, color=LIGHT_INK, stroke_width=8).set_fill(PANEL_FILL, 1)
+        r_three = label("3", FS_HEADING, INK, weight=BOLD).move_to(r_ring)
+        r_note = label("seconds to answer yourself", FS_LABEL, INK)
+        r_row = VGroup(VGroup(r_ring, r_three), r_note).arrange(RIGHT, buff=0.4)
+        r_row.move_to([0, -1.5, 0])
+        r_trk = ValueTracker(0.0)
+        r_arc = always_redraw(lambda: Arc(radius=0.55, start_angle=PI / 2,
+                                          angle=max(TAU * (1 - r_trk.get_value()), 1e-3),
+                                          arc_center=r_ring.get_center(), color=INK, stroke_width=8))
+        self.sync(self.cue(7, "ثَلَاثُ"))
+        self.add(r_arc)
+        self.play(FadeIn(r_ring, run_time=0.3), FadeIn(r_three, run_time=0.3),
+                  FadeIn(r_note, shift=LEFT * 0.2, run_time=0.4))
+        self.play(r_trk.animate(run_time=self.end(7) - 0.45 - self.renderer.time,
+                                rate_func=linear).set_value(1.0))
+        r_arc.clear_updaters()
+        self.clear(run_time=0.45)
+
+        # ------------------------------------------------------------------ the eight cards
+        card(1, "Which frequency range is most UT done in?", art1,
+             f"{D.UT_MIN_MHZ:g} to {D.UT_MAX_MHZ:g} MHz")
+        card(2, "Why put a couplant between probe and part?", art2,
+             f"To drive the air out: steel to air reflects about {D.R_STEEL_AIR * 100:.3f} % "
+             "of the energy")
+        card(3, f"Wavelength of a {D.F_PROBE:g} MHz probe in steel?", art3, f"{D.LAMBDA_STEEL:.3f} mm")
+        card(4, "Why can't shear waves travel in water?", art4, "Liquids do not resist shear")
+        card(5, "What are the two axes of the A-scan?", art5,
+             "Horizontal: time or distance; vertical: echo amplitude")
+        card(6, f"An echo at {D.T_FLAW_US:.2f} µs in steel: how deep is the flaw?", art6,
+             f"{D.FLAW_DEPTH_FROM_T:.1f} mm")
+        card(7, "Why divide by 2 in the depth equation?", art7, "The sound goes and comes back")
+        card(8, "Advantage of pulse-echo over through-transmission?", art8,
+             "One surface is enough, and it gives the flaw depth")
+        self.sync(self.end(len(NARRATION)))
 
 
 if __name__ == "__main__":
