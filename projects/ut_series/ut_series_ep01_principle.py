@@ -469,6 +469,114 @@ class WaveField(VGroup):
         self.update_to(self.t + dt)
 
 
+# ---- Segment 4 helpers: energy arrows, the reflection formula, the interface drawing ----
+def energy_arrow(tail, head, thickness, color, head_len=0.34, head_extra=0.12):
+    """A horizontal block arrow from `tail` to `head` whose shaft is `thickness` thick (the
+    thickness stands for the share of the energy it carries). The head is a little wider than the
+    shaft so that even a hairline shaft keeps a visible tip."""
+    tx, ty = float(tail[0]), float(tail[1])
+    hx = float(head[0])
+    d = 1.0 if hx > tx else -1.0
+    half = max(thickness, 0.012) / 2
+    hh = max(half + head_extra, 0.13)
+    xs = hx - d * head_len
+    pts = [[tx, ty + half, 0], [xs, ty + half, 0], [xs, ty + hh, 0], [hx, ty, 0],
+           [xs, ty - hh, 0], [xs, ty - half, 0], [tx, ty - half, 0]]
+    arrow = Polygon(*pts, color=color, stroke_width=1.5)
+    arrow.set_fill(color, 1)
+    return arrow
+
+
+def big_paren(height, side=LEFT, color=INK, stroke_width=4):
+    """A tall round bracket: `side` = LEFT gives "(", RIGHT gives ")"."""
+    sign = 1 if side is LEFT or np.allclose(side, LEFT) else -1
+    arc = ArcBetweenPoints([0, height / 2, 0], [0, -height / 2, 0], angle=sign * 0.95,
+                           color=color, stroke_width=stroke_width)
+    return arc
+
+
+class ReflectionFormula(VGroup):
+    """R = ((Z₂ − Z₁) / (Z₂ + Z₁))²  and  T = 1 − R, built from Text pieces (no LaTeX), with the
+    brackets drawn. Parts, so that a scene can reveal them one after the other:
+    `r_lhs` ("R =") · `parens` (the two big brackets and the square) · `num` · `bar` · `den` ·
+    `t_line` ("T = 1 − R"). The group is built at its final place: add each part with FadeIn."""
+
+    def __init__(self, size=FS_EQUATION + 6, gap=1.1):
+        mk = lambda s, col=INK, sz=size: Text(s, font_size=sz, color=col)
+        r_lhs = VGroup(mk("R", ACCENT_2), mk("=")).arrange(RIGHT, buff=0.25)
+        num, den = mk("(Z₂ − Z₁)"), mk("(Z₂ + Z₁)")
+        w = max(num.width, den.width) + 0.2
+        bar = Line(LEFT * w / 2, RIGHT * w / 2, color=INK, stroke_width=4)
+        frac = VGroup(num, bar, den).arrange(DOWN, buff=0.14)
+        h = frac.height + 0.35
+        lp, rp = big_paren(h, LEFT), big_paren(h, RIGHT)
+        quo = VGroup(lp, frac, rp).arrange(RIGHT, buff=0.14)
+        sq = mk("2", INK, int(size * 0.62)).next_to(rp, UR, buff=0.04).shift(DOWN * 0.12)
+        r_formula = VGroup(r_lhs, quo, sq).arrange(RIGHT, buff=0.28)
+        sq.next_to(rp, UR, buff=0.04).shift(DOWN * 0.12)        # arrange moved it: re-place it
+        t_line = VGroup(mk("T", ACCENT_3), mk("="), mk("1"), mk("−"), mk("R", ACCENT_2)
+                        ).arrange(RIGHT, buff=0.22)
+        t_line.next_to(r_formula, RIGHT, buff=gap)
+        super().__init__(r_formula, t_line)
+        self.r_lhs, self.num, self.bar, self.den, self.t_line = r_lhs, num, bar, den, t_line
+        self.parens = VGroup(lp, rp, sq)
+        self.lp, self.rp, self.sq = lp, rp, sq
+
+
+def medium_tag(name, calc, result, result_color=INK):
+    """The three lines under a medium: its name, the product that gives Z, and Z itself. Parts:
+    `name_`, `calc_`, `result_` (arranged already, so each can be revealed on its own)."""
+    n = label(name, FS_NOTE, INK, weight=BOLD)
+    c = label(calc, FS_TAG, GREY_INK)
+    r = label(result, FS_NOTE, result_color, weight=BOLD)
+    g = VGroup(n, c, r).arrange(DOWN, buff=0.1)
+    g.name_, g.calc_, g.result_ = n, c, r
+    return g
+
+
+class EnergyBar(VGroup):
+    """A bar for the split of the energy: the left part is the reflected share (ACCENT_2, from the
+    left), the right part the transmitted share (ACCENT_3, from the right). `frame`, `refl`, `trans`;
+    `refl` and `trans` are not in the group (the scene grows them). The transmitted part keeps a
+    minimum width of 0.015 so a share like 0.004 % still shows as a sliver."""
+
+    def __init__(self, r_share, width=10.0, height=0.5):
+        frame = Rectangle(width=width, height=height, color=INK, stroke_width=3)
+        frame.set_fill(PANEL_FILL, 1)
+        super().__init__(frame)
+        self.frame = frame
+        w_r = width * r_share
+        w_t = max(width * (1 - r_share), 0.015)
+        self.refl = Rectangle(width=w_r, height=height, color=ACCENT_2, stroke_width=0)
+        self.refl.set_fill(ACCENT_2, 1).align_to(frame, LEFT).match_y(frame)
+        self.trans = Rectangle(width=w_t, height=height, color=ACCENT_3, stroke_width=0)
+        self.trans.set_fill(ACCENT_3, 1).align_to(frame, RIGHT).match_y(frame)
+
+
+class CouplantRig(VGroup):
+    """A probe held a gap above a part, with the tag "Probe" beside it. `gap_fill()` is the couplant
+    that fills the gap (not in the group until `add`ed). Slide the group to move probe and film."""
+
+    def __init__(self, x, surface_y, gap=0.9):
+        self.surface_y, self.gap = surface_y, gap
+        probe = Probe().next_to([x, surface_y + gap, 0], UP, buff=0)
+        tag = label("Probe", FS_TAG, ACCENT_1, weight=BOLD).next_to(probe.housing, RIGHT, 0.2)
+        super().__init__(probe, tag)
+        self.probe, self.tag = probe, tag
+
+    def face_y(self):
+        return self.probe.face_point()[1]
+
+    def x(self):
+        return self.probe.face_point()[0]
+
+    def gap_fill(self):
+        w = self.probe.crystal.width
+        f = Rectangle(width=w, height=self.gap, color=ACCENT_3, stroke_width=2)
+        f.set_fill(ACCENT_3, 0.45)
+        return f.move_to([self.x(), self.surface_y + self.gap / 2, 0])
+
+
 class UtSeriesEp01(SyncedScene):
     def construct(self):
         self.timeline(NARRATION, AUDIO_DIR)
@@ -1106,6 +1214,263 @@ class UtSeriesEp01(SyncedScene):
 
     # ---------------- Segment 4: impedance and reflection (§4) ----------------
     def seg4(self):
+        c = lambda phrase, nth=1: self.cue(4, phrase, nth)
+
+        # ---- A, 0-4 s: acoustic impedance Z = density x velocity ----
+        self.sync(c("المُعَاوَقَةُ"))
+        eq = equation(self, ["Z", "=", "ρ", "×", "v"], colors={0: ACCENT_1},
+                      size=FS_EQUATION + 16, pos=[0, 0.7, 0], run_time=0.5, buff=0.55)
+        caps = VGroup(*[label(t, FS_LABEL, GREY_INK).next_to(eq[k], DOWN, 0.25)
+                        for k, t in ((0, "acoustic\nimpedance"), (2, "density"), (4, "speed"))])
+        self.sync(c("الصَّوْتِيَّةُ"))
+        self.play(FadeIn(caps[0]), run_time=0.3)
+        self.sync(c("الكَثَافَةُ"))
+        self.play(FadeIn(caps[1]), run_time=0.3)
+        self.sync(c("السُّرْعَةِ"))
+        self.play(FadeIn(caps[2]), run_time=0.3)
+        self.sync(c("وَعِنْدَ") - 0.35)
+        self.play(FadeOut(eq), FadeOut(caps), run_time=0.35)
+
+        # ---- B, 4.2-7.6 s: a wave hits the interface between two media at 90 degrees ----
+        BLK_W, BLK_H, BLK_Y = 5.5, 2.4, 0.8
+        Y_INC, Y_REF, Y_TRN, X_ARR, T0 = 1.25, 0.5, 0.85, 3.0, 0.4
+        steel_blk = Rectangle(width=BLK_W, height=BLK_H, color=INK, stroke_width=4)
+        steel_blk.set_fill(PANEL_FILL, 1).move_to([-BLK_W / 2, BLK_Y, 0])
+        water_blk = Rectangle(width=BLK_W, height=BLK_H, color=INK, stroke_width=4)
+        water_blk.set_fill(PANEL_FILL, 0.45).move_to([BLK_W / 2, BLK_Y, 0])
+        generic = VGroup(label("Medium 1  (Z₁)", FS_NOTE, GREY_INK).next_to(steel_blk, DOWN, 0.2),
+                         label("Medium 2  (Z₂)", FS_NOTE, GREY_INK).next_to(water_blk, DOWN, 0.2))
+        inc = energy_arrow([-X_ARR, Y_INC, 0], [-0.05, Y_INC, 0], T0, ACCENT_1)
+        inc_lab = label("Incident", FS_TAG, ACCENT_1, weight=BOLD).next_to(inc, LEFT, 0.12)
+        normal_lab = label("normal incidence (90°)", FS_TAG, GREY_INK)
+        normal_lab.move_to(water_blk.get_corner(UL) + DR * 0.22, aligned_edge=UL)
+        iface_lab = label("Interface", FS_TAG, GREY_INK).move_to([0, steel_blk.get_bottom()[1] - 0.3, 0])
+        iface_arr = Arrow(iface_lab.get_top() + UP * 0.03, [0, steel_blk.get_bottom()[1], 0], buff=0,
+                          color=GREY_INK, stroke_width=3, tip_length=0.15)
+        self.sync(c("وَعِنْدَ"))
+        self.play(Create(steel_blk), Create(water_blk), FadeIn(generic), run_time=0.75)
+        self.sync(c("المَوْجَةِ"))
+        self.play(GrowFromPoint(inc, [-X_ARR, Y_INC, 0]), FadeIn(inc_lab), run_time=0.5)
+        self.sync(c("عَمُودِيًّا"))
+        self.play(FadeIn(normal_lab), run_time=0.3)
+        self.sync(c("سَطْحٍ"))
+        self.play(FadeIn(iface_lab), GrowArrow(iface_arr),
+                  Flash([0, Y_INC, 0], color=ACCENT_1, flash_radius=0.4, line_length=0.15,
+                        run_time=0.5), run_time=0.5)
+
+        # ---- C, 7.8-14.5 s: the reflection formula, with its brackets, and T = 1 - R ----
+        fm = ReflectionFormula(size=FS_EQUATION + 6)
+        fm.scale_to_fit_height(1.15)
+        fit(fm, 12.4).move_to([0, 3.12, 0])
+        self.sync(c("تَنْعَكِسُ"))
+        self.play(FadeIn(fm.r_lhs), FadeOut(normal_lab), run_time=0.4)
+        self.sync(c("مُرَبَّعُ"))
+        self.play(FadeIn(fm.parens), run_time=0.4)
+        self.sync(c("فَرْقِ"))
+        self.play(FadeIn(fm.num, shift=DOWN * 0.1), run_time=0.4)
+        self.sync(c("عَلَى", 2))
+        self.play(Create(fm.bar), run_time=0.25)
+        self.sync(c("مَجْمُوعِهِمَا"))
+        self.play(FadeIn(fm.den, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("وَيَنْفُذُ"))
+        self.play(FadeIn(fm.t_line), run_time=0.5)
+
+        # ---- D, 15.4-27.5 s: steel against water: 88.0 % reflected, 12.0 % transmitted ----
+        steel_tag = medium_tag("Steel", f"{D.RHO_STEEL:.0f} kg/m³ × {D.V_L_STEEL:.0f} m/s",
+                               f"Z₁ = {D.Z_STEEL:.2f} MRayl").next_to(steel_blk, DOWN, 0.2)
+        water_tag = medium_tag("Water", f"{D.RHO_WATER:.0f} kg/m³ × {D.V_WATER:.0f} m/s",
+                               f"Z₂ = {D.Z_WATER:.2f} MRayl").next_to(water_blk, DOWN, 0.2)
+        self.sync(c("الفُولَاذِ"))
+        self.play(FadeOut(generic[0]), FadeIn(steel_tag.name_), run_time=0.3)
+        self.sync(c("المُعَاوَقَةُ", 2))
+        self.play(FadeIn(steel_tag.calc_), run_time=0.35)
+        self.sync(c("سِتَّةٌ"))
+        self.play(FadeIn(steel_tag.result_, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("المَاءِ"))
+        self.play(FadeOut(generic[1]), FadeIn(water_tag.name_), run_time=0.3)
+        self.sync(c("وَاحِدٌ"))
+        self.play(FadeIn(water_tag.calc_), run_time=0.3)
+        self.play(FadeIn(water_tag.result_, shift=UP * 0.1), run_time=0.4)
+
+        def split(r):
+            """Reflected and transmitted arrows (+ labels) for the reflected share r."""
+            ref = energy_arrow([-0.05, Y_REF, 0], [-X_ARR, Y_REF, 0], T0 * r, ACCENT_2)
+            trn = energy_arrow([0.05, Y_TRN, 0], [X_ARR, Y_TRN, 0], T0 * (1 - r), ACCENT_3)
+            ref_l = label("Reflected", FS_TAG, ACCENT_2, weight=BOLD).next_to(ref, LEFT, 0.12)
+            trn_l = label("Transmitted", FS_TAG, ACCENT_3, weight=BOLD).next_to(trn, RIGHT, 0.12)
+            return ref, trn, ref_l, trn_l
+
+        def split_in(ref, trn, ref_l, trn_l, bar):
+            self.play(Flash([0, Y_INC, 0], color=ACCENT_1, flash_radius=0.4, line_length=0.15,
+                            run_time=0.4),
+                      GrowFromPoint(ref, [-0.05, Y_REF, 0]), GrowFromPoint(trn, [0.05, Y_TRN, 0]),
+                      FadeIn(ref_l), FadeIn(trn_l), FadeIn(bar), run_time=0.7)
+
+        def bar_labels(bar, r_txt, t_txt):
+            lr = label(r_txt, FS_LABEL, ACCENT_2, weight=BOLD).next_to(bar.frame, DOWN, 0.2)
+            lr.align_to(bar.frame, LEFT)
+            lt = label(t_txt, FS_LABEL, ACCENT_3, weight=BOLD).next_to(bar.frame, DOWN, 0.2)
+            lt.align_to(bar.frame, RIGHT)
+            return lr, lt
+
+        bar_w = EnergyBar(D.R_STEEL_WATER)
+        bar_w.move_to([0, -2.2, 0])
+        for part in (bar_w.refl, bar_w.trans):
+            part.align_to(bar_w.frame, LEFT if part is bar_w.refl else RIGHT).match_y(bar_w.frame)
+        lr_w, lt_w = bar_labels(bar_w, f"Reflected  {D.R_STEEL_WATER * 100:.1f} %",
+                                f"Transmitted  {D.T_STEEL_WATER * 100:.1f} %")
+        ref_w, trn_w, ref_wl, trn_wl = split(D.R_STEEL_WATER)
+        self.sync(c("فَيَنْعَكِسُ"))
+        split_in(ref_w, trn_w, ref_wl, trn_wl, bar_w)
+        self.sync(c("ثَمَانِيَةٌ", 2))
+        self.play(GrowFromEdge(bar_w.refl, LEFT), run_time=0.65)
+        self.sync(c("وَثَمَانُونَ"))
+        self.play(FadeIn(lr_w), run_time=0.3)
+        self.sync(c("بِالمِئَةِ"))
+        self.play(GrowFromEdge(bar_w.trans, RIGHT), run_time=0.5)
+        self.sync(c("الطَّاقَةِ"))
+        self.play(FadeIn(lt_w), run_time=0.3)
+
+        # ---- E, 27.9-37.5 s: steel against air: 99.996 % reflected ----
+        air_tag = medium_tag("Air", f"{D.RHO_AIR:g} kg/m³ × {D.V_AIR:.0f} m/s",
+                             f"Z₂ = {D.Z_AIR:.0f} Rayl").next_to(water_blk, DOWN, 0.2)
+        bar_a = EnergyBar(D.R_STEEL_AIR)
+        bar_a.move_to([0, -2.2, 0])
+        bar_a.refl.align_to(bar_a.frame, LEFT).match_y(bar_a.frame)
+        bar_a.trans.align_to(bar_a.frame, RIGHT).match_y(bar_a.frame)
+        lr_a, lt_a = bar_labels(bar_a, f"Reflected  {D.R_STEEL_AIR * 100:.3f} %",
+                                f"Transmitted  {D.T_STEEL_AIR * 100:.3f} %")
+        ref_a, trn_a, ref_al, trn_al = split(D.R_STEEL_AIR)
+        self.sync(c("أَمَّا"))
+        self.play(*[FadeOut(m) for m in (ref_w, trn_w, ref_wl, trn_wl, bar_w, bar_w.refl,
+                                         bar_w.trans, lr_w, lt_w, water_tag)], run_time=0.22)
+        self.sync(c("الهَوَاءُ"))
+        self.play(water_blk.animate.set_fill(PANEL_FILL, 0.0), FadeIn(air_tag.name_), run_time=0.4)
+        self.sync(c("فَمُعَاوَقَتُهُ"))
+        self.play(FadeIn(air_tag.calc_), run_time=0.3)
+        self.sync(c("أَرْبَعُ"))
+        self.play(FadeIn(air_tag.result_, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("فَيَنْعَكِسُ", 2))
+        split_in(ref_a, trn_a, ref_al, trn_al, bar_a)
+        self.sync(c("تِسْعَةٌ"))
+        self.play(GrowFromEdge(bar_a.refl, LEFT), run_time=2.6, rate_func=linear)
+        self.play(FadeIn(lr_a), run_time=0.3)
+        self.sync(c("بِالمِئَةِ", 2))
+        self.play(FadeIn(bar_a.trans), FadeIn(lt_a), run_time=0.4)
+
+        # ---- F, 38-54 s: three consequences: air gap and couplant, air-filled flaw, back wall ----
+        self.sync(c("وَلِهٰذَا") - 0.4)
+        self.clear(run_time=0.4)
+        head = label("Three consequences", FS_BODY, INK, weight=BOLD).move_to([0, 3.35, 0])
+        self.sync(c("ثَلَاثُ"))
+        self.play(FadeIn(head), run_time=0.4)
+        t_top, g = 0.3, 0.9
+        part = SteelBlock(7.6, 2.9).move_to([-2.2, t_top - 1.45, 0])
+        wall_line = Line(part.body.get_corner(DL), part.body.get_corner(DR), color=INK, stroke_width=8)
+        wall_tag = label("Back wall", FS_TAG, GREY_INK).next_to(wall_line, DOWN, 0.15)
+        wall_tag.align_to(wall_line, LEFT).shift(RIGHT * 0.3)
+        steel_name = label("Steel part", FS_TAG, GREY_INK).move_to(
+            part.body.get_corner(DL) + UR * 0.2, aligned_edge=DL)
+        rig = CouplantRig(-4.0, t_top, gap=g)
+        px0 = rig.x()
+        gap_dim = DoubleArrow([px0 + 0.65, t_top, 0], [px0 + 0.65, t_top + g, 0], buff=0,
+                              color=GREY_INK, stroke_width=3, tip_length=0.12)
+        gap_lab = label("Air gap", FS_TAG, GREY_INK).next_to(gap_dim, RIGHT, 0.12)
+        chips = VGroup(
+            chip("Air gap blocks the sound; couplant drives it out", "wind", ACCENT_2, 4.6),
+            chip("Air-filled flaws reflect strongly, so they show", "search", ACCENT_4, 4.6),
+            chip("The back wall gives a strong echo", "arrows-exchange", ACCENT_2, 4.6),
+        ).arrange(DOWN, buff=0.35, aligned_edge=LEFT).move_to([4.5, 0.4, 0])
+
+        self.play(Create(part), FadeIn(rig), run_time=0.6)
+        self.play(FadeIn(wall_line), FadeIn(steel_name), run_time=0.3)
+
+        def hop(color, x, y0, y1, run, direction, amp=0.22, length=0.5, cycles=4, extra=()):
+            """A pulse of `color` leaves y0 and travels to y1 along x (`extra` animations play
+            together with its first appearance)."""
+            p_ = wave_packet(length=length, amp=amp, cycles=cycles, color=color, direction=direction)
+            p_.move_to([x, y0, 0])
+            self.play(FadeIn(p_, run_time=0.1), *extra)
+            self.play(p_.animate(run_time=run, rate_func=linear).move_to([x, y1, 0]))
+            return p_
+
+        # 1. the air gap: the pulse bounces back; couplant fills the gap and the pulse goes in
+        self.sync(c("طَبَقَةُ"))
+        self.play(FadeIn(chips[0], shift=LEFT * 0.2), FadeIn(gap_dim), FadeIn(gap_lab), run_time=0.45)
+        face = rig.face_y()
+        y_a, y_b = face - 0.3, t_top + 0.28            # in the gap: just under the face / on the surface
+        for t_start in (c("الهَوَاءِ") - 0.05, c("وَالقِطْعَةِ") - 0.1):
+            self.sync(t_start)
+            down = hop(ACCENT_1, px0, y_a, y_b, 0.35, DOWN)
+            up = wave_packet(length=0.5, amp=0.22, cycles=4, color=ACCENT_2, direction=UP)
+            up.move_to([px0, y_b, 0])
+            self.play(FadeOut(down, run_time=0.1), FadeIn(up, run_time=0.1),
+                      Flash([px0, t_top, 0], color=ACCENT_2, flash_radius=0.3, line_length=0.1,
+                            run_time=0.25))
+            self.play(up.animate(run_time=0.35, rate_func=linear).move_to([px0, y_a, 0]))
+            self.play(FadeOut(up, run_time=0.1))
+        blocked = icon("x", ACCENT_4, 0.5).move_to([px0, t_top - 0.55, 0])
+        self.sync(c("الصَّوْتَ"))
+        self.play(GrowFromCenter(blocked), run_time=0.3)
+        self.sync(c("فَنَضَعُ"))
+        drop = icon("droplet", ACCENT_3, 0.55).move_to([px0 - 1.4, t_top + g / 2, 0])
+        self.play(FadeIn(drop, shift=DOWN * 0.2), run_time=0.4)
+        self.sync(c("وَسِيطًا"))
+        coup_lab = label("Couplant", FS_TAG, ACCENT_3, weight=BOLD)
+        film = rig.gap_fill()
+        coup_lab.move_to(gap_lab.get_center(), aligned_edge=LEFT).align_to(gap_lab, LEFT)
+        self.play(drop.animate(run_time=0.5).move_to([px0 - 0.15, t_top + g / 2, 0]),
+                  FadeOut(gap_lab, run_time=0.3), FadeIn(coup_lab, run_time=0.4))
+        self.sync(c("يَطْرُدُهَا"))
+        self.play(FadeOut(drop, run_time=0.2), FadeOut(gap_dim, run_time=0.3),
+                  GrowFromCenter(film), FadeOut(blocked, run_time=0.3), run_time=0.4)
+        rig.add(film, coup_lab)
+        go = wave_packet(length=0.6, amp=0.24, cycles=5, color=ACCENT_3, direction=DOWN)
+        go.move_to([px0, face - 0.35, 0])
+        self.play(FadeIn(go, run_time=0.1))
+        self.play(go.animate(run_time=0.7, rate_func=linear).move_to([px0, t_top - 0.9, 0])
+                  .set_stroke(opacity=0.35))
+        self.play(FadeOut(go, run_time=0.2))
+
+        # 2. an air-filled flaw reflects
+        crack = Ellipse(width=1.0, height=0.16, color=ACCENT_4, stroke_width=4)
+        crack.set_fill(ACCENT_4, 0.6)
+        px1 = -2.0
+        crack.move_to([px1, t_top - 1.0, 0])
+        crack_tag = label("Air-filled crack", FS_TAG, ACCENT_4, weight=BOLD).next_to(crack, DOWN, 0.2)
+        self.sync(c("وَالعُيُوبُ"))
+        self.play(rig.animate(run_time=0.6).shift(RIGHT * (px1 - px0)),
+                  FadeIn(chips[1], shift=LEFT * 0.2), FadeIn(crack, scale=0.5), run_time=0.6)
+        self.sync(c("المَمْلُوءَةُ"))
+        self.play(FadeIn(crack_tag), run_time=0.2)
+        self.sync(c("بِالهَوَاءِ") - 0.5)
+        y0, y1 = face - 0.35, crack.get_top()[1] + 0.35
+        go2 = hop(ACCENT_1, px1, y0, y1, 0.65, DOWN, amp=0.26, length=0.7, cycles=6)
+        back = wave_packet(length=0.7, amp=0.26, cycles=6, color=ACCENT_2, direction=UP)
+        back.move_to([px1, y1, 0])
+        self.sync(c("تَعْكِسُ"))
+        self.play(FadeOut(go2, run_time=0.12), FadeIn(back, run_time=0.12),
+                  Flash(crack, color=ACCENT_4, flash_radius=0.7, line_length=0.18, run_time=0.4))
+        self.play(back.animate(run_time=0.8, rate_func=linear).move_to([px1, y0, 0]))
+        self.sync(c("فَتَظْهَرُ"))
+        self.play(FadeOut(back, run_time=0.15),
+                  Flash(crack, color=ACCENT_4, flash_radius=0.7, line_length=0.18, run_time=0.5))
+
+        # 3. the back wall gives a strong echo
+        px2 = -0.5
+        self.sync(c("وَالجِدَارُ") - 0.9)
+        self.play(rig.animate(run_time=0.8).shift(RIGHT * (px2 - px1)), FadeOut(crack_tag, run_time=0.4))
+        self.sync(c("وَالجِدَارُ"))
+        wall_y = part.body.get_bottom()[1]
+        go3 = hop(ACCENT_1, px2, face - 0.35, wall_y + 0.4, 1.0, DOWN, amp=0.3, length=0.7, cycles=6,
+                  extra=(FadeIn(chips[2], shift=LEFT * 0.2, run_time=0.1), FadeIn(wall_tag, run_time=0.1)))
+        echo = wave_packet(length=0.9, amp=0.42, cycles=6, color=ACCENT_2, direction=UP,
+                           stroke_width=5)
+        echo.move_to([px2, wall_y + 0.45, 0])
+        self.play(FadeOut(go3, run_time=0.12), FadeIn(echo, run_time=0.12),
+                  Flash([px2, wall_y, 0], color=ACCENT_2, flash_radius=0.6, line_length=0.2,
+                        run_time=0.4))
+        self.play(echo.animate(run_time=1.3, rate_func=linear).move_to([px2, face - 0.35, 0]))
         self.sync(self.end(4))
         self.clear()
 
