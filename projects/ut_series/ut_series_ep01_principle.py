@@ -232,6 +232,171 @@ def chip_column(heading, items, color, width=4.1):
     return col
 
 
+# ---- Segment 2 helpers: a particle chain that carries a pulse, a labelled wave, a flaw lane ----
+UNITS_PER_MM = 2.2        # on-screen scale of the wavelength drawings (units per mm); steel and
+                          # water share it, so their waves are drawn to the same scale
+
+
+def _spring(a, b, y, coils=6, h=0.065, color=GREY_INK):
+    """A zigzag spring between x = a and x = b on height y."""
+    xs = np.linspace(a, b, 2 * coils + 1)
+    pts = [[xs[0], y, 0]]
+    pts += [[xs[k], y + (h if k % 2 else -h), 0] for k in range(1, 2 * coils)]
+    pts.append([xs[-1], y, 0])
+    s = VMobject(color=color, stroke_width=3)
+    s.set_points_as_corners(pts)
+    return s
+
+
+class ParticleChain(VGroup):
+    """A row of particles joined by springs, along which pulses run (a longitudinal wave).
+
+    Every particle only oscillates about its rest place; the pulse is the envelope that moves.
+    Positions are absolute (the chain is centred on x = 0 at height `y`; do not move it).
+    `launches` are the times (on the chain's own clock) at which pulses start at `x_start`;
+    the clock runs by the updater `advance(dt)` that the scene adds. The tagged particle
+    (index `tag`) is drawn larger in `tag_color`; `ring` is the dashed ghost circle at its rest
+    position and `guide` a short dashed vertical through it. `pulse_x(k)` is the centre of
+    pulse k now."""
+
+    def __init__(self, n=19, spacing=0.6, amp=0.17, wavelength=3.6, pulse_width=1.6, speed=2.6,
+                 tag=9, y=0.0, radius=0.11, tag_radius=0.16, tag_color=ACCENT_1,
+                 x_start=-9.0, launches=()):
+        self.n, self.spacing, self.amp, self.wavelength = n, spacing, amp, wavelength
+        self.pulse_width, self.speed, self.tag, self.y = pulse_width, speed, tag, y
+        self.radius, self.tag_radius = radius, tag_radius
+        self.x_start, self.launches, self.t = x_start, list(launches), 0.0
+        self.rest = [(i - (n - 1) / 2) * spacing for i in range(n)]
+        self.dots = VGroup(*[Dot([x, y, 0], radius=tag_radius if i == tag else radius,
+                                 color=tag_color if i == tag else INK)
+                             for i, x in enumerate(self.rest)])
+        self.springs = VGroup(*[VMobject() for _ in range(n - 1)])
+        super().__init__(self.springs, self.dots)
+        self.update_to(0.0)
+        self.ring = DashedVMobject(Circle(radius=tag_radius, color=GREY_INK, stroke_width=3)
+                                   .move_to([self.rest[tag], y, 0]), num_dashes=14)
+        self.guide = DashedLine([self.rest[tag], y - 0.55, 0], [self.rest[tag], y + 0.55, 0],
+                                color=GREY_INK, stroke_width=2)
+
+    def pulse_x(self, k=0):
+        return self.x_start + self.speed * (self.t - self.launches[k])
+
+    def displacement(self, x0):
+        u = 0.0
+        for tl in self.launches:
+            s = x0 - (self.x_start + self.speed * (self.t - tl))
+            u += self.amp * np.exp(-(s / self.pulse_width) ** 2) * np.sin(TAU * s / self.wavelength)
+        return u
+
+    def update_to(self, t):
+        self.t = t
+        xs = [x + self.displacement(x) for x in self.rest]
+        for i, (d, x) in enumerate(zip(self.dots, xs)):
+            d.move_to([x, self.y, 0])
+        for i, sp in enumerate(self.springs):
+            r0 = self.tag_radius if i == self.tag else self.radius
+            r1 = self.tag_radius if i + 1 == self.tag else self.radius
+            sp.set_points_as_corners(_spring(xs[i] + r0, xs[i + 1] - r1, self.y).get_anchors())
+            sp.set_stroke(GREY_INK, 3)
+
+    def advance(self, dt):
+        self.update_to(self.t + dt)
+
+
+class LabelledWave(VGroup):
+    """A sine wave of wavelength `wavelength` (units) over `width`, built around the origin
+    (`shift` it into place), with a crest-to-crest bracket labelled `tag`. Crests are at
+    x = n * wavelength; the bracket spans crests `crest_n` and `crest_n + 1`.
+    Parts: wave, dots (the two crests), guides, bracket, tag."""
+
+    def __init__(self, wavelength=2.6, width=9.0, amp=0.45, color=ACCENT_1, tag="λ",
+                 stroke_width=4, tag_size=FS_SYMBOL, crest_n=0):
+        k = TAU / wavelength
+        wave = ParametricFunction(lambda t: np.array([t, amp * np.cos(k * t), 0.0]),
+                                  t_range=[-width / 2, width / 2, min(0.02, wavelength / 30)],
+                                  color=color, stroke_width=stroke_width)
+        xa = crest_n * wavelength
+        xb = xa + wavelength
+        yb = amp + 0.3
+        dots = VGroup(*[Dot([x, amp, 0], radius=0.07, color=color) for x in (xa, xb)])
+        guides = VGroup(*[DashedLine([x, amp + 0.08, 0], [x, yb, 0], color=GREY_INK,
+                                     stroke_width=2) for x in (xa, xb)])
+        bracket = DoubleArrow([xa, yb, 0], [xb, yb, 0], buff=0, color=INK, stroke_width=3,
+                              tip_length=min(0.15, wavelength * 0.2))
+        text = label(tag, tag_size, INK).next_to(bracket, UP, 0.08)
+        super().__init__(wave, dots, guides, bracket, text)
+        self.wave, self.dots, self.guides, self.bracket, self.tag = wave, dots, guides, bracket, text
+        self.wavelength, self.amp = wavelength, amp
+
+
+class ScatterLane(VGroup):
+    """A strip of steel with a probe on its left end, a small flaw on its axis and a wave
+    train that runs in from the probe. Built on the axis y = 0 (`shift` it into place and
+    keep `self.y` equal to the shift). The incident wave is ACCENT_1, the part that goes
+    on beyond the flaw ACCENT_3 (amplitude `transmit`), the echo ACCENT_2 (amplitude
+    `reflect`, drawn above the axis). The scene adds `lane.add_updater(lambda m, dt: m.advance(dt))`
+    and calls `start()` when the wave should leave the probe."""
+
+    def __init__(self, wavelength, x0=-2.2, length=8.0, flaw_at=4.6, flaw_w=0.5, speed=1.6,
+                 amp=0.26, transmit=1.0, reflect=0.1, height=1.7):
+        self.x0, self.length, self.speed, self.amp = x0, length, speed, amp
+        self.wavelength, self.transmit, self.reflect = wavelength, transmit, reflect
+        self.xf, self.flaw_half = x0 + flaw_at, flaw_w / 2
+        self.y, self.t, self.running = 0.0, 0.0, False
+        rect = Rectangle(width=length, height=height, color=INK, stroke_width=3)
+        rect.set_fill(PANEL_FILL, 1).move_to([x0 + length / 2, 0, 0])
+        self.flaw = Ellipse(width=flaw_w, height=flaw_w * 0.8, color=ACCENT_4, stroke_width=3)
+        self.flaw.set_fill(ACCENT_4, 0.5).move_to([self.xf, 0, 0])
+        self.probe = Probe().rotate(PI / 2).next_to(rect, LEFT, buff=0)
+        self.rect = rect
+        self.inc, self.trn, self.ref = (VMobject(color=c, stroke_width=4)
+                                        for c in (ACCENT_1, ACCENT_3, ACCENT_2))
+        for m in (self.inc, self.trn, self.ref):
+            m.set_points_as_corners([[x0, 0, 0], [x0 + 0.01, 0, 0]])
+            m.set_stroke(opacity=0)
+        super().__init__(rect, self.flaw, self.probe, self.inc, self.trn, self.ref)
+
+    def start(self):
+        self.running = True
+        for m in (self.inc, self.trn, self.ref):
+            m.set_stroke(opacity=1)
+
+    def _curve(self, mob, xs, amp, y, phase):
+        if len(xs) < 2:
+            mob.set_points_as_corners([[self.x0, y, 0], [self.x0 + 0.01, y, 0]])
+            mob.set_stroke(opacity=0)
+            return
+        k = TAU / self.wavelength
+        pts = [[x, y + amp * np.sin(k * phase(x)), 0] for x in xs]
+        mob.set_points_as_corners(pts)
+        mob.set_stroke(opacity=1)
+
+    def advance(self, dt):
+        if not self.running:
+            return
+        self.t += dt
+        c, t, x0 = self.speed, self.t, self.x0
+        front = x0 + c * t
+        xa = self.xf - self.flaw_half
+        xb = self.xf + self.flaw_half
+        x_end = x0 + self.length
+        grid = lambda a, b: np.linspace(a, b, max(2, int((b - a) / 0.03)))
+        # incident wave (from the probe to the flaw), then the part that goes on beyond it
+        self._curve(self.inc, grid(x0, min(front, xa)) if front > x0 else [], self.amp,
+                    self.y + 0.3, lambda x: x - x0 - c * t)
+        self._curve(self.trn, grid(xb, min(front, x_end)) if front > xb else [],
+                    self.amp * self.transmit, self.y + 0.3, lambda x: x - x0 - c * t)
+        # the echo runs back from the flaw once the front has reached it
+        t_hit = (xa - x0) / c
+        if t > t_hit and self.reflect > 0:
+            xr = xa - c * (t - t_hit)
+            self._curve(self.ref, grid(max(xr, x0), xa) if xr < xa else [],
+                        self.amp * self.reflect, self.y - 0.3,
+                        lambda x: x + c * (t - t_hit) - xa)
+        else:
+            self._curve(self.ref, [], 0, self.y, lambda x: 0)
+
+
 
 class UtSeriesEp01(SyncedScene):
     def construct(self):
@@ -390,6 +555,240 @@ class UtSeriesEp01(SyncedScene):
 
     # ---------------- Segment 2: wave properties (§2) ----------------
     def seg2(self):
+        c = lambda phrase, nth=1: self.cue(2, phrase, nth)
+        S = self.start(2)
+
+        # ---- A, 0-11 s: particles only oscillate, the energy travels; no medium, no wave ----
+        chain_y = 0.5
+        chain = ParticleChain(n=17, spacing=0.66, amp=0.2, wavelength=3.96, pulse_width=1.7,
+                              tag=8, y=chain_y)
+        bands = VGroup(*[Rectangle(width=2.4, height=0.9, color=ACCENT_1, stroke_width=0)
+                         .set_fill(ACCENT_1, 0) for _ in range(2)])
+
+        def move_bands(m):
+            for k, b in enumerate(m):
+                if k >= len(chain.launches):
+                    continue
+                xc = chain.pulse_x(k)
+                b.move_to([xc, chain_y, 0])
+                b.set_fill(ACCENT_1, 0.16 * float(np.clip(4.8 - abs(xc), 0, 1)))
+        bands.add_updater(move_bands)
+        self.add(bands)
+        self.play(FadeIn(chain), FadeIn(chain.ring), FadeIn(chain.guide), run_time=0.7)
+        T0 = self.renderer.time
+        chain.launches = [S + 0.3 - T0, S + 2.6 - T0]          # pulse 1 and pulse 2
+        move_bands(bands)
+        chain.add_updater(lambda m, dt: m.advance(dt))
+
+        energy_on = ValueTracker(0)
+        energy = VGroup(Arrow(LEFT * 0.7, RIGHT * 0.7, buff=0, color=ACCENT_1, stroke_width=5,
+                              tip_length=0.2),
+                        label("energy", FS_NOTE, ACCENT_1))
+        energy[1].next_to(energy[0], UP, 0.08)
+        energy.add_updater(lambda m: (m.move_to([chain.pulse_x(1), chain_y + 1.0, 0]),
+                                      m.set_opacity(energy_on.get_value())))
+        self.add(energy)
+
+        note = VGroup(label("Each particle moves back and forth", FS_NOTE),
+                      label("about its rest place (dashed ring)", FS_NOTE)
+                      ).arrange(DOWN, buff=0.08).next_to(chain.guide, DOWN, 0.25)
+        matter = label("Matter stays, energy moves", FS_LABEL, INK, weight=BOLD)
+        matter.next_to(note, DOWN, 0.25)
+        self.sync(c("جُسَيْمٍ"))
+        self.play(FadeIn(note), run_time=0.5)
+        self.sync(c("يَنْتَقِلُ"))
+        self.play(energy_on.animate.set_value(1), run_time=0.4)
+        self.sync(c("المَادَّةُ"))
+        self.play(FadeIn(matter), run_time=0.4)
+        self.sync(S + 7.75)
+        self.play(energy_on.animate.set_value(0), run_time=0.4)
+        self.sync(c("لِذٰلِكَ"))
+        chain.clear_updaters()
+        energy.clear_updaters()
+        bands.clear_updaters()
+        self.play(FadeOut(bands), FadeOut(chain), FadeOut(chain.ring), FadeOut(chain.guide), FadeOut(note),
+                  FadeOut(matter), FadeOut(energy), run_time=0.6)
+        self.sync(c("تَحْتَاجُ"))
+        lone = wave_packet(length=1.1, amp=0.3, cycles=5, direction=RIGHT)
+        lone.move_to([-3.5, chain_y, 0])
+        none_tag = label("No medium, no wave", FS_HEADING, INK, weight=BOLD).move_to([0, -0.9, 0])
+        self.play(FadeIn(lone, run_time=0.2))
+        self.play(AnimationGroup(
+            lone.animate(run_time=0.9, rate_func=linear).shift(RIGHT * 2.0).set_stroke(opacity=0),
+            Succession(Wait(max(0.01, c("وَسَطًا") - self.renderer.time)),
+                       FadeIn(none_tag, run_time=0.4))))
+        self.sync(c("التَّرَدُّدُ") - 0.4)
+        self.clear(run_time=0.4)
+
+        # ---- B1, 11.5-16.6 s: frequency = cycles per second ----
+        self.sync(c("التَّرَدُّدُ"))
+        head = label("Frequency, f", FS_HEADING, INK, weight=BOLD).move_to([0, 2.8, 0])
+        self.play(FadeIn(head), run_time=0.4)
+        W, cycles, amp, y_s = 8.0, 5, 0.65, 1.1
+        axis = Arrow([-W / 2 - 0.2, y_s, 0], [W / 2 + 0.5, y_s, 0], buff=0, color=GREY_INK,
+                     stroke_width=3, tip_length=0.2)
+        time_lbl = label("time", FS_TAG, GREY_INK).next_to(axis.get_end(), DOWN, 0.1)
+        sine = ParametricFunction(
+            lambda t: np.array([t, y_s + amp * np.sin(TAU * cycles * (t + W / 2) / W), 0.0]),
+            t_range=[-W / 2, W / 2, 0.02], color=ACCENT_1, stroke_width=5)
+        sine_time = 1.2
+        crest_dots = []
+        for k in range(cycles):
+            x = -W / 2 + (k + 0.25) * W / cycles
+            d = Dot([x, y_s + amp, 0], radius=0.09, color=ACCENT_2)
+            crest_dots.append(Succession(Wait((x + W / 2) / W * sine_time),
+                                         GrowFromCenter(d, run_time=0.2)))
+        self.sync(c("عَدَدُ") - 0.25)
+        self.play(Create(axis), FadeIn(time_lbl), run_time=0.25)
+        self.play(Create(sine, rate_func=linear, run_time=sine_time), *crest_dots)
+        self.sync(c("الثَّانِيَةِ"))
+        y_b = 0.0
+        one_s = VGroup(DoubleArrow([-W / 2, y_b, 0], [W / 2, y_b, 0], buff=0, color=INK,
+                                   stroke_width=3, tip_length=0.15),
+                       label("1 second", FS_LABEL, INK)).arrange(DOWN, buff=0.1)
+        self.play(FadeIn(one_s, run_time=0.5))
+        self.sync(c("الثَّانِيَةِ") + 0.5)
+        per_s = label("f = number of cycles per second", FS_LABEL, INK, weight=BOLD)
+        per_s.next_to(one_s, DOWN, 0.5)
+        self.play(FadeIn(per_s, run_time=0.3))
+        self.sync(c("وَوَحْدَتُهُ"))
+        unit = label("Unit: hertz (Hz)", FS_LABEL, ACCENT_1, weight=BOLD).next_to(per_s, DOWN, 0.3)
+        self.play(FadeIn(unit, run_time=0.4))
+        self.sync(c("وَالسُّرْعَةُ") - 0.35)
+        self.clear(run_time=0.35)
+
+        # ---- B2, 17-21 s: the speed is set by the material, not by f ----
+        self.sync(c("وَالسُّرْعَةُ"))
+        h1 = label("Speed v: set by the material and the wave type", FS_LABEL + 2, INK,
+                   weight=BOLD).move_to([0, 2.8, 0])
+        h2 = label("not by the frequency: both pulses have the same f", FS_LABEL, GREY_INK)
+        h2.next_to(h1, DOWN, 0.2)
+        lane_w = 8.4
+        lanes = VGroup(*[Rectangle(width=lane_w, height=1.0, color=INK, stroke_width=3)
+                         .set_fill(PANEL_FILL, 1) for _ in range(2)]).arrange(DOWN, buff=0.7)
+        lanes.move_to([0.9, 0.1, 0])
+        names = VGroup(label("Steel", FS_NOTE, INK).next_to(lanes[0], LEFT, 0.25),
+                       label("Water", FS_NOTE, INK).next_to(lanes[1], LEFT, 0.25))
+        self.play(FadeIn(h1), FadeIn(lanes), FadeIn(names), run_time=0.5)
+        ratio = D.V_L_STEEL / D.V_WATER                    # 4.0: steel is four times faster
+        t_move_w = 3.45
+        t_move_s = t_move_w / ratio
+        xs0, xs1 = lanes[0].get_left()[0] + 0.7, lanes[0].get_right()[0] - 0.7
+        mk = lambda lane: wave_packet(length=0.9, amp=0.27, cycles=5, direction=RIGHT
+                                      ).move_to([xs0, lane.get_center()[1], 0])
+        steel_runs = []
+        for _ in range(round(ratio)):
+            p_ = mk(lanes[0])
+            steel_runs += [FadeIn(p_, run_time=0.03),
+                           p_.animate(run_time=t_move_s, rate_func=linear).move_to(
+                               [xs1, lanes[0].get_center()[1], 0]),
+                           FadeOut(p_, run_time=0.03)]
+        water_p = mk(lanes[1])
+        water_run = Succession(FadeIn(water_p, run_time=0.15),
+                               water_p.animate(run_time=t_move_w, rate_func=linear).move_to(
+                                   [xs1, lanes[1].get_center()[1], 0]))
+        self.sync(c("تُحَدِّدُهَا") - 0.3)
+        lead = max(0.01, c("التَّرَدُّدُ", 2) - self.renderer.time)
+        self.play(AnimationGroup(Succession(*steel_runs), water_run,
+                                 Succession(Wait(lead), FadeIn(h2, run_time=0.4))))
+        self.sync(c("وَالطُّولُ") - 0.3)
+        self.clear(run_time=0.3)
+
+        # ---- C, 21.7-44 s: wavelength, λ = v ÷ f, steel and water at 5 MHz ----
+        self.sync(c("وَالطُّولُ"))
+        steel_lw = LabelledWave(D.LAMBDA_STEEL * UNITS_PER_MM, tag="λ  (wavelength)")
+        steel_lw.shift(UP * 2.35)
+        self.play(Create(steel_lw.wave, run_time=0.55))
+        self.play(FadeIn(steel_lw.dots), FadeIn(steel_lw.guides), GrowFromCenter(steel_lw.bracket),
+                  FadeIn(steel_lw.tag), run_time=0.45)
+        self.sync(c("يُسَاوِي"))
+        eq = equation(self, ["λ", "=", "v", "÷", "f"], colors={0: ACCENT_1}, size=FS_EQUATION + 4,
+                      pos=[0, 0.6, 0], run_time=1.0, buff=0.9)
+        caps = VGroup(*[label(t, FS_TAG, GREY_INK).next_to(eq[k], DOWN, 0.15)
+                        for k, t in ((0, "wavelength"), (2, "speed"), (4, "frequency"))])
+        self.sync(c("السُّرْعَةَ") + 0.55)
+        self.play(FadeIn(caps[0]), FadeIn(caps[1]), run_time=0.4)
+        self.sync(c("التَّرَدُّدِ"))
+        self.play(FadeIn(caps[2]), run_time=0.4)
+        self.sync(c("فَفِي") - 0.35)
+        self.play(FadeOut(eq), FadeOut(caps), run_time=0.35)
+        f_txt = f"{D.F_PROBE:g} MHz"
+        self.sync(c("فَفِي"))
+        steel_name = label("Steel", FS_NOTE, INK).next_to(steel_lw.wave, LEFT, 0.25)
+        self.play(FadeIn(steel_name), run_time=0.3)
+        steel_calc = worked_calculation(
+            self, ["λ steel", "=", "v", "÷", "f"],
+            ["λ", "=", f"{D.V_L_STEEL:.0f} m/s", "÷", f_txt],
+            f"= {D.LAMBDA_STEEL:.3f} mm",
+            cues=[c("فَفِي") + 0.3, c("وَالسُّرْعَةُ", 2), c("وَاحِدًا")],
+            pos=[0, -1.85, 0], size=30)
+        self.sync(c("وَفِي") - 0.65)
+        self.play(steel_calc.animate.shift(LEFT * 3.4), run_time=0.5)
+        water_calc = worked_calculation(
+            self, ["λ water", "=", "v", "÷", "f"],
+            ["λ", "=", f"{D.V_WATER:.0f} m/s", "÷", f_txt],
+            f"= {D.LAMBDA_WATER:.3f} mm",
+            cues=[c("وَفِي"), c("وَفِي") + 1.0, c("وَفِي") + 2.0],
+            pos=[3.4, -1.85, 0], size=30)
+        water_lw = LabelledWave(D.LAMBDA_WATER * UNITS_PER_MM, tag="λ", stroke_width=3)
+        water_lw.shift(UP * 0.95)
+        water_name = label("Water", FS_NOTE, INK).next_to(water_lw.wave, LEFT, 0.25)
+        self.sync(c("صِفْرًا") + 2.0)
+        self.play(Create(water_lw.wave, run_time=0.5), FadeIn(water_name))
+        self.play(FadeIn(water_lw.dots), FadeIn(water_lw.guides), GrowFromCenter(water_lw.bracket),
+                  FadeIn(water_lw.tag), run_time=0.4)
+        self.sync(c("لِمَاذَا") - 0.4)
+        self.clear(run_time=0.4)
+
+        # ---- D, 44-58 s: a short wave sees a small flaw; the price is penetration ----
+        self.sync(c("لِمَاذَا"))
+        lane_long = ScatterLane(3.0, transmit=0.95, reflect=0.08)
+        lane_short = ScatterLane(1.0, transmit=0.45, reflect=0.6)
+        for lane, y in ((lane_long, 2.55), (lane_short, 0.6)):
+            lane.shift(UP * y)
+            lane.y = y
+        tags = VGroup(
+            VGroup(label("Long wave", FS_NOTE, INK, weight=BOLD),
+                   label("low frequency", FS_TAG, GREY_INK)).arrange(DOWN, aligned_edge=RIGHT,
+                                                                       buff=0.06),
+            VGroup(label("Short wave", FS_NOTE, INK, weight=BOLD),
+                   label("high frequency", FS_TAG, GREY_INK)).arrange(DOWN, aligned_edge=RIGHT,
+                                                                        buff=0.06))
+        for tg, lane in zip(tags, (lane_long, lane_short)):
+            tg.next_to(lane.probe, LEFT, 0.3)
+        self.play(FadeIn(lane_long), FadeIn(lane_short), FadeIn(tags), run_time=0.7)
+        lane_long.add_updater(lambda m, dt: m.advance(dt))
+        lane_short.add_updater(lambda m, dt: m.advance(dt))
+        self.sync(c("لِأَنَّ") + 0.15)
+        lane_long.start()
+        lane_short.start()
+        note_d = label(f"Smallest flaw seen ≈ λ/2 to λ/3 = {D.MIN_FLAW_HALF:.3f}–"
+                       f"{D.MIN_FLAW_THIRD:.3f} mm (steel, {f_txt})", FS_NOTE, INK)
+        note_d.move_to([0, -0.55, 0])
+        self.sync(c("نَحْوَ"))
+        self.play(FadeIn(note_d), run_time=0.4)
+        # trade-off chart: sensitivity rises with f, penetration falls
+        ay0 = -3.2
+        x_ax = Arrow([-3.0, ay0, 0], [3.2, ay0, 0], buff=0, color=GREY_INK, stroke_width=3,
+                     tip_length=0.18)
+        y_ax = Arrow([-3.0, ay0, 0], [-3.0, -1.2, 0], buff=0, color=GREY_INK, stroke_width=3,
+                     tip_length=0.18)
+        f_lbl = label("frequency f", FS_TAG, GREY_INK).next_to(x_ax.get_end(), DOWN, 0.1)
+        sens = Line([-2.8, -2.8, 0], [3.0, -1.5, 0], color=ACCENT_3, stroke_width=5)
+        pen = Line([-2.8, -1.5, 0], [3.0, -2.8, 0], color=ACCENT_1, stroke_width=5)
+        sens_t = label("Sensitivity", FS_TAG, ACCENT_3, weight=BOLD).next_to(sens.get_end(), RIGHT, 0.15)
+        pen_t = label("Penetration", FS_TAG, ACCENT_1, weight=BOLD).next_to(pen.get_end(), RIGHT, 0.15)
+        self.sync(c("لٰكِنَّهُ") - 0.3)
+        self.play(Create(x_ax), Create(y_ax), FadeIn(f_lbl), run_time=0.3)
+        self.play(Create(sens), FadeIn(sens_t), run_time=0.6)
+        self.sync(c("التَّوْهِينَ"))
+        self.play(Create(pen, run_time=1.4), FadeIn(pen_t, run_time=0.4))
+        self.sync(c("فَالِاخْتِيَارُ"))
+        cross = Dot([0.1, -2.15, 0], radius=0.11, color=INK)
+        bal = label("balance", FS_LABEL, INK, weight=BOLD).next_to(cross, UP, 0.45)
+        self.play(GrowFromCenter(cross), FadeIn(bal), run_time=0.5)
+        lane_long.clear_updaters()
+        lane_short.clear_updaters()
         self.sync(self.end(2))
         self.clear()
 
