@@ -39,7 +39,9 @@ the two elements (`a`, `b`: name, text, bbox, cells), the amount (`area`, `share
 `distance`, `gap`, `font_size`), the grid `cell` and a `suggestion`. Severity: `critical`
 (texts overlapping, a line through a text, a text closer than `CLEARANCE` to a line, arrow
 or shape outside its frame — `text_near_shape`, touching included —, a text touching its
-frame, anything off the frame, text below the minimum size) or `improvement` (text inside
+frame, anything off the frame, text below the minimum size, `low_contrast`: a text under
+4.5:1 against what is behind it — fix by using `INK`/`GREY_INK`/an accent, a different panel
+token, or a higher `dim` over an image background) or `improvement` (text inside
 the safe margin). A text inside its own frame, a label's own leader arrow, a badge number or
 a ✓/✗ mark on its box is not a finding.
 

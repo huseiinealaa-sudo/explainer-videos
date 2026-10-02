@@ -1,7 +1,7 @@
 """ISA-5.1 style P&ID symbols drawn in code (no copied images), with ports for signal lines.
 
 Every symbol is a function that returns a `Symbol` (a VGroup) of one size and colour:
-    v = control_valve(size=1.0, color=INK)
+    v = control_valve(size=1.0, color=LINE_C)
     v.port("in"), v.port("out"), v.port("actuator")    # points that move with the symbol
     v.port_names()                                     # the ports it offers
 Instrument bubbles carry the function letters and the loop number:
@@ -19,7 +19,7 @@ import numpy as np
 from manim import (DOWN, LEFT, ORIGIN, PI, RIGHT, UP, Arc, Circle, Dot, Line, Polygon,
                    Square, VGroup, VMobject, VectorizedPoint, DashedVMobject)
 
-from ..style import BG, FS_TAG, INK, MIN_FONT_SIZE, label
+from ..style import BG, FS_TAG, LINE_C, MIN_FONT_SIZE, label
 
 __all__ = ["Symbol", "gate_valve", "globe_valve", "ball_valve", "butterfly_valve",
            "check_valve", "control_valve", "relief_valve", "centrifugal_pump", "pd_pump",
@@ -60,14 +60,14 @@ def _p(x, y):
     return np.array([x, y, 0.0])
 
 
-def _poly(*pts, color=INK, width=STROKE, close=False):
+def _poly(*pts, color=LINE_C, width=STROKE, close=False):
     m = VMobject(color=color, stroke_width=width)
     pts = [_p(*p) for p in pts]
     m.set_points_as_corners(pts + ([pts[0]] if close else []))
     return m
 
 
-def _line(a, b, color=INK, width=STROKE):
+def _line(a, b, color=LINE_C, width=STROKE):
     return Line(_p(*a), _p(*b), color=color, stroke_width=width)
 
 
@@ -96,24 +96,24 @@ def _two_way(name, extra, size, color):
 
 
 # ---------------- valves ----------------
-def gate_valve(size=1.0, color=INK):
+def gate_valve(size=1.0, color=LINE_C):
     """Gate valve: the plain two-way body (two triangles tip to tip)."""
     return _two_way("gate valve", [], size, color)
 
 
-def globe_valve(size=1.0, color=INK):
+def globe_valve(size=1.0, color=LINE_C):
     """Globe valve: two-way body with a solid dot at the centre."""
     return _two_way("globe valve", [Dot(ORIGIN, radius=0.07, color=color)], size, color)
 
 
-def ball_valve(size=1.0, color=INK):
+def ball_valve(size=1.0, color=LINE_C):
     """Ball valve: two-way body with an open circle (the ball) at the centre."""
     ball = Circle(radius=0.13, color=color, stroke_width=STROKE).set_fill(BG, 1)
     ball.keep_fill = True
     return _two_way("ball valve", [ball], size, color)
 
 
-def butterfly_valve(size=1.0, color=INK):
+def butterfly_valve(size=1.0, color=LINE_C):
     """Butterfly valve: two end flanges and the disc, a slanted line with its shaft dot."""
     flanges = VGroup(_line((-0.3, 0.3), (-0.3, -0.3)), _line((0.3, 0.3), (0.3, -0.3)))
     disc = _line((-0.12, -0.24), (0.12, 0.24))
@@ -122,7 +122,7 @@ def butterfly_valve(size=1.0, color=INK):
     return _finish(s, size, color)
 
 
-def check_valve(size=1.0, color=INK):
+def check_valve(size=1.0, color=LINE_C):
     """Check valve: |\\| body with the free-flow direction arrow above (left to right)."""
     body = _poly((-0.3, 0.3), (-0.3, -0.3), color=color)
     diag = _poly((-0.3, 0.3), (0.3, -0.3), color=color)
@@ -135,7 +135,7 @@ def check_valve(size=1.0, color=INK):
     return _finish(s, size, color)
 
 
-def control_valve(size=1.0, color=INK):
+def control_valve(size=1.0, color=LINE_C):
     """Control valve with a spring-and-diaphragm actuator: two-way body, stem, dome."""
     stem = _line((0, 0), (0, 0.55))
     dome = Arc(radius=0.3, start_angle=0, angle=PI, color=color, stroke_width=STROKE)
@@ -147,7 +147,7 @@ def control_valve(size=1.0, color=INK):
     return _finish(s, size, color)
 
 
-def relief_valve(size=1.0, color=INK):
+def relief_valve(size=1.0, color=LINE_C):
     """Pressure relief / safety valve: angle body (inlet below, outlet right), spring on top."""
     inlet = _poly((0, 0), (-0.25, -0.45), (0.25, -0.45), color=color, close=True)
     outlet = _poly((0, 0), (0.45, 0.25), (0.45, -0.25), color=color, close=True)
@@ -161,7 +161,7 @@ def relief_valve(size=1.0, color=INK):
 
 
 # ---------------- pumps and machines ----------------
-def centrifugal_pump(size=1.0, color=INK):
+def centrifugal_pump(size=1.0, color=LINE_C):
     """Centrifugal pump: casing circle, suction at the centre from the left, tangential
     discharge at the top to the right, and a base."""
     r = 0.4
@@ -175,7 +175,7 @@ def centrifugal_pump(size=1.0, color=INK):
     return _finish(s, size, color)
 
 
-def pd_pump(size=1.0, color=INK):
+def pd_pump(size=1.0, color=LINE_C):
     """Positive displacement pump: stepped casing with suction left and discharge right."""
     casing = _poly((-0.35, -0.25), (0.45, -0.25), (0.45, 0.05), (0.1, 0.05), (0.1, 0.4),
                    (-0.35, 0.4), color=color, close=True)
@@ -186,7 +186,7 @@ def pd_pump(size=1.0, color=INK):
     return _finish(s, size, color)
 
 
-def compressor(size=1.0, color=INK):
+def compressor(size=1.0, color=LINE_C):
     """Compressor: casing circle with two lines converging from inlet (left) to outlet
     (right), the flow path narrowing as the gas is compressed."""
     r = 0.42
@@ -199,7 +199,7 @@ def compressor(size=1.0, color=INK):
     return _finish(s, size, color)
 
 
-def tank(size=1.0, color=INK, width=1.1, height=1.3):
+def tank(size=1.0, color=LINE_C, width=1.1, height=1.3):
     """Atmospheric storage tank: vertical shell with a cone roof.
 
     Ports: top (roof nozzle), inlet (upper left side), outlet (bottom of the right side),
@@ -213,7 +213,7 @@ def tank(size=1.0, color=INK, width=1.1, height=1.3):
     return _finish(s, size, color)
 
 
-def heat_exchanger(size=1.0, color=INK):
+def heat_exchanger(size=1.0, color=LINE_C):
     """Shell-and-tube heat exchanger: shell circle with the tube bundle drawn as a zigzag
     passing through it. Tube side left/right, shell side top/bottom."""
     r = 0.42
@@ -238,41 +238,41 @@ def _inline(name, body, size, color, tap_y):
 
 
 def _meter_box():
-    return Square(side_length=0.6, color=INK, stroke_width=STROKE)
+    return Square(side_length=0.6, color=LINE_C, stroke_width=STROKE)
 
 
-def orifice_plate(size=1.0, color=INK):
+def orifice_plate(size=1.0, color=LINE_C):
     """Orifice plate: the plate between two flanges, two short bars across the pipe."""
     pipe = _line((-0.3, 0), (0.3, 0), width=PROCESS_STROKE)
     plates = VGroup(_line((-0.06, 0.3), (-0.06, -0.3)), _line((0.06, 0.3), (0.06, -0.3)))
     return _inline("orifice plate", [pipe, plates], size, color, 0.3)
 
 
-def turbine_meter(size=1.0, color=INK):
+def turbine_meter(size=1.0, color=LINE_C):
     """Turbine meter: a box across the pipe with the rotor drawn as a two-bladed propeller."""
-    blade = VGroup(Circle(radius=0.11, color=INK, stroke_width=STROKE).stretch(0.45, 0)
+    blade = VGroup(Circle(radius=0.11, color=LINE_C, stroke_width=STROKE).stretch(0.45, 0)
                    .move_to(_p(0, 0.11)),
-                   Circle(radius=0.11, color=INK, stroke_width=STROKE).stretch(0.45, 0)
+                   Circle(radius=0.11, color=LINE_C, stroke_width=STROKE).stretch(0.45, 0)
                    .move_to(_p(0, -0.11)))
     return _inline("turbine meter", [_meter_box(), blade], size, color, 0.3)
 
 
-def magnetic_flowmeter(size=1.0, color=INK):
+def magnetic_flowmeter(size=1.0, color=LINE_C):
     """Magnetic flowmeter: a box across the pipe with the letter M."""
-    m = label("M", TAG_SIZE + 2, INK)
+    m = label("M", TAG_SIZE + 2, LINE_C)
     return _inline("magnetic flowmeter", [_meter_box(), m], size, color, 0.3)
 
 
-def coriolis_meter(size=1.0, color=INK):
+def coriolis_meter(size=1.0, color=LINE_C):
     """Coriolis meter: a box across the pipe with the vibrating tube drawn as a small wave."""
     wave = _poly((-0.2, 0), (-0.1, 0), (-0.03, 0.1), (0.05, -0.1), (0.1, 0), (0.2, 0),
-                 color=INK)
+                 color=LINE_C)
     return _inline("Coriolis meter", [_meter_box(), wave], size, color, 0.3)
 
 
-def vortex_meter(size=1.0, color=INK):
+def vortex_meter(size=1.0, color=LINE_C):
     """Vortex meter: a box across the pipe with the bluff body drawn as a triangle."""
-    bluff = _poly((-0.13, 0.15), (-0.13, -0.15), (0.14, 0), color=INK, close=True)
+    bluff = _poly((-0.13, 0.15), (-0.13, -0.15), (0.14, 0), color=LINE_C, close=True)
     return _inline("vortex meter", [_meter_box(), bluff], size, color, 0.3)
 
 
@@ -303,7 +303,7 @@ def _bubble_text(text, size, color, bold, y_edge, half_width):
     return t
 
 
-def instrument(function, loop="", location="field", size=1.0, color=INK, text_size=TAG_SIZE):
+def instrument(function, loop="", location="field", size=1.0, color=LINE_C, text_size=TAG_SIZE):
     """Instrument bubble: function letters (FT, PIC ...) above, loop number below.
 
     location: field | panel | behind_panel | dcs | plc (see LOCATIONS). The bubble is 1 unit
@@ -398,7 +398,7 @@ def _marks_along(pts, spacing, end_gap):
     return out
 
 
-def signal_line(points, kind="electrical", color=INK, arrow=False, spacing=MARK_SPACING,
+def signal_line(points, kind="electrical", color=LINE_C, arrow=False, spacing=MARK_SPACING,
                 end_gap=0.3):
     """A line of ISA type `kind` through `points` (corners); returns a VGroup.
 
@@ -441,7 +441,7 @@ def signal_line(points, kind="electrical", color=INK, arrow=False, spacing=MARK_
     return group
 
 
-def connect(a, port_a, b, port_b, kind="electrical", route="straight", via=None, color=INK,
+def connect(a, port_a, b, port_b, kind="electrical", route="straight", via=None, color=LINE_C,
             arrow=False, **kw):
     """Join port `port_a` of symbol a to port `port_b` of symbol b with an ISA line type.
 

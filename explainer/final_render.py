@@ -1,4 +1,4 @@
-"""Final 1080p render of ONE episode, with a verdict that cannot report a render that did not happen.
+"""Final render (1080p unless the project says otherwise) of ONE episode, with a verdict that cannot report a render that did not happen.
 
     python -m explainer.final_render projects/<name>/<script>.py [--expected SECONDS]
 
@@ -13,7 +13,8 @@ done: the "after" row was read from the old file.
        line every minute. The wait stops after --wait seconds (default 540, under the
        10-minute limit of one Bash command); the render keeps running, and running the
        same command again waits on it instead of starting a second one (state.json).
-    3. After: the exit code is 0, the file exists, its hash changed, it is 1920x1080, and
+    3. After: the exit code is 0, the file exists, its hash changed, it has the project's resolution (1920x1080 by default; `[render] resolution` in
+       project.toml), and
        its duration matches the expected one (the narration audio, or --expected) within
        1 s.
     4. Prints one verdict line: RENDER_OK with a before/after table, or RENDER_FAILED with
@@ -29,6 +30,7 @@ import sys
 import time
 from pathlib import Path
 
+from .pipeline import render_resolution
 from .style import BUILD_DIR, FINAL_RESOLUTION, OUTPUT_DIR, ROOT
 
 TOLERANCE = 1.0             # seconds between the video and the expected duration
@@ -142,7 +144,8 @@ def verdict(state, exit_code):
     expected = state.get("expected")
     if expected is None:
         expected = expected_duration(state["audio_dir"])
-    reasons = check(state["before"], after, exit_code, expected)
+    reasons = check(state["before"], after, exit_code, expected,
+                    resolution=state.get("resolution") or FINAL_RESOLUTION)
     try:
         name = str(out.relative_to(ROOT))
     except ValueError:
@@ -251,7 +254,8 @@ EXIT_NOTES = {-1: "exit code file unreadable", -2: "render process ended without
               -3: f"render still running after {MAX_HOURS} h: stopped"}
 
 
-def run(cmd, output, work_dir, audio_dir, expected=None, window=WAIT, out=print, **wait_kw):
+def run(cmd, output, work_dir, audio_dir, expected=None, window=WAIT, out=print,
+        resolution=None, **wait_kw):
     """Start (or re-attach to) the render and report. Returns 0 OK, 1 FAILED, 3 RUNNING."""
     state = load(work_dir)
     if state and not state.get("reported") and (read_exit_code(state) is not None
@@ -260,6 +264,8 @@ def run(cmd, output, work_dir, audio_dir, expected=None, window=WAIT, out=print,
             f"{mmss(time.time() - state['started'])} ago (pid {state['pid']})", flush=True)
     else:
         state = start(cmd, output, work_dir, audio_dir, expected)
+        state["resolution"] = list(resolution or FINAL_RESOLUTION)
+        save(work_dir, state)
         out(f"RENDER_START: pid {state['pid']}, log {state['log']}", flush=True)
     code = wait(state, window=window, out=out, **wait_kw)
     if code is None:
@@ -298,7 +304,7 @@ def main(argv=None):
     name = script.stem
     return run([sys.executable, str(script)], OUTPUT_DIR / f"{name}.mp4",
                BUILD_DIR / name / "final_render", BUILD_DIR / name / "audio",
-               expected=args.expected, window=args.wait)
+               expected=args.expected, window=args.wait, resolution=render_resolution(script))
 
 
 if __name__ == "__main__":

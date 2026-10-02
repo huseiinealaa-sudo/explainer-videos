@@ -1,0 +1,13 @@
+# Silent catalogue: no narration. The settings below are read by explainer.pipeline.
+[narration]
+language = "en"
+voice = "en-US-GuyNeural"
+rate = "+0%"
+
+# Colours: the default theme. The video switches theme on screen (self.set_theme).
+[style]
+theme = "dark"
+
+# This catalogue is rendered at 720p (the default for a project is 1080p).
+[render]
+resolution = "720p"

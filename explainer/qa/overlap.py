@@ -10,6 +10,10 @@ and calls check() after every animation. It records:
     out_of_frame        a text or a shape leaves the 16:9 frame
     in_safe_margin      a text inside the frame but closer than SAFE_MARGIN to its edge
     text_too_small      a text whose size after fit()/scale is below MIN_FONT_SIZE
+    low_contrast        a text whose colour against what is behind it (the background of the
+                        scene, with every fill under the text blended in) is below 4.5:1
+                        (WCAG AA, theme.MIN_CONTRAST). Text in LIGHT_INK is inactive by
+                        convention and exempt, as is any text marked `contrast_exempt = True`
 Intended overlaps are not errors: a text inside a closed shape (its box, badge, table
 row, panel or emphasis frame) that keeps clear of the outline, single-symbol marks
 (✓ ✗ • ...) placed on a drawing on purpose, lines that cross out a whole text, and a
@@ -34,7 +38,8 @@ from shapely.affinity import translate
 from shapely.geometry import LinearRing, LineString, MultiPoint, Point, Polygon, box
 from shapely.ops import nearest_points, unary_union
 
-from ..style import MIN_FONT_SIZE, SAFE_MARGIN, SAFE_WIDTH
+from ..style import BG, LIGHT_INK, MIN_FONT_SIZE, SAFE_MARGIN, SAFE_WIDTH
+from ..theme import MIN_CONTRAST, _rgb, blend, contrast_ratio
 
 MIN_AREA = 0.002            # scene units² (about 36 px² at 1080p): smaller contacts are noise
 ATTACHED = 0.35             # parts of the same on-screen group this close move with a text
@@ -49,6 +54,7 @@ MARKS = set("✓✗✔✘×•·○●◦▪■□▲▼►◄★")
 SEVERITY = {"text_overlap": "critical", "text_over_shape": "critical", "out_of_frame": "critical",
             "text_near_shape": "critical",
             "text_touches_frame": "critical", "text_too_small": "critical",
+            "low_contrast": "critical",
             "in_safe_margin": "improvement"}
 DIRECTIONS = {"RIGHT": (1, 0), "LEFT": (-1, 0), "UP": (0, 1), "DOWN": (0, -1)}
 OPPOSITE = {"RIGHT": "LEFT", "LEFT": "RIGHT", "UP": "DOWN", "DOWN": "UP"}
@@ -80,6 +86,7 @@ class Item:
         self.core = ink if core is None else core      # text: hull of its glyphs; shape: its ink
         self.glyphs = self.core if glyphs is None else glyphs   # text: each glyph's hull
         self.region, self.outline = region, outline
+        self.fills = []                 # shape: [(polygon, rgb, opacity)] painted under later texts
         self.text, self.font = text, font
         self.cls = type(mob).__name__
         self.root = None                # the on-screen mobject (scene.mobjects entry) it is part of
@@ -112,7 +119,7 @@ def _subpaths(vm):
 
 def _shape_item(m, skip):
     """One primitive shape (Line, Arrow with its tip, DashedLine with its dashes, ...)."""
-    strokes, rings, fills, regions = [], [], [], []
+    strokes, rings, fills, regions, layers = [], [], [], [], []
     for f in m.get_family():
         if id(f) in skip or not isinstance(f, VMobject) or not f.has_points():
             continue
@@ -129,14 +136,18 @@ def _shape_item(m, skip):
                     regions.append(poly)
                     if filled:
                         fills.append(poly)
+                        layers.append((poly, f.get_fill_rgbas()[:, :3].mean(axis=0),
+                                       float(f.get_fill_opacity())))
             if width > 0:
                 line = LinearRing(xy) if closed else LineString(xy)
                 (rings if closed else strokes).append(line.buffer(half, cap_style="flat"))
     ink = unary_union(strokes + rings + fills)
     if ink.is_empty:
         return None
-    return Item("shape", m, ink, region=unary_union(regions) if regions else None,
+    item = Item("shape", m, ink, region=unary_union(regions) if regions else None,
                 outline=unary_union(rings) if rings else None)
+    item.fills = layers
+    return item
 
 
 def _text_of(m):
@@ -209,6 +220,8 @@ def collect(mobjects):
             visit(t)
 
     for m in mobjects:
+        if getattr(m, "is_background", False):      # decoration: the contrast rule measures it
+            continue
         first = len(items)
         visit(m)
         for it in items[first:]:
@@ -252,6 +265,78 @@ def leader_of(text, shape, texts=(), reach=LEADER_REACH):
         return False
     return shape.cls in ARROWS or any(t is not text and t.ink.distance(p0) < reach
                                       for t in texts)
+
+
+
+# ---------------- contrast ----------------
+def _image_rgb(img, x, y):
+    px = img.pixel_array
+    h, w = px.shape[:2]
+    u = (x - img.get_left()[0]) / max(img.width, 1e-9)
+    v = (img.get_top()[1] - y) / max(img.height, 1e-9)
+    return px[int(np.clip(v * h, 0, h - 1)), int(np.clip(u * w, 0, w - 1))][:3] / 255.0
+
+
+def _glyph_colors(text):
+    """[(rgb, opacity)] of the distinct fills of a text's glyphs."""
+    seen = {}
+    for g in text.mob.family_members_with_points():
+        op = float(g.get_fill_opacity())
+        if op > 0.05:
+            rgb = g.get_fill_rgbas()[0][:3]
+            seen[(tuple(np.round(rgb, 3)), round(op, 2))] = (rgb, op)
+    return list(seen.values())
+
+
+def _samples(text, n=(5, 3)):
+    """Points over a text where the surface is read: a grid over its box, kept if close to a
+    glyph (the middle of the box if none is)."""
+    x0, y0, x1, y1 = text.ink.bounds
+    pts = [(x0 + (x1 - x0) * (i + 0.5) / n[0], y0 + (y1 - y0) * (j + 0.5) / n[1])
+           for i in range(n[0]) for j in range(n[1])]
+    near = text.core.buffer(0.04)
+    pts = [p for p in pts if near.contains(Point(p))]
+    return pts or [((x0 + x1) / 2, (y0 + y1) / 2)]
+
+
+def surface_at(point, index, items, backdrop):
+    """RGB of what is behind a text at `point`: the scene's background, then every filled
+    shape and image listed before the text (below it) that covers the point, blended in
+    order."""
+    rgb = np.asarray(backdrop(*point), dtype=float)
+    p = Point(point)
+    for it in items[:index]:
+        if it.kind == "image" and it.region is not None and it.region.contains(p):
+            rgb = _image_rgb(it.mob, *point)
+        for poly, fill, alpha in it.fills:
+            if alpha > 0.05 and poly.contains(p):
+                rgb = np.asarray(blend(fill, rgb, alpha))
+    return rgb
+
+
+def low_contrast(text, index, items, backdrop, minimum=MIN_CONTRAST):
+    """(worst ratio, text rgb, surface rgb, point) if the text's contrast with what is behind
+    it falls below `minimum`; None if it is readable or exempt."""
+    if getattr(text.mob, "contrast_exempt", False):
+        return None
+    worst = None
+    for rgb, op in _glyph_colors(text):
+        if np.allclose(rgb, _rgb(LIGHT_INK), atol=2e-3):     # inactive text (LIGHT_INK)
+            continue
+        for pt in _samples(text):
+            bg = surface_at(pt, index, items, backdrop)
+            shown = blend(rgb, bg, op)
+            r = contrast_ratio(shown, bg)
+            if worst is None or r < worst[0]:
+                worst = (r, shown, bg, pt)
+    if worst is not None and worst[0] < minimum - 1e-6:
+        return worst
+    return None
+
+
+def _hex(rgb):
+    r, g, b = (int(round(float(v) * 255)) for v in rgb[:3])
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 # ---------------- naming (for the report) ----------------
@@ -333,8 +418,11 @@ class Finding:
 
 
 def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA,
-            clearance=CLEARANCE):
-    """Every fault on screen now, as Findings."""
+            clearance=CLEARANCE, backdrop=None, min_contrast=MIN_CONTRAST, frame=True):
+    """Every fault on screen now, as Findings. backdrop(x, y) -> RGB is the scene's
+    background (the theme's BG when omitted); frame=False skips the frame and safe-margin
+    rules (the content is magnified on purpose: motion.zoom_on)."""
+    backdrop = backdrop or (lambda x, y: _rgb(BG))
     texts = [i for i in items if i.kind == "text"]
     shapes = [i for i in items if i.kind != "text"]
     found = []
@@ -370,15 +458,24 @@ def analyse(items, margin=SAFE_MARGIN, min_font=MIN_FONT_SIZE, min_area=MIN_AREA
                     p = nearest_points(a.glyphs, s.ink)[0]
                     found.append(Finding("text_near_shape", a, s, amount=clearance - gap,
                                          gap=gap, clearance=clearance, at=(p.x, p.y)))
+    for k, it in enumerate(items):
+        if it.kind == "text":
+            worst = low_contrast(it, k, items, backdrop, min_contrast)
+            if worst:
+                ratio, shown, bg, (x, y) = worst
+                found.append(Finding("low_contrast", it, amount=min_contrast - ratio,
+                                     ratio=ratio, minimum=min_contrast,
+                                     text=_hex(shown), surface=_hex(bg), at=(x, y)))
     fw, fh = config.frame_width / 2, config.frame_height / 2
     for it in items:
-        x0, y0, x1, y1 = it.ink.bounds
-        side, over = max({"RIGHT": x1 - fw, "LEFT": -fw - x0, "UP": y1 - fh,
-                          "DOWN": -fh - y0}.items(), key=lambda kv: kv[1])
-        if over > 0.01:
-            found.append(Finding("out_of_frame", it, amount=over, side=side))
-        elif it.kind == "text" and over + margin > 0.01:
-            found.append(Finding("in_safe_margin", it, amount=over + margin, side=side))
+        if frame:
+            x0, y0, x1, y1 = it.ink.bounds
+            side, over = max({"RIGHT": x1 - fw, "LEFT": -fw - x0, "UP": y1 - fh,
+                              "DOWN": -fh - y0}.items(), key=lambda kv: kv[1])
+            if over > 0.01:
+                found.append(Finding("out_of_frame", it, amount=over, side=side))
+            elif it.kind == "text" and over + margin > 0.01:
+                found.append(Finding("in_safe_margin", it, amount=over + margin, side=side))
         if it.kind == "text" and it.font is not None and it.font < min_font - 0.05:
             found.append(Finding("text_too_small", it, amount=it.font))
     return found
@@ -462,6 +559,12 @@ def suggest(f, items, texts, margin):
         if side in ("LEFT", "RIGHT") and width > config.frame_width - 2 * margin:
             tip = f"{name_a} is {width:.2f} wide: shrink it with fit() (SAFE_WIDTH {SAFE_WIDTH})"
         return tip + f" to keep {margin} clear of the frame edge"
+    if f.kind == "low_contrast":
+        e = f.extra
+        return (f"{name_a} is {e['text']} on {e['surface']}: {f.extra['ratio']:.1f}:1, below "
+                f"{e['minimum']}:1. Use INK or GREY_INK (or an accent) for text, not LIGHT_INK "
+                "or a colour near the background; on a filled panel pick the token that suits "
+                "the panel; over an image raise `dim` in scene.background()")
     if f.kind == "text_too_small":
         return (f"{name_a} is font size {f.extra['amount']:.1f} (< {MIN_FONT_SIZE}): use a "
                 "larger font_size, shorten the text, or let fit()/scale shrink it less")
@@ -473,8 +576,9 @@ class OverlapChecker:
     """Called by SyncedScene after every animation in QA mode; findings become intervals."""
 
     def __init__(self, safe_margin=SAFE_MARGIN, min_font_size=MIN_FONT_SIZE, min_area=MIN_AREA,
-                 clearance=CLEARANCE):
+                 clearance=CLEARANCE, min_contrast=MIN_CONTRAST):
         self.margin, self.min_font, self.min_area = safe_margin, min_font_size, min_area
+        self.min_contrast = min_contrast
         self.clearance = clearance
         self.open, self.done = {}, []
         self.checks, self.last_time = 0, 0.0
@@ -485,7 +589,10 @@ class OverlapChecker:
         items = collect(scene.mobjects)
         texts = [i for i in items if i.kind == "text"]
         now = {}
-        for f in analyse(items, self.margin, self.min_font, self.min_area, self.clearance):
+        backdrop = getattr(scene, "background_color_at", None)
+        frame = not getattr(scene, "zoomed", False)
+        for f in analyse(items, self.margin, self.min_font, self.min_area, self.clearance,
+                         backdrop=backdrop, min_contrast=self.min_contrast, frame=frame):
             now.setdefault(f.key, f)
         for key, f in now.items():
             rec = self.open.get(key)
@@ -513,6 +620,11 @@ class OverlapChecker:
             return out
         if f.kind == "text_too_small":
             return {"font_size": round(f.extra["amount"], 1), "minimum": self.min_font}
+        if f.kind == "low_contrast":
+            x, y = f.extra["at"]
+            return {"ratio": round(f.extra["ratio"], 2), "minimum": f.extra["minimum"],
+                    "text_color": f.extra["text"], "background": f.extra["surface"],
+                    "at": [round(x, 3), round(y, 3)], "cell": cell(x, y)}
         if f.kind == "text_near_shape":
             x, y = f.extra["at"]
             return {"gap": round(f.extra["gap"], 3), "clearance": f.extra["clearance"],
@@ -545,6 +657,7 @@ class OverlapChecker:
     def settings(self):
         return {"safe_margin": self.margin, "min_font_size": self.min_font,
                 "min_area": self.min_area, "clearance": self.clearance,
+                "min_contrast": self.min_contrast,
                 "frame": [round(config.frame_width, 3), round(config.frame_height, 3)],
                 "grid": "6x6: columns A-F left to right, rows 1-6 top to bottom"}
 
@@ -573,7 +686,13 @@ def group_findings(findings):
                "a": {"name": members, "kind": "group", "cells": cells(bounds),
                      "bbox": [round(float(v), 3) for v in bounds],
                      "members": [x["a"] for x in fs]}}
-        if f0["type"] == "text_too_small":
+        if f0["type"] == "low_contrast":
+            worst = min(x["overlap"]["ratio"] for x in fs)
+            rec["overlap"] = {**f0["overlap"], "ratio": worst}
+            rec["suggestion"] = (f"{n} texts below {f0['overlap']['minimum']}:1 (worst "
+                                 f"{worst}:1): use INK, GREY_INK or an accent for them; "
+                                 "details in each member")
+        elif f0["type"] == "text_too_small":
             sizes = [x["overlap"]["font_size"] for x in fs]
             rec["overlap"] = {**f0["overlap"], "font_size": [min(sizes), max(sizes)]}
             size = f"{min(sizes)}" if min(sizes) == max(sizes) else f"{min(sizes)}–{max(sizes)}"

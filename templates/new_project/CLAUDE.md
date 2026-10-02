@@ -12,6 +12,9 @@ grep -rl NAME . | xargs sed -i "s/NAME/$name/g"
 ```
 Then fill in this file, `project.toml` and `sources/<name>_source.md`, and delete `<name>_data.py` if the topic shows no numbers.
 
+## Theme
+- `project.toml` → `[style] theme` (first step of every project): `dark` (default) | `blueprint` | `light`. Colours in scripts are the theme names (`INK`, `ACCENT_1` …), never literals. Chosen here: **dark** — change the line and this note together.
+
 ## Source
 - Primary reference: `projects/NAME/sources/NAME_source.md` (cleaned: no real site, personal or confidential data).
 - Research notes per video: `projects/NAME/sources/NAME_<video>.md` (claim → source URL → short note).

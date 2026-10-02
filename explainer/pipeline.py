@@ -21,6 +21,7 @@ import tomllib
 from pathlib import Path
 
 from .style import BUILD_DIR, FINAL_FPS, FINAL_RESOLUTION, OUTPUT_DIR
+from .theme import SCRIPT_ENV
 from .timing import (QA_ENV, RENDER_LOG_ENV, WINDOW_ENV, segment_paths, segment_starts,
                      timing_path)
 
@@ -46,6 +47,22 @@ def project_settings(script):
     return {"language": lang,
             "voice": data.get("voice", DEFAULT_VOICES.get(lang, DEFAULT_PROJECT["voice"])),
             "rate": data.get("rate", DEFAULT_PROJECT["rate"])}
+
+
+def render_resolution(script):
+    """Final resolution of the script's project: `[render] resolution` of project.toml
+    ("1080p", "720p" or [width, height]); 1920x1080 when absent."""
+    path = Path(script).resolve().parent / "project.toml"
+    value = (tomllib.loads(path.read_text()) if path.exists() else {}).get(
+        "render", {}).get("resolution")
+    if value is None:
+        return FINAL_RESOLUTION
+    if isinstance(value, str):
+        names = {"1080p": (1920, 1080), "720p": (1280, 720)}
+        if value not in names:
+            raise ValueError(f"resolution {value!r}: use {', '.join(names)} or [width, height]")
+        return names[value]
+    return tuple(value)
 
 
 # ---------------- Narration (edge-tts) ----------------
@@ -129,11 +146,12 @@ def render(script, scene, preview=False, media_dir=None, env=None):
     if preview:
         args, folder = ["-ql"], "480p15"
     else:
-        w, h = FINAL_RESOLUTION
+        w, h = render_resolution(script)
         args = ["-r", f"{w},{h}", "--fps", str(FINAL_FPS)]
         folder = f"{h}p{FINAL_FPS}"
     subprocess.run(["manim", *args, "--disable_caching", "--media_dir", str(media_dir),
-                    str(script), scene], check=True, env={**os.environ, **(env or {})})
+                    str(script), scene], check=True,
+                   env={**os.environ, SCRIPT_ENV: str(Path(script).resolve()), **(env or {})})
     return media_dir / "videos" / script.stem / folder / f"{scene}.mp4"
 
 

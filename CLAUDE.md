@@ -1,7 +1,7 @@
 # explainer-videos — Project Instructions
 
 ## Purpose
-A general template that turns any file or topic into a professional whiteboard-style explainer video (or a series of episodes): Manim animation + narration (edge-tts), merged with ffmpeg.
+A general template that turns any file or topic into a professional explainer video (whiteboard drawing style, on a theme of its own) (or a series of episodes): Manim animation + narration (edge-tts), merged with ffmpeg.
 Each topic is a project in `projects/<name>/`. Project-specific rules live in `projects/<name>/CLAUDE.md`; they add to these general rules and win where they differ.
 
 ## Reply language
@@ -22,7 +22,8 @@ Then verify: `ffmpeg -version`, `manim --version`, `edge-tts --version`, `python
 import ssl, edge_tts.communicate as c
 c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 ```
-3. **No LaTeX in the container**: build equations from `Text` pieces, not `MathTex`/`Tex`.
+3. **Two tests fail on a fresh container before any change** (`test_overlap`: `KnownDefects.test_seg3_tag_touching_the_rays_is_found` and the `small round badge '10'` case of `SelfTest`): they depend on glyph metrics of the installed Manim/Pango (the same two fail on Manim 0.20.1 and 0.21.0 here). Do not read them as regressions; compare against a clean checkout.
+4. **No LaTeX in the container**: build equations from `Text` pieces, not `MathTex`/`Tex`.
 
 ## Quality standard
 - The quality reference is the prover series (`projects/prover`). Quality comes before time; time is measured, not targeted.
@@ -37,6 +38,7 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 
 ## Fast workflow (every project)
 The Fast workflow is subject to the Quality standard above; the step-by-step procedure is the `explainer-video` skill (`.claude/skills/explainer-video/SKILL.md`).
+0. **Choose the theme (a fixed first step of every project).** Set `[style] theme = "dark" | "blueprint" | "light"` in `projects/<name>/project.toml` (one line; **dark is the default** and what the template ships with). Pick `blueprint` for engineering-drawing topics, `light` only when the owner asks for the white board. A scene can switch inside an episode (see Themes and backgrounds). Projects made before themes (prover, pt_cal, rt_intro, svp_winsfc, ut_intro and the two galleries) are pinned to `light` so they re-render as published.
 1. **Source first.** Each project has a cleaned source file `projects/<name>/sources/<name>_source.md`. It is the primary reference for the content and holds no real (site, personal or confidential) data.
 2. **Research only verifies.** Use web research only to check the claims in the source. Add nothing except to correct an error or to fill a gap the explanation cannot do without; mark every such addition or correction with [+] and its source.
 3. **One approval message.** Write the narration of ALL episodes (or all segments of a single video) in one go, and present it in ONE message together with the storyboard, the quality gate, any source conflicts and any new values.
@@ -66,11 +68,12 @@ Subject to the Quality standard: delegation changes who does the work, never the
 - Arabic narration MUST be fully diacritized (تشكيل كامل) before sending to edge-tts — this noticeably improves pronunciation.
 - Foreign terms in the narration are written in the letters of the narration language so the voice pronounces them correctly (each project keeps its own list).
 - Split narration into segments; each scene duration must match its audio segment.
-- Word timing: `synthesize()` saves the edge-tts WordBoundary timings of each segment next to its audio (`tmp/<script>/audio/seg{i}.json`). `SyncedScene.cue(seg, phrase)` uses them to show an item exactly when its word is spoken (Arabic and English); without them it falls back to the phrase's relative position in the text. Cue phrases are copied from the narration exactly as written (same diacritics).
+- Word timing: `synthesize()` saves the edge-tts WordBoundary timings of each segment next to its audio (`tmp/<script>/audio/seg{i}.json`). `SyncedScene.cue(seg, phrase)` uses them to show an item exactly when its word is spoken (Arabic and English); without them it falls back to the phrase's relative position in the text. Cue phrases are copied from the narration exactly as written (same diacritics). `cue()` matches the whole word before a partial one (`explainer.timing.find_phrase`): «الدفع» does not match inside «والدفع» while a lone «الدفع» exists later in the segment; the nth occurrence counts whole words first.
 
 ## Video defaults
 - Resolution: 1080p, aspect 16:9.
-- Style: whiteboard — white background, black strokes drawn progressively.
+- Style: whiteboard drawing — strokes drawn progressively — on the project's theme (default `dark`; see Themes and backgrounds).
+- Resolution of a project other than 1080p (e.g. a catalogue at 720p): `[render] resolution = "720p"` in `project.toml`.
 - On-screen text: English or equations only (Arabic RTL rendering in Manim is unreliable).
 - Merge audio + video with ffmpeg.
 - Series: each episode 3–5 minutes unless the project says otherwise (see Quality standard). After all episodes are approved, they may be concatenated with ffmpeg into one file with a short title card between episodes (no re-render of episodes).
@@ -80,9 +83,9 @@ Subject to the Quality standard: delegation changes who does the work, never the
 - New projects start from `templates/new_project/` (project `CLAUDE.md`, `project.toml`, `sources/<name>_source.md`, optional `<name>_data.py`, sample episode script); the copy steps are at the top of its `CLAUDE.md`.
 - New scripts use the installed `explainer` package: `from explainer import *` (Manim, style, `SyncedScene` with `timeline/sync/at/cue/say/clear`, the pipeline, and the scene library in `explainer/scenes.py`); they end with `main(__file__, "SceneName", NARRATION)`.
 - The scene library is for the general structure (titles, equations, tables); mechanisms and motions are drawn custom (see Scene library).
-- Palette: `ACCENT_1`…`ACCENT_4` (blue, orange, green, red), `OK_C`, `ALERT_C`, `GREY_INK`, `LIGHT_INK`, `PANEL_FILL`; each project assigns the accents a meaning in its `CLAUDE.md`.
+- Palette: `BG`, `BG_ALT`, `INK`, `GREY_INK`, `LIGHT_INK`, `LINE_C`, `GRID_C`, `PANEL_FILL`, `ACCENT_1`…`ACCENT_4` (blue, orange, green, red on `light`/`dark`; yellow, orange, green, pink on `blueprint`), `OK_C`, `ALERT_C`; each project assigns the accents a meaning in its `CLAUDE.md`. They are theme colours (below): never write a colour literal in a script, use these names.
 - Series: join finished episodes with `explainer.series.concat_series(...)` (title cards, stream copy, no re-encode of episodes).
-- Older scripts (prover series, ut_intro) keep their header `sys.path.insert(0, .../"scripts")` + `from style import *`; `scripts/style.py` is a bridge to the package. Do not port them to the library.
+- Older scripts (prover series, ut_intro and the other projects made before themes) keep their header `sys.path.insert(0, .../"scripts")` + `from style import *`; `scripts/style.py` is a bridge to the package. Do not port them to the library.
 - The prover series (`projects/prover/`) is the reference for quality, pacing and scene structure (see Quality standard); `projects/ut_intro/ut_intro.py` is a short example of the visual style.
 - Before rendering, show the owner the narration text for approval (see Fast workflow).
 - Render a low-quality preview first to check layout, then render the final 1080p:
@@ -136,16 +139,36 @@ Helpers: `emphasize(scene, mob)` frames any part; `badge(n)` is a numbered circl
 
 **Layout rule:** place texts and labels relative to each other and to what they name (`next_to`, `arrange`, `align_to`), not at fixed coordinates, and keep them at least `SAFE_MARGIN` (0.25 units) inside the frame; `fit()` keeps a group within `SAFE_WIDTH`. Text stays at `MIN_FONT_SIZE` (14) or larger after any scaling. Both limits are set so that the prover series passes them.
 
+**Motion tools** (`explainer/motion.py`, also from `from explainer import *`). Same convention as the library: the scene first, the animation plays, the result returns; times come from `self.cue(seg, phrase)`.
+
+| Function | Use it when | Main inputs |
+|---|---|---|
+| `zoom_on` | the narration moves to one small part: magnify it, hold, come back | `target` (mobject or point), `factor=2.0`, `hold`, `during=callable` |
+| `stagger_in` | a set of items enters one after another | `items, shift=UP*0.3, lag=0.18, run_time, cues` |
+| `move_along_path` | an element travels (a fluid, a signal, a part) | `mob, path` (VMobject or points), `rotate`, `trail`, `run_time` |
+| `pulse` | marking the element being explained without leaving anything on screen | `mob, color, times=2, scale, ring` |
+| `parallax` | layers of depth sliding at different speeds | `layers=[(mobject, depth), ...], shift, run_time` |
+
+`zoom_on` scales the content (strokes included) about the target and fades the bottom caption while magnified; it works in any scene (no camera class), and while it is magnified the QA frame rules are off (`scene.zoomed`). Keep `parallax` layers inside the frame for their whole travel.
+
+## Themes and backgrounds
+`explainer/theme.py`, `explainer/backgrounds.py`; catalogue: `output/theme_gallery.mp4` (720p, silent; project `projects/theme_gallery/`).
+- **A theme is a set of colour tokens:** background (`bg`, `bg_alt`), `panel`, text (`ink`), secondary text (`muted`), inactive (`faint`), `line` (lines, arrows, symbols), `grid`, four accents, `ok`, `alert`. Ready themes: `dark` (default: slate-navy gradient, bright accents), `blueprint` (white linework on blueprint blue, drafting grid), `light` (the original white board, exactly as before).
+- **Choosing:** one line in `project.toml`: `[style] theme = "dark"` (order: the `EXPLAINER_THEME` variable, that line, then `dark`). Optional slow background motion for the whole project: `background = "gradient" | "grid" | "particles"` (or a list).
+- **The names `INK`, `BG`, `ACCENT_1` … are `ThemeColor` objects** (ordinary Manim colours whose value is rewritten when the theme changes), so `color=INK` in a script or a default argument follows the theme. All 18 library functions, the Tabler `icon()`s and the ISA symbols use these names: no colour literals in the library. A mobject keeps the colours it was created with.
+- **One scene in another theme:** `self.set_theme("blueprint")` clears the screen (except `keep`), switches the tokens and crossfades the background; `self.reset_theme()` returns to the project's theme; `with self.themed("blueprint"): ...` does both around a block.
+- **Backgrounds:** `self.background(...)` gives a scene a colour (`color=`), a gradient (`gradient=[...], angle=`) or a picture (`image=path, dim=0.55`, dimmed with the theme's colour so text stays readable); with no arguments it is the theme's own. `motion="gradient" | "grid" | "particles"` (or a tuple) adds slow motion (full cycles of 30–80 s, never above `GRID_ALPHA` opacity). Layers sit first in `scene.mobjects`, `clear()` keeps them and the overlap check ignores them. The moving layers carry time-based updaters (Manim draws what precedes the first animated mobject once, and a pause with nothing to update as a frozen frame; with updaters at index 0 everything is redrawn each frame), and `tests/test_theme.py` renders a pause to prove they move.
+- **Contrast:** `python -c "from explainer import *; print(check_theme('dark'))"` lists a theme's tokens below 4.5:1 on its surfaces (empty for `dark` and `blueprint`; `light` keeps its original `faint` and `accent2`). The QA overlap check measures every text against what is behind it (see Preview QA).
+
 ## Preview QA
 Every preview passes these checks before the final render (procedure: the `explainer-video` skill):
-- **Overlap check** (`explainer/qa/overlap.py`): `python projects/<name>/<script>.py --segments 2 --qa`, or for any script, old ones included, `python -m explainer.qa projects/<name>/<script>.py [--segments 2]`. After every animation it records texts and labels overlapping each other or shapes, texts closer than `CLEARANCE` (0.06 units, stroke width included) to a line, arrow or shape outside their frame (touching included), anything leaving the frame, text inside the safe margin, and text below `MIN_FONT_SIZE`; a text inside its own frame and a label's own leader arrow are not errors. It is run in the automatic loop (Fast workflow step 5) until it reports zero critical findings (at most 5 iterations) before the critic is called. `python -m explainer.qa.selftest` and `python -m unittest discover tests` check its rules. Output: one JSON report per segment in `tmp/<script>/qa/<run>/overlap/segNN.json` (time, the two elements, overlap amount, grid cell, fix suggestion).
+- **Overlap check** (`explainer/qa/overlap.py`): `python projects/<name>/<script>.py --segments 2 --qa`, or for any script, old ones included, `python -m explainer.qa projects/<name>/<script>.py [--segments 2]`. After every animation it records texts and labels overlapping each other or shapes, texts closer than `CLEARANCE` (0.06 units, stroke width included) to a line, arrow or shape outside their frame (touching included), **text whose contrast with what is behind it is below 4.5:1** (`low_contrast`, critical: the scene's background — colour, gradient or image, read where the text is — with every fill under the text blended in; `LIGHT_INK` text is inactive and exempt, as is a text marked `contrast_exempt = True`), anything leaving the frame, text inside the safe margin, and text below `MIN_FONT_SIZE`; a text inside its own frame and a label's own leader arrow are not errors. It is run in the automatic loop (Fast workflow step 5) until it reports zero critical findings (at most 5 iterations) before the critic is called. `python -m explainer.qa.selftest` and `python -m unittest discover tests` check its rules. Output: one JSON report per segment in `tmp/<script>/qa/<run>/overlap/segNN.json` (time, the two elements, overlap amount, grid cell, fix suggestion).
 - **Contact sheets** (`explainer/qa/contact_sheet.py`, made by the same `--qa` run): a frame every 3 s plus the start and end of each segment, with a 6×6 grid (A1 top-left … F6 bottom-right) and the time, 3×3 frames per sheet in `tmp/<script>/qa/<run>/sheets/`.
 - **Critic** (`.claude/agents/video-critic.md`): a read-only agent that reads the sheets, the overlap reports, the storyboard, the approved narration and the data module, scores each segment and returns PASS or FIX. It keeps its recurring findings in `.claude/agent-memory/video-critic/MEMORY.md` and updates that file itself: it has Write/Edit, and a PreToolUse hook in its definition (`.claude/hooks/critic_memory_guard.py`) blocks any write outside `.claude/agent-memory/video-critic/`. Commit the memory file with the video.
 
 ## Accuracy and privacy (the repository is PUBLIC)
 - Never put real site, personal or confidential data in the repository or the videos (serial numbers, IDs, real measured values, names, dates, locations). Use illustrative values.
 - If a project shows numbers, all of them come from one data module in the project (e.g. `projects/<name>/<name>_data.py`); never type derived values by hand. Projects without numbers need no data module.
-- On a technical or regulated topic, the first video (episode 1 of a series) opens with one sentence: this is educational material; the binding reference is the official documentation and approved procedures.
 - If sources conflict with each other or with the owner's outline or source file, DO NOT decide silently: list the conflict in the narration approval message and ask the owner.
 - If a fact cannot be verified, leave it out of the narration; never guess.
 - Never try to complete site-specific data (nameplate values, certificates, open notes, or any real identifiers). It stays out of the repository and the videos.

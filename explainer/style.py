@@ -1,12 +1,18 @@
 """Shared whiteboard style: paths, colours, fonts, text sizes and render settings.
 
 Every video imports it (through `from explainer import *`). Importing it also sets
-Manim's defaults: white background, black strokes, the shared font.
+Manim's defaults: the project's theme (explainer/theme.py: background, ink strokes) and the
+shared font.
 """
 import os
 from pathlib import Path
 
 from manim import *
+
+from .theme import (DEFAULT_THEME, THEMES, ThemeColor, check_theme, contrast_ratio,  # noqa: F401
+                    current_theme, project_motion, project_style, project_theme, set_theme,
+                    theme_colors, theme_names)
+from .theme import token as _token
 
 # Repository root: override with EXPLAINER_ROOT, else the folder that holds this package.
 ROOT = Path(os.environ.get("EXPLAINER_ROOT", Path(__file__).resolve().parents[1]))
@@ -14,21 +20,27 @@ OUTPUT_DIR = ROOT / "output"
 BUILD_DIR = ROOT / "tmp"            # git-ignored: audio, media cache, previews
 
 # ---------------- Colours ----------------
-BG = WHITE
-INK = BLACK
-GREY_INK = "#555555"                # secondary strokes, notes, ray traces
-LIGHT_INK = "#9e9e9e"               # faint guides, inactive items
-PANEL_FILL = "#f3f3f3"              # light fill behind panels and table rows
+# Every colour is a ThemeColor (explainer/theme.py): it holds the value of the project's
+# theme (dark by default, chosen by the `[style] theme` line of project.toml) and changes
+# with SyncedScene.set_theme. `color=INK` in any script or default argument follows the theme.
+BG = _token("bg")                    # background
+BG_ALT = _token("bg_alt")            # second colour of gradients
+INK = _token("ink")                  # text and primary strokes
+GREY_INK = _token("muted")           # secondary text, strokes, notes, ray traces
+LIGHT_INK = _token("faint")          # inactive items, faint guides
+PANEL_FILL = _token("panel")         # fill behind panels and table rows
+LINE_C = _token("line")              # lines, arrows, axes, symbols
+GRID_C = _token("grid")              # background grid and particles
 
-# Generic palette: four accents that stay readable on white (used by the prover
-# series as prover/fluid, meter/drive, measurement/OK, alarm).
-ACCENT_1 = "#1f5fa8"                # blue
-ACCENT_2 = "#c25a12"                # orange
-ACCENT_3 = "#2e7d32"                # green
-ACCENT_4 = "#c62828"                # red
+# Generic palette: four accents that stay readable on the theme's background (used by
+# the prover series as prover/fluid, meter/drive, measurement/OK, alarm).
+ACCENT_1 = _token("accent1")         # blue (yellow on blueprint)
+ACCENT_2 = _token("accent2")         # orange
+ACCENT_3 = _token("accent3")         # green
+ACCENT_4 = _token("accent4")         # red
 PALETTE = [ACCENT_1, ACCENT_2, ACCENT_3, ACCENT_4]
-OK_C = ACCENT_3                     # accepted / correct / done
-ALERT_C = ACCENT_4                  # alarm / error / out of limit
+OK_C = _token("ok")                  # accepted / correct / done
+ALERT_C = _token("alert")            # alarm / error / out of limit
 
 # ---------------- Fonts & text sizes ----------------
 FONT = "DejaVu Sans"
@@ -55,9 +67,8 @@ CAPTION_Y = -3.3                    # caption line (SyncedScene.say)
 FINAL_RESOLUTION = (1920, 1080)
 FINAL_FPS = 30
 
-config.background_color = BG
 Text.set_default(color=INK, font=FONT)
-VMobject.set_default(color=INK)
+VMobject.set_default(color=LINE_C)
 
 
 def label(text, size=FS_LABEL, color=INK, **kw):

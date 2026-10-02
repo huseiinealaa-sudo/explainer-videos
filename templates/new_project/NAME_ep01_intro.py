@@ -9,8 +9,8 @@ import NAME_data as D           # delete with the data module if the topic has n
 
 # Fully diacritized narration (owner-approved <date>) — one entry per scene.
 NARRATION = [
-    # 1 title (episode 1 of a technical topic opens with the educational-material sentence)
-    "هٰذِهِ مَادَّةٌ تَعْلِيمِيَّةٌ؛ وَالمَرْجِعُ المُلْزِمُ هُوَ الوَثَائِقُ الرَّسْمِيَّةُ وَالإِجْرَاءَاتُ المُعْتَمَدَةُ. نَتَعَرَّفُ فِي هٰذِهِ الحَلْقَةِ عَلَى الفِكْرَةِ الأَسَاسِيَّةِ.",
+    # 1 title
+    "نَتَعَرَّفُ فِي هٰذِهِ الحَلْقَةِ عَلَى الفِكْرَةِ الأَسَاسِيَّةِ.",
     # 2 key points
     "نَبْدَأُ بِثَلَاثِ نِقَاطٍ: التَّعْرِيفُ، ثُمَّ المُكَوِّنَاتُ، ثُمَّ طَرِيقَةُ العَمَلِ.",
     # 3 a number from the data module
