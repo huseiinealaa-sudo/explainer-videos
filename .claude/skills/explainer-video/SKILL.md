@@ -42,8 +42,9 @@ Run the session setup of the root `CLAUDE.md` (manim, `pip install -e .`, checks
 2. Take the outline and constraints from the owner's request (episodes, audience, length,
    language, voice).
 3. Make the **material inventory**: every main section of the source → its concepts, the
-   mechanisms / motions / sequences to animate, the numbers (worked examples), and what
-   needs privacy transformation (site cases, real numbers, screenshots → illustrative
+   mechanisms / motions / sequences to animate, the numbers (which equation the technician
+   really uses: that one gets the episode's single worked example, the others become visual
+   results), and what needs privacy transformation (site cases, real numbers, screenshots → illustrative
    examples or simplified drawings). Size the video from it: 2–4 minutes per main section,
    one main idea per segment, series of 3–5-minute episodes by default.
 4. Research only verifies (Fast workflow step 2); save sources per video in
@@ -57,8 +58,12 @@ motions are custom drawings; the library is for titles, equations, tables. For p
 and instrument drawings, build from `explainer.symbols` (ISA valves, pumps, flow elements,
 bubbles, joined by `connect()` with the right line type) and add `icon()` pictograms where a
 label needs one (root `CLAUDE.md`, Scene library: Icons and engineering symbols). Keep text and
-table scenes at about one third of each episode or less. The storyboard is shown with the
-narration (step c), never approved on its own.
+table scenes at about one third of each episode or less. **Equations and numbers (root
+`CLAUDE.md`, Quality standard):** an equation is shown only if the technician uses it in their
+work; at most ONE step-by-step worked example per episode, for its most important equation;
+every other number is a visual result (bars, comparisons, a reading on a screen) with no
+calculation steps. The priority is understanding: what happens, why, and what it means for the
+inspector. The storyboard is shown with the narration (step c), never approved on its own.
 
 ### c. All narration at once, with the quality gate
 Write the fully diacritized narration of ALL episodes in one go, and present it in ONE

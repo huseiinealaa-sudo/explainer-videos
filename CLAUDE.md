@@ -28,12 +28,12 @@ c._SSL_CTX = ssl.create_default_context(cafile="/root/.ccr/ca-bundle.crt")
 ## Quality standard
 - The quality reference is the prover series (`projects/prover`). Quality comes before time; time is measured, not targeted.
 - The material sets the length: each main section of the source gets 2–4 minutes, and each segment carries one main idea. The default format is a series of 3–5-minute episodes.
-- Every concept: what it is, why, and a worked example when it involves numbers.
+- Every concept: what it is, why it matters, and what it means for the inspector. Understanding comes first: what happens, why, and what it means. An equation is shown only if the technician uses it in their work. At most ONE step-by-step worked example per episode, for the most important equation in it. Every other number is shown as a visual result (bars, comparisons, a reading on a screen) without calculation steps.
 - Every mechanism, motion or sequence is shown as an animated drawing, drawn from scratch when the library does not have it. Text and table scenes take no more than about a third of an episode's duration.
 - Privacy transforms, it does not delete: site cases, real numbers and screenshots become illustrative examples or simplified drawings.
 - Every video stands on its own: a concept is not shortened because an earlier video explained it.
 - Nothing is dropped for lack of verification or of time without showing it to the owner with a proposal.
-- The narration is presented with a quality gate: the number of worked examples, the number of custom drawings, the share of text-scene time in each episode, and everything left out with its reason.
+- The narration is presented with a quality gate: the number of step-by-step worked examples (at most one), the number of custom drawings, the share of text-scene time in each episode, and everything left out with its reason.
 - In a series, the first episode is produced in full and pushed; the others are completed only after the owner approves its level.
 
 ## Fast workflow (every project)
@@ -153,12 +153,12 @@ Helpers: `emphasize(scene, mob)` frames any part; `badge(n)` is a numbered circl
 
 ## Themes and backgrounds
 `explainer/theme.py`, `explainer/backgrounds.py`; catalogue: `output/theme_gallery.mp4` (720p, silent; project `projects/theme_gallery/`).
-- **A theme is a set of colour tokens:** background (`bg`, `bg_alt`), `panel`, text (`ink`), secondary text (`muted`), inactive (`faint`), `line` (lines, arrows, symbols), `grid`, four accents, `ok`, `alert`. Ready themes: `dark` (default: slate-navy gradient, bright accents), `blueprint` (white linework on blueprint blue, drafting grid), `light` (the original white board, exactly as before).
+- **A theme is a set of colour tokens:** background (`bg`, `bg_alt`), `panel`, text (`ink`), secondary text (`muted`), inactive (`faint`), `line` (lines, arrows, symbols), `grid`, four accents, `ok`, `alert`. Ready themes: `dark` (default: slate-navy gradient, bright accents), `blueprint` (white linework on blueprint blue, drafting grid), `light` (the original white board; only `faint` and `accent2` were darkened at the same hue for the 4.5:1 contrast).
 - **Choosing:** one line in `project.toml`: `[style] theme = "dark"` (order: the `EXPLAINER_THEME` variable, that line, then `dark`). Optional slow background motion for the whole project: `background = "gradient" | "grid" | "particles"` (or a list).
 - **The names `INK`, `BG`, `ACCENT_1` … are `ThemeColor` objects** (ordinary Manim colours whose value is rewritten when the theme changes), so `color=INK` in a script or a default argument follows the theme. All 18 library functions, the Tabler `icon()`s and the ISA symbols use these names: no colour literals in the library. A mobject keeps the colours it was created with.
 - **One scene in another theme:** `self.set_theme("blueprint")` clears the screen (except `keep`), switches the tokens and crossfades the background; `self.reset_theme()` returns to the project's theme; `with self.themed("blueprint"): ...` does both around a block.
 - **Backgrounds:** `self.background(...)` gives a scene a colour (`color=`), a gradient (`gradient=[...], angle=`) or a picture (`image=path, dim=0.55`, dimmed with the theme's colour so text stays readable); with no arguments it is the theme's own. `motion="gradient" | "grid" | "particles"` (or a tuple) adds slow motion (full cycles of 30–80 s, never above `GRID_ALPHA` opacity). Layers sit first in `scene.mobjects`, `clear()` keeps them and the overlap check ignores them. The moving layers carry time-based updaters (Manim draws what precedes the first animated mobject once, and a pause with nothing to update as a frozen frame; with updaters at index 0 everything is redrawn each frame), and `tests/test_theme.py` renders a pause to prove they move.
-- **Contrast:** `python -c "from explainer import *; print(check_theme('dark'))"` lists a theme's tokens below 4.5:1 on its surfaces (empty for `dark` and `blueprint`; `light` keeps its original `faint` and `accent2`). The QA overlap check measures every text against what is behind it (see Preview QA).
+- **Contrast:** `python -c "from explainer import *; print(check_theme('dark'))"` lists a theme's tokens below 4.5:1 on its surfaces (empty for all three themes; `light` has its original look except `faint` and `accent2`, darkened at the same hue to reach 4.5:1). The QA overlap check measures every text against what is behind it (see Preview QA).
 
 ## Preview QA
 Every preview passes these checks before the final render (procedure: the `explainer-video` skill):

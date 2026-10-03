@@ -23,8 +23,10 @@ How to fill it:
 - **What moves**: every mechanism, motion or sequence as an animation (piston travels,
   valve closes, pulses flow, a value lights up). "Nothing moves" is a warning sign for
   anything that is a mechanism.
-- **Worked example**: every concept with numbers gets one; the numbers come from the data
-  module (name the variables), never typed by hand.
+- **Worked example**: at most ONE step-by-step example per episode, for its most important
+  equation (one the technician uses at work); every other number is a visual result (bars,
+  comparisons, a reading on a screen) without calculation steps. The numbers come from the
+  data module (name the variables), never typed by hand.
 - **Scene**: a library function (`title_card`, `equation`, `worked_calculation`,
   `data_table` ...) for general structure, or "custom" for mechanisms and motions. Count
   text-only scenes (bullets, tables, equation-only screens, summary, document panel) for the

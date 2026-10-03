@@ -44,16 +44,18 @@ class Themes(WithTheme):
         for name, t in theme.THEMES.items():
             self.assertEqual(set(t["colors"]), set(theme.TOKENS), name)
 
-    def test_dark_and_blueprint_pass_the_contrast_check_everywhere(self):
-        for name in ("dark", "blueprint"):
+    def test_every_theme_passes_the_contrast_check_everywhere(self):
+        for name in ("dark", "blueprint", "light"):
             self.assertEqual(theme.check_theme(name), [], name)
 
-    def test_light_is_the_original_board(self):
+    def test_light_is_the_original_board_with_two_contrast_fixes(self):
         c = theme.THEMES["light"]["colors"]
-        self.assertEqual((c["bg"], c["ink"], c["muted"], c["faint"], c["panel"]),
-                         ("#ffffff", "#000000", "#555555", "#9e9e9e", "#f3f3f3"))
-        self.assertEqual((c["accent1"], c["accent2"], c["accent3"], c["accent4"]),
-                         ("#1f5fa8", "#c25a12", "#2e7d32", "#c62828"))
+        self.assertEqual((c["bg"], c["ink"], c["muted"], c["panel"]),
+                         ("#ffffff", "#000000", "#555555", "#f3f3f3"))
+        self.assertEqual((c["accent1"], c["accent3"], c["accent4"]),
+                         ("#1f5fa8", "#2e7d32", "#c62828"))
+        # faint was #9e9e9e and accent2 #c25a12 (2.41:1 and 3.97:1 on the panel): same hue, darker
+        self.assertEqual((c["faint"], c["accent2"]), ("#6f6f6f", "#b45311"))
 
     def test_colours_follow_the_theme_and_new_text_uses_them(self):
         theme.set_theme("blueprint")
