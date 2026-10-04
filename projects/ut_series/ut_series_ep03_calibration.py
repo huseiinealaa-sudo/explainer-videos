@@ -297,31 +297,32 @@ class UtSeriesEp03(SyncedScene):
 
         def panel_title(key, text):
             x, y = pos[key]
-            return label(text, FS_NOTE, INK, weight=BOLD).move_to([x - PW / 2 + 0.1, y + 1.38, 0], aligned_edge=LEFT)
+            return label(text, FS_NOTE, INK, weight=BOLD).move_to([x, y + 1.38, 0])
 
         def row_tag(key, text, icon_name, color, width):
+            """A short result tag centred under the panel."""
             x, y = pos[key]
             t = tag_line(text, icon_name, color, width=width, size=FS_TAG)
-            return t.move_to([x + PW / 2 - 0.1 - t.width / 2, y + 1.38, 0])
+            return t.move_to([x, y - 1.35, 0])
 
         # 1. horizontal linearity: equally spaced echoes
-        sh = small_scan(pos["h"], [(0, 1.3), (25, 1.0), (50, 0.8), (75, 0.62), (100, 0.5)], width=PW, height=2.0)
+        sh = small_scan(pos["h"], [(0, 1.3), (25, 1.0), (50, 0.8), (75, 0.62), (100, 0.5)], width=PW, height=2.0, x_caption="")
         th = panel_title("h", "Horizontal linearity")
         guides = VGroup(*[DashedLine([sh.x_of(v), sh.y_base() - 0.05, 0], [sh.x_of(v), sh.y_base() + 1.5, 0],
                                      color=ACCENT_3, stroke_width=2) for v in (25, 50, 75, 100)])
         ok_h = row_tag("h", "equal spacing", "check", OK_C, 2.8)
         # 2. vertical linearity: heights in proportion
-        sv = small_scan(pos["v"], [(0, 1.3), (35, 1.2), (70, 0.6)], width=PW, height=2.0)
+        sv = small_scan(pos["v"], [(0, 1.3), (35, 1.2), (70, 0.6)], width=PW, height=2.0, x_caption="")
         tv = panel_title("v", "Vertical linearity")
         ok_v = row_tag("v", "proportional", "check", OK_C, 2.7)
         # 3. resolution: two close reflectors, merged then resolved
         sg = ValueTracker(4.0)
-        sr = small_scan(pos["r"], [(0, 1.3), (85, 1.0), (92, 0.95)], width=PW, height=2.0, sigma=4.0)
+        sr = small_scan(pos["r"], [(0, 1.3), (85, 1.0), (92, 0.95)], width=PW, height=2.0, sigma=4.0, x_caption="")
         tr_ = panel_title("r", "Resolution")
         sr.trace.add_updater(lambda m: (setattr(sr, "sigma", sg.get_value()), sr.update_trace(sr.t_max)))
         res_t = row_tag("r", "two reflectors told apart", "check", OK_C, 3.7)
         # 4. dead zone: the initial pulse hides a near-surface echo
-        sd = small_scan(pos["d"], [(0, 1.4), (7, 0.55), (45, 1.0)], width=PW, height=2.0, sigma=4.5)
+        sd = small_scan(pos["d"], [(0, 1.4), (7, 0.55), (45, 1.0)], width=PW, height=2.0, sigma=4.5, x_caption="")
         td = panel_title("d", "Dead zone")
         dz = Rectangle(width=sd.x_of(14) - sd.x_of(-4), height=1.5, color=ACCENT_4, stroke_width=0).set_fill(ACCENT_4, 0.15)
         dz.move_to([(sd.x_of(14) + sd.x_of(-4)) / 2, sd.y_base() + 0.7, 0])
@@ -408,13 +409,16 @@ class UtSeriesEp03(SyncedScene):
                      ACCENT_2, (v1.x0 + 1.9, v1.bottom - 0.75))
         self.play(Create(arc_hl), FadeIn(arc_c), run_time=0.7)
         self.sync(c("وَثَقْبٌ"))
+        self.play(FadeOut(arc_c), FadeOut(arc_hl), run_time=0.3)
         hs = v1.hole_small
         hs_c = call(f"{D.V1_HOLE_D:g} mm hole", hs.get_center() + UP * 0.06, ACCENT_4, (hs.get_center()[0] - 0.2, v1.y_top + 1.0))
         self.play(Indicate(hs, color=ACCENT_4, scale_factor=3), FadeIn(hs_c), run_time=0.7)
         self.sync(c("كَبِيرٌ"))
+        self.play(FadeOut(hs_c), run_time=0.3)
         hb_c = call("large hole with a plastic insert", v1.hole_big.get_top() + UP * 0.04, ACCENT_1, (v1.hole_big.get_center()[0] - 0.4, v1.y_top + 1.0))
         self.play(Indicate(v1.insert, color=ACCENT_1, scale_factor=1.2), FadeIn(hb_c), run_time=0.7)
         self.sync(c("وَتَدْرِيجٌ"))
+        self.play(FadeOut(hb_c), run_time=0.3)
         tick_lbs = VGroup(*[v1.tick_label(a) for a in (40, 50, 60, 70)])
         sc_c = call("angle scale", [v1.scale_x(55), v1.y_top, 0.0], INK, (v1.scale_x(55) - 0.3, v1.y_top + 1.0))
         self.play(Indicate(v1.scale, color=INK), FadeIn(tick_lbs), FadeIn(sc_c), run_time=0.7)
@@ -465,8 +469,8 @@ class UtSeriesEp03(SyncedScene):
         self.play(FadeIn(weak), run_time=0.4)
         # ---- delay and range: the echoes are set on 25, 50, 75, 100 ----
         self.sync(c("نَضْبِطُ"))
-        k_delay = knob("Delay").move_to([-0.2, -2.55, 0])
-        k_range = knob("Range").move_to([1.5, -2.55, 0])
+        k_delay = knob("Delay").move_to([-0.2, -2.85, 0])
+        k_range = knob("Range").move_to([1.5, -2.85, 0])
         self.play(FadeOut(weak), FadeIn(k_delay), FadeIn(k_range), run_time=0.4)
         self.sync(c("حَتَّى"))
         self.play(g.animate(run_time=2.4, rate_func=smooth).set_value(1.0),
@@ -483,7 +487,7 @@ class UtSeriesEp03(SyncedScene):
         gaps = VGroup(*[DoubleArrow([scr.x_of(a_), scr.y_base() + 1.95, 0], [scr.x_of(b_), scr.y_base() + 1.95, 0], buff=0,
                                     color=ACCENT_3, stroke_width=3, tip_length=0.1)
                         for a_, b_ in zip([0] + ECH[:-1], ECH)])
-        eq = tag_line("equal spacing: horizontal linearity", "check", OK_C, width=5.6)
+        eq = tag_line("equal spacing: horizontal linearity", "check", OK_C, width=7.2)
         eq.next_to(scr, DOWN, 0.9).align_to(scr.frame, LEFT)
         self.play(Create(gaps), run_time=0.6)
         self.play(FadeIn(eq), run_time=0.4)
@@ -496,13 +500,13 @@ class UtSeriesEp03(SyncedScene):
         S = self.start(3)
         X0, Y0 = -2.9, 0.5
         # the two media: perspex wedge above, steel below
-        perspex = Rectangle(width=7.0, height=2.9, color=INK, stroke_width=3).set_fill(ACCENT_1, 0.1)
-        perspex.move_to([X0 + 0.3, Y0 + 1.45, 0])
+        perspex = Rectangle(width=7.0, height=2.6, color=INK, stroke_width=3).set_fill(ACCENT_1, 0.1)
+        perspex.move_to([X0 + 0.3, Y0 + 1.3, 0])
         steel = Rectangle(width=7.0, height=3.6, color=INK, stroke_width=3).set_fill(PANEL_FILL, 1)
         steel.move_to([X0 + 0.3, Y0 - 1.8, 0])
-        p_lab = label("Perspex wedge", FS_NOTE, GREY_INK, weight=BOLD).move_to([X0 + 2.5, Y0 + 2.45, 0])
-        s_lab = label("Steel", FS_NOTE, GREY_INK, weight=BOLD).move_to([X0 - 2.6, Y0 - 3.15, 0])
-        rf = Refraction(X0, Y0)
+        p_lab = label("Perspex wedge", FS_NOTE, GREY_INK, weight=BOLD).move_to([X0 - 1.8, Y0 + 2.9, 0])
+        s_lab = label("Steel", FS_NOTE, GREY_INK, weight=BOLD).move_to([X0 - 2.6, Y0 - 3.95, 0])
+        rf = Refraction(X0, Y0, length=2.3)
         rf.set_alpha(15.0)
         gauge = AngleGauge(2.9, 6.5, y=-0.9)
         g_head = label("Wedge angle", FS_NOTE, INK, weight=BOLD).move_to([4.7, 0.35, 0])
@@ -597,7 +601,7 @@ class UtSeriesEp03(SyncedScene):
         normal = DashedLine(ex, ex + DOWN * 2.7, color=GREY_INK, stroke_width=2)
         self.play(Create(blk), FadeIn(wp), Create(normal), run_time=0.6)
         self.sync(c("المَكْتُوبَةُ"))
-        written = label("angle written on the probe", FS_NOTE, INK, weight=BOLD).move_to([-4.4, top + 0.85, 0])
+        written = VGroup(*wrap_two_lines("angle written on the probe", FS_NOTE, weight=BOLD)).arrange(DOWN, buff=0.06).move_to([-4.5, top + 0.55, 0])
         self.play(FadeIn(written), run_time=0.4)
         for cue, g in rays:
             self.sync(c(cue))
@@ -718,7 +722,7 @@ class UtSeriesEp03(SyncedScene):
         end2 = np.array([XE + D.FULL_SKIP * ss, TOPY, 0.0])
         # the sound path to the flaw (S)
         s_arrow = Arrow(ex, flaw_p, buff=0, color=ACCENT_1, stroke_width=5, tip_length=0.2)
-        s_lab = label("S", FS_LABEL, ACCENT_1, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([-0.35, 0.4, 0.0]))
+        s_lab = label("S", FS_LABEL, ACCENT_1, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([0.5, -0.55, 0.0]))
         flaw = Ellipse(width=0.42, height=0.2, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8).move_to(flaw_p)
         screen_note = tag_line("S is read on the calibrated screen", "gauge", INK, width=5.8, size=FS_TAG)
         screen_note.move_to([0.6, -1.6, 0])
@@ -768,7 +772,7 @@ class UtSeriesEp03(SyncedScene):
         normal = DashedLine(ex, ex + DOWN * 1.4, color=GREY_INK, stroke_width=2)
         arc = Arc(radius=0.9, start_angle=-PI / 2, angle=TH, arc_center=ex, color=ACCENT_2, stroke_width=4)
         lab_a = label(f"{D.PROBE_ANGLE:.0f}°", FS_TAG, ACCENT_2, weight=BOLD).move_to(ex + np.array([0.82, -1.2, 0.0]))
-        lab_s = label(f"S = {S_MM:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([-0.6, 0.62, 0.0]))
+        lab_s = label(f"S = {S_MM:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([0.95, -0.55, 0.0]))
         lab_d = label("d", FS_LABEL, ACCENT_4, weight=BOLD).move_to([flaw_p[0] + 0.35, TOPY - D.DEPTH * ss / 2, 0])
         lab_x = label("x", FS_LABEL, ACCENT_4, weight=BOLD).move_to([(XE + flaw_p[0]) / 2, TOPY + 0.45, 0])
         self.sync(c("صَدَى"))
@@ -901,7 +905,7 @@ class UtSeriesEp03(SyncedScene):
         dac.set_points_smoothly([[scr.x_of(s_), scr.y_base() + hfun(s_), 0] for s_ in ss_])
         self.play(FadeOut(pr), Create(dac, run_time=1.4, rate_func=linear))
         self.sync(c("مُنْحَنَى", 2))
-        dac_lab = label("DAC curve", FS_NOTE, ACCENT_3, weight=BOLD).move_to([scr.x_of(46), scr.y_base() + 0.8, 0])
+        dac_lab = label("DAC curve", FS_NOTE, ACCENT_3, weight=BOLD).move_to([scr.x_of(44), scr.y_base() + 2.0, 0])
         self.play(FadeIn(dac_lab), run_time=0.5)
         self.sync(c("دِي"))
         abbr = label("DAC = distance-amplitude correction", FS_TAG, ACCENT_3, weight=BOLD).next_to(scr, DOWN, 0.55).align_to(scr.frame, RIGHT)
@@ -1006,13 +1010,13 @@ class UtSeriesEp03(SyncedScene):
                 rf.set_alpha(15.0)
                 return rf
             rf = build()
-            perspex = Rectangle(width=6.0, height=1.5, color=INK, stroke_width=3).set_fill(ACCENT_1, 0.1).move_to([-1.0, 0.85, 0])
-            steel = Rectangle(width=6.0, height=2.2, color=INK, stroke_width=3).set_fill(PANEL_FILL, 1).move_to([-1.0, -1.0, 0])
+            perspex = Rectangle(width=5.6, height=1.5, color=INK, stroke_width=3).set_fill(ACCENT_1, 0.1).move_to([-1.2, 0.85, 0])
+            steel = Rectangle(width=5.6, height=2.2, color=INK, stroke_width=3).set_fill(PANEL_FILL, 1).move_to([-1.2, -1.0, 0])
             al = ValueTracker(15.0)
             rf.add_updater(lambda m: m.set_alpha(al.get_value()))
             tag = label("wedge angle: 15°", FS_TAG, INK, weight=BOLD).move_to([4.2, 0.2, 0])
             both = label("longitudinal + shear", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.2, -0.4, 0])
-            gone = label("longitudinal ray leaves the part", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.4, -0.4, 0])
+            gone = label("longitudinal ray leaves the part", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.6, -0.4, 0])
 
             def show():
                 self.play(FadeIn(perspex), FadeIn(steel), FadeIn(rf), FadeIn(tag), FadeIn(both), run_time=0.7)
@@ -1088,10 +1092,10 @@ class UtSeriesEp03(SyncedScene):
             wp = wedge_probe(XE, TOPY, size=1.1)
             ray = Arrow(ex, fl, buff=0, color=ACCENT_4, stroke_width=5, tip_length=0.2)
             flaw = Ellipse(width=0.36, height=0.18, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8).move_to(fl)
-            ls = label(f"S = {D.PATH_S:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + fl) / 2 + np.array([-0.2, 0.55, 0.0]))
+            ls = label(f"S = {D.PATH_S:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + fl) / 2 + np.array([0.9, -0.5, 0.0]))
             tl = label(f"plate {D.PLATE_T:.0f} mm · probe {D.PROBE_ANGLE:.0f}°", FS_NOTE, INK, weight=BOLD).move_to([3.3, 0.95, 0])
             vert = DashedLine(fl, [fl[0], TOPY, 0], color=INK, stroke_width=3)
-            ask = label("d = ?", FS_LABEL, ACCENT_2, weight=BOLD).move_to([fl[0] + 1.0, TOPY - D.DEPTH * ss / 2, 0])
+            ask = label("d = ?", FS_LABEL, ACCENT_2, weight=BOLD).move_to([fl[0] + 1.5, TOPY - D.DEPTH * ss / 2 + 0.2, 0])
             ans = label(f"d = {D.DEPTH:.1f} mm", FS_LABEL, ACCENT_2, weight=BOLD).move_to(ask)
             leg = tag_line(f"{D.DEPTH:.1f} < {D.PLATE_T:.0f}: first leg", "check", OK_C, width=4.6, size=FS_NOTE)
             leg.move_to([1.4, -2.0, 0])
