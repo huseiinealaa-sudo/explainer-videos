@@ -509,8 +509,8 @@ class UtSeriesEp02(SyncedScene):
         PULSES = [(0.0, 1.9), (3.0, 1.0), (3.45, 1.0)]       # transmit pulse, two close flaws
         strong = trace_panel(PULSES, tau=0.12, width=5.6, height=1.7)
         light = trace_panel(PULSES, tau=0.7, width=5.6, height=1.7)
-        strong.move_to([3.9, 1.75, 0])
-        light.move_to([3.9, -1.75, 0])
+        strong.move_to([3.9, 1.85, 0])
+        light.move_to([3.9, -1.6, 0])
         h_s = label("Strong damping", FS_NOTE, INK, weight=BOLD).next_to(strong, UP, 0.12).align_to(strong, LEFT)
         h_l = label("Light damping", FS_NOTE, INK, weight=BOLD).next_to(light, UP, 0.12).align_to(light, LEFT)
         flaw_ticks = VGroup()
@@ -522,7 +522,7 @@ class UtSeriesEp02(SyncedScene):
                                .scale(0.08).move_to([x, y - 0.12, 0]))
         legend = VGroup(Triangle(color=ACCENT_4, stroke_width=2).set_fill(ACCENT_4, 1).scale(0.09),
                         label("two close flaws", FS_TAG, ACCENT_4, weight=BOLD)).arrange(RIGHT, buff=0.12)
-        legend.move_to([3.9, 3.55, 0])
+        legend.move_to([3.9, 3.5, 0])
         self.play(FadeIn(strong.frame), FadeIn(strong.base), FadeIn(h_s), run_time=0.4)
         self.play(Create(strong.trace, run_time=1.2, rate_func=linear))
         self.play(FadeIn(flaw_ticks[0:2]), FadeIn(legend), run_time=0.4)
@@ -821,7 +821,7 @@ class UtSeriesEp02(SyncedScene):
         close_flaw = near_flaw.copy().move_to([BX, yd(0.7 * N_MM), 0])
         self.play(FadeIn(near_zone), FadeIn(close_flaw, scale=0.5), run_time=0.6)
         # ---- the result for the technician: a bigger crystal or a higher frequency lengthens N ----
-        self.sync(c("البَلُّورَةُ", 2) - 0.2)
+        self.sync(c("وَالنَّتِيجَةُ") - 0.2)
         self.play(*[FadeOut(m) for m in (calc, calc_frame, specs, d_dim)], run_time=0.5)
         cases = [("2 MHz, 10 mm", D.NEAR_FIELDS[1], GREY_INK), ("4 MHz, 10 mm", D.NEAR_FIELDS[0], ACCENT_4),
                  ("4 MHz, 20 mm", D.NEAR_FIELDS[2], ACCENT_2)]
@@ -834,10 +834,10 @@ class UtSeriesEp02(SyncedScene):
             names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.05).align_to(b, LEFT))
         head = label("Near field length N", FS_NOTE, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
         self.play(FadeIn(head), run_time=0.3)
-        self.sync(c("البَلُّورَةُ", 2))
+        self.sync(c("البَلُّورَةُ"))
         self.play(GrowFromEdge(bars[1], LEFT), FadeIn(names[1]), run_time=0.5)
         self.play(GrowFromEdge(bars[2], LEFT), FadeIn(names[2]), run_time=0.7)
-        self.sync(c("التَّرَدُّدُ", 2))
+        self.sync(c("التَّرَدُّدُ"))
         self.play(GrowFromEdge(bars[0], LEFT), FadeIn(names[0]), run_time=0.5)
         # remedies
         twin_p = VGroup(RoundedRectangle(width=0.9, height=0.45, corner_radius=0.07, color=INK, stroke_width=4).set_fill(BG, 1),
