@@ -189,7 +189,7 @@ class BeamCone(VGroup):
     def __init__(self, x, d_mm, theta_deg, top_y=1.9, depth=3.9, color=ACCENT_1):
         w = d_mm * CONE_SCALE
         t = np.tan(np.radians(theta_deg))
-        self.x, self.w, self.t, self.top_y, self.depth = x, w, t, top_y, depth
+        self.x, self.w, self.t, self.top_y, self.depth_u = x, w, t, top_y, depth     # (`depth` is a Mobject property)
         self.probe = Probe(width=w / 0.85, height=0.55, color=color).next_to(np.array([x, top_y, 0.0]), UP, 0)
         r_end = [x + w / 2 + depth * t, top_y - depth, 0]
         l_end = [x - w / 2 - depth * t, top_y - depth, 0]
