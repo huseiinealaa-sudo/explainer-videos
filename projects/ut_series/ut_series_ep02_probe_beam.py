@@ -829,7 +829,7 @@ class UtSeriesEp02(SyncedScene):
         bars, names = VGroup(), VGroup()
         for k, (nm, n_mm, col) in enumerate(cases):
             b = Rectangle(width=n_mm * 0.05, height=0.34, color=col, stroke_width=0).set_fill(col, 1)
-            b.move_to([3.5 + b.width / 2, 2.2 - 0.85 * k, 0])
+            b.move_to([3.5 + b.width / 2, 2.3 - 1.0 * k, 0])
             bars.add(b)
             names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.05).align_to(b, LEFT))
         head = label("Near field length N", FS_TAG, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
@@ -857,7 +857,7 @@ class UtSeriesEp02(SyncedScene):
         delay_t = label("Delay-line probe", FS_TAG, INK, weight=BOLD).next_to(delay_all, DOWN, 0.15)
         rem = VGroup(VGroup(twin_all, twin_t), VGroup(delay_all, delay_t)).arrange(DOWN, buff=0.35)
         rem.move_to([5.2, -1.85, 0])
-        rem_head = label("Flaws near the surface", FS_TAG, INK, weight=BOLD).next_to(rem, UP, 0.3)
+        rem_head = label("Near-surface flaws", FS_TAG, INK, weight=BOLD).next_to(rem, UP, 0.3)
         self.sync(c("وَلِلْعُيُوبِ"))
         self.play(FadeIn(rem_head), run_time=0.3)
         self.sync(c("المُزْدَوَجَ"))
@@ -939,7 +939,7 @@ class UtSeriesEp02(SyncedScene):
         # double the diameter, about half the angle
         self.sync(c("ضَاعَفْنَا"))
         rule_n = label("2× diameter → about ½ angle", FS_TAG - 3, ACCENT_2, weight=BOLD)
-        rule_n.next_to(note_n, DOWN, 0.1)
+        rule_n.next_to(note_n, DOWN, 0.1).shift(LEFT * 0.12)
         self.play(FadeIn(rule_n), Indicate(cap_narrow, color=ACCENT_2, scale_factor=1.1), run_time=0.6)
         self.sync(self.end(5))
         self.clear()
