@@ -768,9 +768,9 @@ class UtSeriesEp02(SyncedScene):
         for sc_ in (scan_a, scan_b):
             sc_.update_trace(sc_.t_max)
         multi = label("several echoes", FS_TAG, ACCENT_4, weight=BOLD)
-        multi.next_to(scan_a.frame, DOWN, 0.12).align_to(scan_a.frame, RIGHT)
+        multi.next_to(scan_a.frame, DOWN, 0.12).align_to(scan_a.frame, RIGHT).shift(LEFT * 0.1)
         single = label("one clear echo", FS_TAG, ACCENT_3, weight=BOLD)
-        single.next_to(scan_b.frame, DOWN, 0.12).align_to(scan_b.frame, RIGHT)
+        single.next_to(scan_b.frame, DOWN, 0.12).align_to(scan_b.frame, RIGHT).shift(LEFT * 0.1)
         self.sync(c("وَالعَيْبُ"))
         self.play(FadeIn(near_flaw, scale=0.5), run_time=0.4)
         self.sync(c("إِشَارَاتٍ"))
@@ -786,15 +786,16 @@ class UtSeriesEp02(SyncedScene):
         # ---- the strongest echo is near the end of the near field ----
         self.sync(c("وَأَقْوَى"))
         n_dot = Dot([PX0 + PAMP * axis_intensity(N_MM), yd(N_MM), 0], radius=0.11, color=ACCENT_2)
-        n_lab = label("strongest echo: at N", FS_NOTE, ACCENT_2, weight=BOLD).move_to([5.2, yd(N_MM), 0])
+        n_lab = label("strongest echo at N", FS_TAG, ACCENT_2, weight=BOLD).move_to([5.0, yd(N_MM), 0])
         self.play(FadeOut(scan_b), FadeOut(scan_b.trace), FadeOut(single), FadeOut(far_flaw),
                   GrowFromCenter(n_dot), FadeIn(n_lab), run_time=0.6)
         # ---- the one worked example: N = D^2 / (4 lambda) ----
         self.sync(c("وَنَحْسُبُ"))
+        self.play(FadeOut(n_lab), run_time=0.3)
         f_ = Text("N  =  D²  ÷  (4 λ)", font_size=32)
         v_ = Text(f"=  {D.PROBE_D_MM:.0f}²  ÷  (4 × {D.LAMBDA_EP2:.2f})", font_size=28, color=GREY_INK)
         r_ = Text(f"N = {D.NEAR_FIELD:.1f} mm", font_size=36, color=ACCENT_4, weight=BOLD)
-        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.5), 3.4).move_to([5.2, -0.9, 0])
+        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.5), 3.4).move_to([5.1, -0.9, 0])
         calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.28, corner_radius=0.1, stroke_width=4)
         self.play(Write(f_, run_time=1.2))
         # the given values, each when its word is spoken
@@ -831,7 +832,7 @@ class UtSeriesEp02(SyncedScene):
             b.move_to([3.5 + b.width / 2, 2.2 - 0.85 * k, 0])
             bars.add(b)
             names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.05).align_to(b, LEFT))
-        head = label("Near field length N", FS_NOTE, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
+        head = label("Near field length N", FS_TAG, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
         self.play(FadeIn(head), run_time=0.3)
         self.sync(c("البَلُّورَةُ"))
         self.play(GrowFromEdge(bars[1], LEFT), FadeIn(names[1]), run_time=0.5)
@@ -856,7 +857,7 @@ class UtSeriesEp02(SyncedScene):
         delay_t = label("Delay-line probe", FS_TAG, INK, weight=BOLD).next_to(delay_all, DOWN, 0.15)
         rem = VGroup(VGroup(twin_all, twin_t), VGroup(delay_all, delay_t)).arrange(DOWN, buff=0.35)
         rem.move_to([5.2, -1.85, 0])
-        rem_head = label("Flaws near the surface", FS_NOTE, INK, weight=BOLD).next_to(rem, UP, 0.3)
+        rem_head = label("Flaws near the surface", FS_TAG, INK, weight=BOLD).next_to(rem, UP, 0.3)
         self.sync(c("وَلِلْعُيُوبِ"))
         self.play(FadeIn(rem_head), run_time=0.3)
         self.sync(c("المُزْدَوَجَ"))
@@ -937,7 +938,7 @@ class UtSeriesEp02(SyncedScene):
         self.play(FadeIn(rule_w), Indicate(cap_wide, color=ACCENT_2, scale_factor=1.1), run_time=0.6)
         # double the diameter, about half the angle
         self.sync(c("ضَاعَفْنَا"))
-        rule_n = label("2× diameter → about ½ angle", FS_TAG - 2, ACCENT_2, weight=BOLD)
+        rule_n = label("2× diameter → about ½ angle", FS_TAG - 3, ACCENT_2, weight=BOLD)
         rule_n.next_to(note_n, DOWN, 0.1)
         self.play(FadeIn(rule_n), Indicate(cap_narrow, color=ACCENT_2, scale_factor=1.1), run_time=0.6)
         self.sync(self.end(5))
