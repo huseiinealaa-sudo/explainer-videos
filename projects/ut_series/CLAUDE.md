@@ -8,10 +8,10 @@ Four episodes, 3–5 minutes each without the review segment, about 17 minutes i
 | # | Episode | Source sections (IAEA-TCS-67) | Status |
 |---|---|---|---|
 | 1 | The principle | §1.1.2.6 (p. 9), ch. 2 (pp. 99–132), §3.1 (pp. 133–136) | narration for approval |
-| 2 | The probe and the beam | — | not started |
-| 3 | Calibration and angle-beam testing | — | not started |
+| 2 | The probe and the beam | §2.6 (pp. 118–122), §3.2 (pp. 137–149), §3.3.4 (p. 153), §2.5 (pp. 124–131), §2.8 (pp. 128–131) | produced; waits for the owner's review |
+| 3 | Calibration and angle-beam testing | §2.4.2 (pp. 112–115), §5.1–5.8 (pp. 178–202), §6 (p. 215), §8.4.1 (pp. 278–279) | produced; waits for the owner's review |
 | 4 | Flaw evaluation and the report, with a glance at PAUT and TOFD | — | not started |
-Only episode 1 is produced in the first session; the others wait for the owner's approval of its level.
+Episode 1 was produced first and approved; episodes 2 and 3 were produced after the owner's approval of the narration; episode 4 waits.
 
 ## Theme
 - `project.toml` → `[style] theme`: chosen here **light** (the white board), 1080p (`[render] resolution`). Colours in scripts are the theme names (`INK`, `ACCENT_1` …), never literals.
@@ -39,7 +39,9 @@ Only episode 1 is produced in the first session; the others wait for the owner's
 ## Videos
 | # | Script / output | Topic | Status |
 |---|---|---|---|
-| 1 | `ut_series_ep01_principle` | The principle of ultrasonic testing | narration for approval |
+| 1 | `ut_series_ep01_principle` | The principle of ultrasonic testing | approved model (merged) |
+| 2 | `ut_series_ep02_probe_beam` | The probe and the beam | produced, 6:24 (content 4:31 + review 1:52) |
+| 3 | `ut_series_ep03_calibration` | Calibration and angle-beam testing | produced, 6:41 (content 4:50 + review 1:52) |
 
 ## Terminology and on-screen conventions
 - probe = المجس; couplant = الوسيط; pulse-echo = النبضة والصدى; through-transmission = النفاذ; resonance = الرنين; attenuation = التوهين; acoustic impedance = المعاوقة الصوتية.
