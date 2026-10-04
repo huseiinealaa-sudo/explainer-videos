@@ -450,25 +450,25 @@ class UtSeriesEp02(SyncedScene):
         case = RoundedRectangle(width=PW, height=case_top - case_bot, corner_radius=0.18,
                                 color=INK, stroke_width=5).set_fill(BG, 1)
         case.move_to([PX, (case_top + case_bot) / 2, 0])
-        face = Rectangle(width=PW - 0.3, height=0.16, color=ACCENT_3, stroke_width=3).set_fill(ACCENT_3, 0.6)
+        face = Rectangle(width=PW - 0.5, height=0.16, color=ACCENT_3, stroke_width=3).set_fill(ACCENT_3, 0.6)
         face.move_to([PX, case_bot + 0.2, 0])
-        crys = Rectangle(width=PW - 0.3, height=0.42, color=ACCENT_1, stroke_width=4).set_fill(ACCENT_1, 0.35)
+        crys = Rectangle(width=PW - 0.5, height=0.42, color=ACCENT_1, stroke_width=4).set_fill(ACCENT_1, 0.35)
         crys.next_to(face, UP, 0)
-        backing = Rectangle(width=PW - 0.3, height=1.9, color=GREY_INK, stroke_width=3).set_fill(PANEL_FILL, 1)
+        backing = Rectangle(width=PW - 0.5, height=1.9, color=GREY_INK, stroke_width=3).set_fill(PANEL_FILL, 1)
         backing.next_to(crys, UP, 0)
         hatch = VGroup(*[Line(backing.get_corner(DL) + RIGHT * k * 0.32,
                               backing.get_corner(DL) + RIGHT * k * 0.32 + UP * 0.32 + RIGHT * 0.32,
                               color=LIGHT_INK, stroke_width=2)
-                         for k in range(int((PW - 0.3) / 0.32 - 0.4))])
+                         for k in range(int((PW - 0.5) / 0.32 - 0.4))])
         hatch_rows = VGroup(*[hatch.copy().shift(UP * r * 0.34) for r in range(5)])
         net = Rectangle(width=1.4, height=0.55, color=ACCENT_2, stroke_width=4).set_fill(PANEL_FILL, 1)
         net.move_to([PX, case_top - 0.5, 0])
         net_sym = label("L C", FS_TAG, ACCENT_2, weight=BOLD).move_to(net)
         wire_in = VGroup(
-            Line(crys.get_left(), [PX - PW / 2 + 0.1, crys.get_center()[1], 0], color=ACCENT_2, stroke_width=4),
-            Line([PX - PW / 2 + 0.1, crys.get_center()[1], 0], [PX - PW / 2 + 0.1, net.get_center()[1], 0],
+            Line(crys.get_left(), [PX - PW / 2 + 0.12, crys.get_center()[1], 0], color=ACCENT_2, stroke_width=4),
+            Line([PX - PW / 2 + 0.12, crys.get_center()[1], 0], [PX - PW / 2 + 0.12, net.get_center()[1], 0],
                  color=ACCENT_2, stroke_width=4),
-            Line([PX - PW / 2 + 0.1, net.get_center()[1], 0], net.get_left(), color=ACCENT_2, stroke_width=4))
+            Line([PX - PW / 2 + 0.12, net.get_center()[1], 0], net.get_left(), color=ACCENT_2, stroke_width=4))
         cable = Line(case.get_top(), case.get_top() + UP * 0.8, color=GREY_INK, stroke_width=8)
         wire_net = Line(net.get_top(), case.get_top(), color=ACCENT_2, stroke_width=4)
 
@@ -610,8 +610,8 @@ class UtSeriesEp02(SyncedScene):
         recv_t = label("receive", FS_TAG - 3, ACCENT_2, weight=BOLD).next_to(hous, RIGHT, 0.1)
         dz = Rectangle(width=3.4, height=0.42, color=ACCENT_4, stroke_width=0).set_fill(ACCENT_4, 0.22)
         dz.align_to(blk2, UP).match_x(blk2)
-        dz_note = label("dead zone hides the flaw", FS_TAG - 2, ACCENT_4, weight=BOLD).move_to(p2.note)
-        ok_note = label("short dead zone: flaw seen", FS_TAG - 2, OK_C, weight=BOLD).move_to(p2.note)
+        dz_note = label("single crystal: flaw hidden", FS_TAG - 4, ACCENT_4, weight=BOLD).move_to(p2.note)
+        ok_note = label("twin crystal: flaw seen", FS_TAG - 4, OK_C, weight=BOLD).move_to(p2.note)
         near = Ellipse(width=0.6, height=0.14, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.6)
         near.move_to([cx + 0.7, cy - 0.28, 0])
         self.sync(c("وَالمُزْدَوَجُ"))
@@ -641,7 +641,8 @@ class UtSeriesEp02(SyncedScene):
         wedge = Polygon([cx - 1.4, cy, 0], [cx - 0.4, cy, 0], [cx - 1.4, cy + 0.6, 0],
                         color=GREY_INK, stroke_width=3).set_fill(ACCENT_1, 0.15)
         wprobe = Probe(width=0.55, height=0.3).rotate(-0.9).move_to([cx - 1.18, cy + 0.42, 0])
-        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).move_to([cx - 0.15, cy + 0.9, 0])
+        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).move_to([cx - 0.45, cy + 0.55, 0])
+        wedge_lead = Line(wedge_t.get_left() + LEFT * 0.03, [cx - 0.95, cy + 0.27, 0], color=GREY_INK, stroke_width=2)
         # the beam leaves the wedge at its exit point and runs down to the crack
         ex = np.array([cx - 0.7, cy, 0.0])
         hit = np.array([wx0 - 0.04, cy - 0.6, 0.0])
@@ -651,14 +652,19 @@ class UtSeriesEp02(SyncedScene):
         if n_hat[1] < 0:
             n_hat = -n_hat
         crack = Line(hit - n_hat * 0.5, hit + n_hat * 0.5, color=ACCENT_4, stroke_width=6)
-        vert = DashedLine([hit[0], cy - 0.02, 0], crack.get_end() + UP * 0.0, color=GREY_INK, stroke_width=2)
-        vdef = Arrow(crack.get_end(), crack.get_end() + np.array([0.55, 0.12, 0.0]), buff=0, color=ACCENT_2, stroke_width=3, tip_length=0.12)
+        gp = Probe(width=0.7, height=0.45, color=GREY_INK)
+        gp.remove(gp.cable)
+        gp.next_to(np.array([hit[0], cy + 0.3, 0.0]), UP, 0)
+        vert = DashedLine(gp.face_point(), hit, color=GREY_INK, stroke_width=3)
+        n_b = beam_dir / np.linalg.norm(beam_dir)
+        refl = np.array([0.0, -1.0, 0.0]) - 2 * float(np.dot([0.0, -1.0, 0.0], n_b)) * n_b      # specular reflection of a vertical beam
+        vdef = Arrow(hit, hit + 0.5 * refl, buff=0, color=ACCENT_2, stroke_width=3, tip_length=0.12)
         vert_note = label("vertical beam: weak echo", FS_TAG - 2, GREY_INK, weight=BOLD).move_to(p3.note)
         self.sync(c("وَالمَائِلُ"))
         self.play(FadeIn(p3.frame), FadeIn(p3.title), run_time=0.4)
         self.play(Create(blk3), FadeIn(wedge), FadeIn(wprobe), run_time=0.5)
         self.sync(c("إِسْفِينٍ"))
-        self.play(FadeIn(wedge_t), Indicate(wedge, color=ACCENT_1, scale_factor=1.08), run_time=0.5)
+        self.play(FadeIn(wedge_t), Create(wedge_lead), Indicate(wedge, color=ACCENT_1, scale_factor=1.08), run_time=0.5)
         self.sync(c("فَتَنْكَسِرُ"))
         self.play(Create(beam), run_time=0.6)
         shoot(ex + beam_dir * 0.1, hit - beam_dir * 0.15, ACCENT_1, 0.5, angled=beam_dir)
@@ -667,11 +673,10 @@ class UtSeriesEp02(SyncedScene):
         shoot(hit - beam_dir * 0.25, hit, ACCENT_1, 0.3, angled=beam_dir)
         shoot(hit, ex + beam_dir * 0.1, ACCENT_2, 0.5, angled=-beam_dir)
         self.sync(c("قَدْ"))
-        self.play(Create(vert), run_time=0.4)
-        self.play(GrowArrow(vdef), run_time=0.3)
-        self.play(FadeIn(vert_note), run_time=0.3)
-        self.sync(c("العَمُودِيَّةَ") + 0.3)
-        self.play(ReplacementTransform(vert_note, p3.note), run_time=0.3)
+        self.play(FadeIn(gp), Create(vert), run_time=0.5)
+        self.play(GrowArrow(vdef), FadeIn(vert_note), run_time=0.4)
+        self.sync(c("وَفِي") - 0.4)
+        self.play(ReplacementTransform(vert_note, p3.note), FadeOut(gp), FadeOut(vert), FadeOut(vdef), run_time=0.3)
 
         # ---- panel 4: immersion (bottom row, left) ----
         cx, cy = -2.3, BOT_Y
@@ -679,7 +684,6 @@ class UtSeriesEp02(SyncedScene):
         blk4 = SteelBlock(3.0, 0.55).move_to([cx, cy - 0.45 - 0.275, 0])
         water = Rectangle(width=3.7, height=1.58, color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.18)
         water.move_to([cx, cy - 0.24, 0])
-        water.set_z_index(-1)
         pr4 = small_probe().move_to([cx - 0.6, cy + 0.3, 0])
         wnote = label("water is the couplant", FS_TAG - 2, ACCENT_1, weight=BOLD).move_to(p4.note)
         self.sync(c("وَفِي"))
@@ -751,7 +755,7 @@ class UtSeriesEp02(SyncedScene):
         mark_n = mark(N_MM, "N", ACCENT_4)
         mark_3n = mark(3 * N_MM, "3N", ACCENT_3)
         # zone brackets
-        ZX = 1.2
+        ZX = 0.9
         def zone(s0, s1, text, color):
             br = DoubleArrow([ZX, yd(s0) - 0.04, 0], [ZX, yd(s1) + 0.04, 0], buff=0, color=color,
                              stroke_width=3, tip_length=0.12)
@@ -811,7 +815,7 @@ class UtSeriesEp02(SyncedScene):
         f_ = Text("N  =  D²  ÷  (4 λ)", font_size=32)
         v_ = Text(f"=  {D.PROBE_D_MM:.0f}²  ÷  (4 × {D.LAMBDA_EP2:.2f})", font_size=28, color=GREY_INK)
         r_ = Text(f"N = {D.NEAR_FIELD:.1f} mm", font_size=36, color=ACCENT_4, weight=BOLD)
-        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.5), 3.3).move_to([4.9, -0.9, 0])
+        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.5), 3.1).move_to([5.3, -0.9, 0])
         calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.28, corner_radius=0.1, stroke_width=4)
         self.play(Write(f_, run_time=1.2))
         # the given values, each when its word is spoken
@@ -819,7 +823,7 @@ class UtSeriesEp02(SyncedScene):
         spec_d = label(f"D = {D.PROBE_D_MM:.0f} mm", FS_LABEL, INK, weight=BOLD)
         spec_f = label(f"f = {D.PROBE_F_MHZ:.0f} MHz", FS_LABEL, INK, weight=BOLD)
         spec_l = label(f"λ = {D.LAMBDA_EP2:.2f} mm", FS_LABEL, INK, weight=BOLD)
-        specs = VGroup(spec_d, spec_f, spec_l).arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([4.9, 2.3, 0])
+        specs = VGroup(spec_d, spec_f, spec_l).arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([5.2, 2.3, 0])
         d_dim.put_start_and_end_on(probe.crystal.get_corner(UL) + UP * 0.35 + LEFT * 0.0,
                                    probe.crystal.get_corner(UR) + UP * 0.35)
         self.sync(c("قُطْرُهُ"))
@@ -844,8 +848,8 @@ class UtSeriesEp02(SyncedScene):
                  ("4 MHz, 20 mm", D.NEAR_FIELDS[2], ACCENT_2)]
         bars, names = VGroup(), VGroup()
         for k, (nm, n_mm, col) in enumerate(cases):
-            b = Rectangle(width=n_mm * 0.048, height=0.34, color=col, stroke_width=0).set_fill(col, 1)
-            b.move_to([3.3 + b.width / 2, 2.3 - 1.0 * k, 0])
+            b = Rectangle(width=n_mm * 0.044, height=0.34, color=col, stroke_width=0).set_fill(col, 1)
+            b.move_to([3.7 + b.width / 2, 2.3 - 1.0 * k, 0])
             bars.add(b)
             names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.13).align_to(b, LEFT))
         head = label("Near field length N", FS_TAG, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
@@ -874,7 +878,7 @@ class UtSeriesEp02(SyncedScene):
         delay_all = VGroup(delay_h, delay_b)
         delay_t = label("Delay-line probe", FS_TAG, INK, weight=BOLD).next_to(delay_all, DOWN, 0.15)
         rem = VGroup(VGroup(twin_all, twin_t), VGroup(delay_all, delay_t)).arrange(DOWN, buff=0.35)
-        rem.move_to([5.2, -1.85, 0])
+        rem.move_to([5.3, -2.1, 0])
         rem_head = label("Near-surface flaws", FS_TAG, INK, weight=BOLD).next_to(rem, UP, 0.3)
         self.sync(c("وَلِلْعُيُوبِ"))
         self.play(FadeIn(rem_head), run_time=0.3)
