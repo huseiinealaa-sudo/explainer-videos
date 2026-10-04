@@ -679,7 +679,7 @@ class UtSeriesEp03(SyncedScene):
         self.play(xe.animate(run_time=1.7, rate_func=smooth).set_value(P[0] - 0.55))
         self.play(xe.animate(run_time=c("أَقْصَاهُ") - self.renderer.time + 0.1, rate_func=smooth).set_value(P[0]))
         peak = label("maximum echo", FS_TAG, ACCENT_2, weight=BOLD)
-        peak.move_to([scr.x_of(48), scr.y_base() + 1.2, 0])
+        peak.move_to([scr.x_of(48) - 0.2, scr.y_base() + 1.2, 0])
         self.play(FadeIn(peak), run_time=0.3)
         # the exit point is above the centre of the arc
         self.sync(c("فَتَكُونُ"))
@@ -1114,7 +1114,7 @@ class UtSeriesEp03(SyncedScene):
             wp = wedge_probe(P[0] + 1.2, v1.y_top, facing=-1, size=1.2)
             ask = label("exit point?", FS_NOTE, ACCENT_2, weight=BOLD).move_to([P[0] - 1.2, v1.y_top + 0.9, 0])
             dot = Dot(P, radius=0.1, color=ACCENT_2)
-            lab = label("exit point = centre of the arc", FS_NOTE, ACCENT_2, weight=BOLD).move_to([P[0] - 1.9, v1.y_top + 0.9, 0])
+            lab = label("exit point =\narc centre", FS_NOTE, INK, weight=BOLD).move_to([P[0] - 1.5, v1.y_top + 0.8, 0])
             lead = Arrow(lab.get_right() + RIGHT * 0.03, P + UP * 0.08, buff=0.04, color=ACCENT_2, stroke_width=3, tip_length=0.15)
 
             def show():
