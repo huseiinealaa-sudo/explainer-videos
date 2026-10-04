@@ -303,7 +303,7 @@ class UtSeriesEp03(SyncedScene):
             """A short result tag centred under the panel."""
             x, y = pos[key]
             t = tag_line(text, icon_name, color, width=width, size=FS_TAG)
-            return t.move_to([x, y - 1.35, 0])
+            return t.move_to([x, y - 1.5, 0])
 
         # 1. horizontal linearity: equally spaced echoes
         sh = small_scan(pos["h"], [(0, 1.3), (25, 1.0), (50, 0.8), (75, 0.62), (100, 0.5)], width=PW, height=2.0, x_caption="")
@@ -548,7 +548,7 @@ class UtSeriesEp03(SyncedScene):
         self.play(FadeOut(bend), al.animate(run_time=c("تِسْعِينَ") + 0.6 - self.renderer.time, rate_func=linear)
                   .set_value(D.CRIT_1 + 0.3))
         self.sync(c("هٰذِهِ"))
-        lab1 = label(f"first critical angle ≈ {D.CRIT_1:.1f}°", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.7, -1.65, 0])
+        lab1 = label(f"first critical angle ≈ {D.CRIT_1:.1f}°", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.55, -1.65, 0])
         self.play(FadeIn(lab1), Flash(gauge.mark_1, color=ACCENT_3, flash_radius=0.4, line_length=0.12), run_time=0.6)
         self.sync(c("سَبْعَةٍ"))
         v1 = VGroup()
@@ -563,7 +563,7 @@ class UtSeriesEp03(SyncedScene):
         self.play(FadeOut(only), al.animate(run_time=c("تِسْعِينَ", 2) + 0.4 - self.renderer.time, rate_func=linear)
                   .set_value(D.CRIT_2 + 0.3))
         self.sync(c("الزَّاوِيَةُ", 2))
-        lab2 = label(f"second critical angle ≈ {D.CRIT_2:.0f}°", FS_TAG, ACCENT_2, weight=BOLD).move_to([4.7, -2.1, 0])
+        lab2 = label(f"second critical angle ≈ {D.CRIT_2:.0f}°", FS_TAG, ACCENT_2, weight=BOLD).move_to([4.5, -2.1, 0])
         self.play(FadeIn(lab2), Flash(gauge.mark_2, color=ACCENT_2, flash_radius=0.4, line_length=0.12), run_time=0.6)
         self.sync(c("سَبْعَةٍ", 2))
         v2 = VGroup()
@@ -722,7 +722,7 @@ class UtSeriesEp03(SyncedScene):
         end2 = np.array([XE + D.FULL_SKIP * ss, TOPY, 0.0])
         # the sound path to the flaw (S)
         s_arrow = Arrow(ex, flaw_p, buff=0, color=ACCENT_1, stroke_width=5, tip_length=0.2)
-        s_lab = label("S", FS_LABEL, ACCENT_1, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([0.5, -0.55, 0.0]))
+        s_lab = label("S", FS_LABEL, ACCENT_1, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([-0.4, -0.7, 0.0]))
         flaw = Ellipse(width=0.42, height=0.2, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8).move_to(flaw_p)
         screen_note = tag_line("S is read on the calibrated screen", "gauge", INK, width=5.8, size=FS_TAG)
         screen_note.move_to([0.6, -1.6, 0])
@@ -772,7 +772,7 @@ class UtSeriesEp03(SyncedScene):
         normal = DashedLine(ex, ex + DOWN * 1.4, color=GREY_INK, stroke_width=2)
         arc = Arc(radius=0.9, start_angle=-PI / 2, angle=TH, arc_center=ex, color=ACCENT_2, stroke_width=4)
         lab_a = label(f"{D.PROBE_ANGLE:.0f}°", FS_TAG, ACCENT_2, weight=BOLD).move_to(ex + np.array([0.82, -1.2, 0.0]))
-        lab_s = label(f"S = {S_MM:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([0.95, -0.55, 0.0]))
+        lab_s = label(f"S = {S_MM:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([-0.7, -0.8, 0.0]))
         lab_d = label("d", FS_LABEL, ACCENT_4, weight=BOLD).move_to([flaw_p[0] + 0.35, TOPY - D.DEPTH * ss / 2, 0])
         lab_x = label("x", FS_LABEL, ACCENT_4, weight=BOLD).move_to([(XE + flaw_p[0]) / 2, TOPY + 0.45, 0])
         self.sync(c("صَدَى"))
@@ -905,7 +905,7 @@ class UtSeriesEp03(SyncedScene):
         dac.set_points_smoothly([[scr.x_of(s_), scr.y_base() + hfun(s_), 0] for s_ in ss_])
         self.play(FadeOut(pr), Create(dac, run_time=1.4, rate_func=linear))
         self.sync(c("مُنْحَنَى", 2))
-        dac_lab = label("DAC curve", FS_NOTE, ACCENT_3, weight=BOLD).move_to([scr.x_of(44), scr.y_base() + 2.0, 0])
+        dac_lab = label("DAC curve", FS_NOTE, ACCENT_3, weight=BOLD).move_to([scr.x_of(22), scr.y_base() + 2.05, 0])
         self.play(FadeIn(dac_lab), run_time=0.5)
         self.sync(c("دِي"))
         abbr = label("DAC = distance-amplitude correction", FS_TAG, ACCENT_3, weight=BOLD).next_to(scr, DOWN, 0.55).align_to(scr.frame, RIGHT)
@@ -929,7 +929,7 @@ class UtSeriesEp03(SyncedScene):
         self.sync(c("بِارْتِفَاعِهِ"))
         flat2 = DashedLine([scr.x_of(3), scr.y_base() + hfun(paths[0]), 0], [scr.x_of(56), scr.y_base() + hfun(paths[0]), 0],
                            color=GREY_INK, stroke_width=3)
-        cross = icon("x", ALERT_C, 0.4).move_to([scr.x_of(52), scr.y_base() + hfun(paths[0]) + 0.35, 0])
+        cross = icon("x", ALERT_C, 0.4).move_to([scr.x_of(53), scr.y_base() + hfun(paths[0]) + 0.35, 0])
         self.play(Create(flat2), FadeIn(cross), run_time=0.5)
         # ---- a glimpse of DGS ----
         self.sync(c("وَلَمْحَةٌ") - 0.3)
@@ -1016,7 +1016,7 @@ class UtSeriesEp03(SyncedScene):
             rf.add_updater(lambda m: m.set_alpha(al.get_value()))
             tag = label("wedge angle: 15°", FS_TAG, INK, weight=BOLD).move_to([4.2, 0.2, 0])
             both = label("longitudinal + shear", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.2, -0.4, 0])
-            gone = label("longitudinal ray leaves the part", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.6, -0.4, 0])
+            gone = label("longitudinal ray leaves", FS_TAG, ACCENT_3, weight=BOLD).move_to([4.4, -0.4, 0])
 
             def show():
                 self.play(FadeIn(perspex), FadeIn(steel), FadeIn(rf), FadeIn(tag), FadeIn(both), run_time=0.7)
@@ -1092,7 +1092,7 @@ class UtSeriesEp03(SyncedScene):
             wp = wedge_probe(XE, TOPY, size=1.1)
             ray = Arrow(ex, fl, buff=0, color=ACCENT_4, stroke_width=5, tip_length=0.2)
             flaw = Ellipse(width=0.36, height=0.18, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8).move_to(fl)
-            ls = label(f"S = {D.PATH_S:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + fl) / 2 + np.array([0.9, -0.5, 0.0]))
+            ls = label(f"S = {D.PATH_S:.0f} mm", FS_TAG, ACCENT_4, weight=BOLD).move_to((ex + fl) / 2 + np.array([-0.8, -0.7, 0.0]))
             tl = label(f"plate {D.PLATE_T:.0f} mm · probe {D.PROBE_ANGLE:.0f}°", FS_NOTE, INK, weight=BOLD).move_to([3.3, 0.95, 0])
             vert = DashedLine(fl, [fl[0], TOPY, 0], color=INK, stroke_width=3)
             ask = label("d = ?", FS_LABEL, ACCENT_2, weight=BOLD).move_to([fl[0] + 1.5, TOPY - D.DEPTH * ss / 2 + 0.2, 0])
