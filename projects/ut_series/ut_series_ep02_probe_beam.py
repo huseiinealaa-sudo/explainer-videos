@@ -821,7 +821,7 @@ class UtSeriesEp02(SyncedScene):
         close_flaw = near_flaw.copy().move_to([BX, yd(0.7 * N_MM), 0])
         self.play(FadeIn(near_zone), FadeIn(close_flaw, scale=0.5), run_time=0.6)
         # ---- the result for the technician: a bigger crystal or a higher frequency lengthens N ----
-        self.sync(c("البَلُّورَةُ", 2) - 0.2)
+        self.sync(c("وَالنَّتِيجَةُ") - 0.2)
         self.play(*[FadeOut(m) for m in (calc, calc_frame, specs, d_dim)], run_time=0.5)
         cases = [("2 MHz, 10 mm", D.NEAR_FIELDS[1], GREY_INK), ("4 MHz, 10 mm", D.NEAR_FIELDS[0], ACCENT_4),
                  ("4 MHz, 20 mm", D.NEAR_FIELDS[2], ACCENT_2)]
@@ -833,10 +833,10 @@ class UtSeriesEp02(SyncedScene):
             names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.05).align_to(b, LEFT))
         head = label("Near field length N", FS_NOTE, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
         self.play(FadeIn(head), run_time=0.3)
-        self.sync(c("البَلُّورَةُ", 2))
+        self.sync(c("البَلُّورَةُ"))
         self.play(GrowFromEdge(bars[1], LEFT), FadeIn(names[1]), run_time=0.5)
         self.play(GrowFromEdge(bars[2], LEFT), FadeIn(names[2]), run_time=0.7)
-        self.sync(c("التَّرَدُّدُ", 2))
+        self.sync(c("التَّرَدُّدُ"))
         self.play(GrowFromEdge(bars[0], LEFT), FadeIn(names[0]), run_time=0.5)
         # remedies
         twin_p = VGroup(RoundedRectangle(width=0.9, height=0.45, corner_radius=0.07, color=INK, stroke_width=4).set_fill(BG, 1),
