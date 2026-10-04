@@ -244,7 +244,7 @@ class FrequencyDial(VGroup):
                               for a in np.linspace(0, PI, 6)])
         self.needle = Line(ORIGIN, radius * 0.85 * UP, color=ACCENT_2, stroke_width=6)
         self.hub = Dot(ORIGIN, radius=0.08, color=INK)
-        self.caption = label(caption, FS_TAG, INK, weight=BOLD).move_to([0, -0.4, 0])
+        self.caption = label(caption, FS_TAG, INK, weight=BOLD).move_to([0, -0.7, 0])
         self.low = label("low", FS_TAG - 3, GREY_INK).move_to([-radius, -0.25, 0])
         self.high = label("high", FS_TAG - 3, GREY_INK).move_to([radius, -0.25, 0])
         super().__init__(self.arc, self.ticks, self.needle, self.hub, self.caption, self.low, self.high)
@@ -306,7 +306,7 @@ class UtSeriesEp02(SyncedScene):
         self.add(clock)
         self.sync(c("يُسَلَّطُ"))
         plus.next_to(cry.top_plate, RIGHT, 0.1)
-        minus.next_to(cry.bottom_plate, RIGHT, 0.1)
+        minus.move_to([XC + 1.55, BLK_TOP + 0.4, 0])
         volt_lab = label("voltage applied", FS_TAG, ACCENT_2).next_to(plus, RIGHT, 0.15).shift(DOWN * 0.45)
         self.play(FadeIn(plus), FadeIn(minus), FadeIn(volt_lab), run_time=0.4)
         self.play(osc.animate(run_time=0.6).set_value(0.16))
@@ -641,7 +641,7 @@ class UtSeriesEp02(SyncedScene):
         wedge = Polygon([cx - 1.4, cy, 0], [cx - 0.4, cy, 0], [cx - 1.4, cy + 0.6, 0],
                         color=GREY_INK, stroke_width=3).set_fill(ACCENT_1, 0.15)
         wprobe = Probe(width=0.55, height=0.3).rotate(-0.9).move_to([cx - 1.18, cy + 0.42, 0])
-        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).move_to([cx - 0.5, cy + 0.6, 0])
+        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).move_to([cx - 0.15, cy + 0.9, 0])
         # the beam leaves the wedge at its exit point and runs down to the crack
         ex = np.array([cx - 0.7, cy, 0.0])
         hit = np.array([wx0 - 0.04, cy - 0.6, 0.0])
@@ -676,9 +676,9 @@ class UtSeriesEp02(SyncedScene):
         # ---- panel 4: immersion (bottom row, left) ----
         cx, cy = -2.3, BOT_Y
         p4 = type_panel(cx, cy, "Immersion probe", "Automatic testing")
-        blk4 = SteelBlock(3.0, 0.55).move_to([cx, cy - 0.55 - 0.275, 0])
-        water = Rectangle(width=3.7, height=1.7, color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.18)
-        water.move_to([cx, cy - 1.15 + 0.85, 0])
+        blk4 = SteelBlock(3.0, 0.55).move_to([cx, cy - 0.45 - 0.275, 0])
+        water = Rectangle(width=3.7, height=1.58, color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.18)
+        water.move_to([cx, cy - 0.24, 0])
         water.set_z_index(-1)
         pr4 = small_probe().move_to([cx - 0.6, cy + 0.3, 0])
         wnote = label("water is the couplant", FS_TAG - 2, ACCENT_1, weight=BOLD).move_to(p4.note)
@@ -823,8 +823,7 @@ class UtSeriesEp02(SyncedScene):
         d_dim.put_start_and_end_on(probe.crystal.get_corner(UL) + UP * 0.35 + LEFT * 0.0,
                                    probe.crystal.get_corner(UR) + UP * 0.35)
         self.sync(c("قُطْرُهُ"))
-        d_lab = label("D", FS_TAG, INK, weight=BOLD).next_to(d_dim, UP, 0.08)
-        self.play(FadeIn(spec_d, shift=LEFT * 0.2), GrowFromCenter(d_dim), FadeIn(d_lab), run_time=0.5)
+        self.play(FadeIn(spec_d, shift=LEFT * 0.2), Indicate(probe.crystal, color=INK, scale_factor=1.3), run_time=0.6)
         self.sync(c("وَتَرَدُّدُهُ"))
         self.play(FadeIn(spec_f, shift=LEFT * 0.2), run_time=0.5)
         self.sync(c("طُولُهُ"))
@@ -840,7 +839,7 @@ class UtSeriesEp02(SyncedScene):
         self.play(FadeIn(near_zone), FadeIn(close_flaw, scale=0.5), run_time=0.6)
         # ---- the result for the technician: a bigger crystal or a higher frequency lengthens N ----
         self.sync(c("وَالنَّتِيجَةُ") - 0.2)
-        self.play(*[FadeOut(m) for m in (calc, calc_frame, specs, d_dim, d_lab)], run_time=0.5)
+        self.play(*[FadeOut(m) for m in (calc, calc_frame, specs)], run_time=0.5)
         cases = [("2 MHz, 10 mm", D.NEAR_FIELDS[1], GREY_INK), ("4 MHz, 10 mm", D.NEAR_FIELDS[0], ACCENT_4),
                  ("4 MHz, 20 mm", D.NEAR_FIELDS[2], ACCENT_2)]
         bars, names = VGroup(), VGroup()
@@ -855,9 +854,9 @@ class UtSeriesEp02(SyncedScene):
         self.play(GrowFromEdge(bars[1], LEFT), FadeIn(names[1]), run_time=0.5)
         self.play(GrowFromEdge(bars[2], LEFT), FadeIn(names[2]), run_time=0.7)
         self.sync(c("التَّرَدُّدُ"))
-        cmp_arrow = Arrow([3.3 + bars[0].width + 0.05, 2.3, 0], [3.3 + bars[1].width, 1.3, 0], buff=0.05, color=INK, stroke_width=3, tip_length=0.15)
+        twice = label("× 2", FS_LABEL, INK, weight=BOLD).next_to(bars[1], RIGHT, 0.2)
         self.play(GrowFromEdge(bars[0], LEFT), FadeIn(names[0]), run_time=0.5)
-        self.play(Create(cmp_arrow), run_time=0.4)
+        self.play(FadeIn(twice), run_time=0.4)
         # remedies
         twin_p = VGroup(RoundedRectangle(width=0.9, height=0.45, corner_radius=0.07, color=INK, stroke_width=4).set_fill(BG, 1),
                         Line(ORIGIN, UP * 0.4, color=INK, stroke_width=5))

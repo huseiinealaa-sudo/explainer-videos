@@ -97,15 +97,15 @@ def card(scene, k, question, art, answer):
         scene.sync(scene.start(sc) + t0)
         nd = digit(n)
         scene.play(FadeOut(d, run_time=0.15), FadeIn(nd, scale=1.5, run_time=0.25),
-                   trk.animate(run_time=scene.end(sc) - scene.start(sc) - t0
+                   trk.animate(run_time=scene.end(sc) - scene.start(sc) - t0 - 0.3
                                if n == 1 else 1.0, rate_func=linear).set_value(goal))
         d = nd
+    scene.play(FadeOut(track, run_time=0.3), FadeOut(arc, run_time=0.3), FadeOut(d, run_time=0.3))   # the ring leaves first
     # ---- the answer: ring out, answer line with its tick in, the drawing completed
     scene.sync(scene.start(sa))
     arc.clear_updaters()
     ans = answer_block(answer)
-    finish(FadeOut(track, run_time=0.3), FadeOut(arc, run_time=0.3),
-           FadeOut(d, run_time=0.3), FadeIn(ans, shift=UP * 0.15, run_time=0.4))
+    finish(FadeIn(ans, shift=UP * 0.15, run_time=0.4))
     scene.sync(scene.end(sa) - 0.45)
     scene.clear(run_time=0.45)
 
