@@ -507,8 +507,8 @@ class UtSeriesEp02(SyncedScene):
         # ---- damping: short pulse resolves two close flaws, ringing pulse merges them ----
         self.sync(c("التَّخْمِيدُ"))
         PULSES = [(0.0, 1.9), (3.0, 1.0), (3.45, 1.0)]       # transmit pulse, two close flaws
-        strong = trace_panel(PULSES, tau=0.12, width=5.6, height=1.7)
-        light = trace_panel(PULSES, tau=0.7, width=5.6, height=1.7)
+        strong = trace_panel(PULSES, tau=0.12, width=5.6, height=1.5)
+        light = trace_panel(PULSES, tau=0.7, width=5.6, height=1.5)
         strong.move_to([3.9, 1.85, 0])
         light.move_to([3.9, -1.5, 0])
         h_s = label("Strong damping", FS_NOTE, INK, weight=BOLD).next_to(strong, UP, 0.12).align_to(strong, LEFT)
