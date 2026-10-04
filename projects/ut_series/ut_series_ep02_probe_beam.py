@@ -638,13 +638,19 @@ class UtSeriesEp02(SyncedScene):
         weld = Polygon([cx + 0.7, cy, 0], [cx + 1.5, cy, 0], [cx + 1.3, cy + 0.14, 0], [cx + 0.9, cy + 0.14, 0],
                        color=GREY_INK, stroke_width=2).set_fill(LIGHT_INK, 0.6)
         wx0 = cx + 1.1
-        wedge = Polygon([cx - 1.4, cy, 0], [cx - 0.4, cy, 0], [cx - 1.4, cy + 0.6, 0],
+        wedge = Polygon([cx - 1.5, cy, 0], [cx - 0.3, cy, 0], [cx - 0.3, cy + 0.6, 0],
                         color=GREY_INK, stroke_width=3).set_fill(ACCENT_1, 0.15)
-        wprobe = Probe(width=0.55, height=0.3).rotate(-0.9).move_to([cx - 1.18, cy + 0.42, 0])
-        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).move_to([cx - 0.45, cy + 0.55, 0])
-        wedge_lead = Line(wedge_t.get_left() + LEFT * 0.03, [cx - 0.95, cy + 0.27, 0], color=GREY_INK, stroke_width=2)
+        # the crystal sits on the slanted face and fires down and forward, perpendicular to that face
+        alpha = np.arctan2(0.6, 1.2)
+        face_c = np.array([cx - 0.9, cy + 0.3, 0.0])
+        inc_dir = np.array([np.sin(alpha), -np.cos(alpha), 0.0])
+        wprobe = Probe(width=0.55, height=0.3).rotate(alpha)
+        wprobe.shift(face_c - wprobe.face_point())
+        wedge_t = label("wedge", FS_TAG - 3, INK).move_to([cx - 1.2, cy - 0.62, 0])
+        wedge_lead = Line(wedge_t.get_top() + UP * 0.03, [cx - 0.95, cy + 0.12, 0], color=GREY_INK, stroke_width=2)
         # the beam leaves the wedge at its exit point and runs down to the crack
-        ex = np.array([cx - 0.7, cy, 0.0])
+        ex = face_c + inc_dir * 0.3 / np.cos(alpha)
+        inc = DashedLine(face_c, ex, color=ACCENT_1, stroke_width=3)
         hit = np.array([wx0 - 0.04, cy - 0.6, 0.0])
         beam_dir = hit - ex
         beam = DashedLine(ex, hit, color=ACCENT_1, stroke_width=3)
@@ -654,7 +660,7 @@ class UtSeriesEp02(SyncedScene):
         crack = Line(hit - n_hat * 0.5, hit + n_hat * 0.5, color=ACCENT_4, stroke_width=6)
         gp = Probe(width=0.7, height=0.45, color=GREY_INK)
         gp.remove(gp.cable)
-        gp.next_to(np.array([hit[0], cy + 0.3, 0.0]), UP, 0)
+        gp.next_to(np.array([hit[0], cy + 0.14, 0.0]), UP, 0)
         vert = DashedLine(gp.face_point(), hit, color=GREY_INK, stroke_width=3)
         n_b = beam_dir / np.linalg.norm(beam_dir)
         refl = np.array([0.0, -1.0, 0.0]) - 2 * float(np.dot([0.0, -1.0, 0.0], n_b)) * n_b      # specular reflection of a vertical beam
@@ -666,7 +672,9 @@ class UtSeriesEp02(SyncedScene):
         self.sync(c("إِسْفِينٍ"))
         self.play(FadeIn(wedge_t), Create(wedge_lead), Indicate(wedge, color=ACCENT_1, scale_factor=1.08), run_time=0.5)
         self.sync(c("فَتَنْكَسِرُ"))
-        self.play(Create(beam), run_time=0.6)
+        self.play(Create(inc), run_time=0.3)
+        shoot(face_c + inc_dir * 0.05, ex, ACCENT_1, 0.3, angled=inc_dir)
+        self.play(Create(beam), run_time=0.4)
         shoot(ex + beam_dir * 0.1, hit - beam_dir * 0.15, ACCENT_1, 0.5, angled=beam_dir)
         self.sync(c("لِلَّحَامِ"))
         self.play(FadeIn(weld), FadeIn(crack), run_time=0.5)
@@ -703,7 +711,7 @@ class UtSeriesEp02(SyncedScene):
         cx, cy = 2.3, BOT_Y
         p5 = type_panel(cx, cy, "Focused probe", "Small flaws at a set depth")
         blk5 = part_block(cx, cy - 0.05, height=1.0)
-        pr5 = Probe(width=1.0, height=0.45).next_to(blk5, UP, 0.0)
+        pr5 = Probe(width=1.0, height=0.45).next_to(blk5, UP, 0.17)
         lens = Arc(radius=0.9, start_angle=-PI / 2 - 0.55, angle=1.1, color=INK, stroke_width=6)
         lens.move_to(pr5.get_bottom() + DOWN * 0.04, aligned_edge=UP)
         fx, fy = cx, cy - 0.05 - 0.55
