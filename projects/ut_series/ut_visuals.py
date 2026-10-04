@@ -162,8 +162,10 @@ class AScan(VGroup):
                                    stroke_width=3) for x in tick_x])
         tick_labels = VGroup(*[label(f"{t:g}", FS_TAG - 2, GREY_INK).move_to([x, self._by - 0.28, 0])
                                for t, x in zip(ticks, tick_x)])
-        xc = label(x_caption, FS_TAG, INK).next_to(frame, DOWN, 0.1).align_to(frame, RIGHT)
-        yc = label(y_caption, FS_TAG, INK).rotate(PI / 2).next_to(frame, LEFT, 0.1)
+        xc = (label(x_caption, FS_TAG, INK).next_to(frame, DOWN, 0.1).align_to(frame, RIGHT)
+              if x_caption else VGroup())
+        yc = (label(y_caption, FS_TAG, INK).rotate(PI / 2).next_to(frame, LEFT, 0.1)
+              if y_caption else VGroup())
         super().__init__(frame, x_axis, y_axis, tick_marks, tick_labels, xc, yc)
         self.frame, self.x_axis, self.y_axis = frame, x_axis, y_axis
         self.ticks, self.tick_labels, self.x_caption, self.y_caption = tick_marks, tick_labels, xc, yc
