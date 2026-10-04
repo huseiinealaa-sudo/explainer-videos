@@ -589,7 +589,7 @@ class UtSeriesEp03(SyncedScene):
         self.sync(c("سَبْعَةٍ", 2))
         v2 = VGroup()
         self.sync(c("سَطْحِيَّةٌ"))
-        surf = label("surface wave", FS_TAG, ACCENT_2, weight=BOLD).next_to(rf.surf, UP, 0.15)
+        surf = label("surface wave", FS_TAG, INK, weight=BOLD).move_to([X0 + 1.5, Y0 + 0.4, 0])
         self.play(al.animate(run_time=0.8).set_value(D.CRIT_2 + 3.0), FadeIn(surf), run_time=0.8)
         # ---- 45.7-54 s: angle probes work between the two angles ----
         self.sync(c("لِهٰذَا"))
@@ -679,7 +679,7 @@ class UtSeriesEp03(SyncedScene):
         self.play(xe.animate(run_time=1.7, rate_func=smooth).set_value(P[0] - 0.55))
         self.play(xe.animate(run_time=c("أَقْصَاهُ") - self.renderer.time + 0.1, rate_func=smooth).set_value(P[0]))
         peak = label("maximum echo", FS_TAG, ACCENT_2, weight=BOLD)
-        peak.move_to([scr.x_of(100) - 1.0, scr.y_base() + 1.55, 0])
+        peak.move_to([scr.x_of(48), scr.y_base() + 1.2, 0])
         self.play(FadeIn(peak), run_time=0.3)
         # the exit point is above the centre of the arc
         self.sync(c("فَتَكُونُ"))
@@ -752,7 +752,7 @@ class UtSeriesEp03(SyncedScene):
         s_arrow = Arrow(ex, flaw_p, buff=0, color=ACCENT_1, stroke_width=5, tip_length=0.2)
         s_lab = label("S", FS_LABEL, ACCENT_1, weight=BOLD).move_to((ex + flaw_p) / 2 + np.array([-0.4, -0.7, 0.0]))
         flaw = Ellipse(width=0.42, height=0.2, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8).move_to(flaw_p)
-        s_scr = small_scan([5.25, 0.5], [(0, 1.4), (D.PATH_S, 0.9)], width=3.4, height=1.9, t_max=60.0, ticks=(0, 25, 50),
+        s_scr = small_scan([5.1, 0.5], [(0, 1.4), (D.PATH_S, 0.9)], width=3.4, height=1.9, t_max=60.0, ticks=(0, 25, 50),
                            sigma=0.9, x_caption="Sound path (mm)", y_caption="")
         s_tag = label(f"S = {D.PATH_S:.0f} mm", FS_TAG, ACCENT_1, weight=BOLD).next_to(s_scr.frame, UP, 0.15)
         self.sync(S + 0.1)
@@ -792,8 +792,8 @@ class UtSeriesEp03(SyncedScene):
         self.sync(c("نِصْفُ"))
         self.play(Create(half), run_time=0.7)
         # the plate thickness and the probe angle are spoken: mark them
-        t_dim = DoubleArrow([-6.4, TOPY, 0], [-6.4, bot, 0], buff=0, color=ACCENT_3, stroke_width=3, tip_length=0.12)
-        t_lab = label(f"{D.PLATE_T:.0f}\u00a0mm", FS_TAG, ACCENT_3, weight=BOLD).next_to(t_dim, RIGHT, 0.12)
+        t_dim = DoubleArrow([-6.3, TOPY, 0], [-6.3, bot, 0], buff=0, color=ACCENT_3, stroke_width=3, tip_length=0.12)
+        t_lab = label(f"{D.PLATE_T:.0f}\u00a0mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([-6.1, bot - 0.28, 0])
         normal = DashedLine(ex, ex + DOWN * 1.4, color=GREY_INK, stroke_width=2)
         arc = Arc(radius=0.9, start_angle=-PI / 2, angle=TH, arc_center=ex, color=ACCENT_2, stroke_width=4)
         lab_a = label(f"{D.PROBE_ANGLE:.0f}°", FS_TAG, ACCENT_2, weight=BOLD).move_to(ex + np.array([0.82, -1.2, 0.0]))
@@ -853,9 +853,8 @@ class UtSeriesEp03(SyncedScene):
         self.play(FadeIn(first), run_time=0.5)
         # ---- the second leg: the depth is counted up from the back wall ----
         self.sync(c("أَمَّا"))
-        self.play(FadeOut(VGroup(bars, lt, ld, first)), s_hot.animate.set_opacity(0.25), lab_s.animate.set_opacity(0.25),
-                  vert.animate.set_opacity(0.25), lab_d.animate.set_opacity(0.25), x_dim.animate.set_opacity(0.25),
-                  lab_x.animate.set_opacity(0.25), run_time=0.4)
+        self.play(FadeOut(VGroup(bars, lt, ld, first, lab_s, lab_d, lab_x)), s_hot.animate.set_opacity(0.25),
+                  vert.animate.set_opacity(0.25), x_dim.animate.set_opacity(0.25), run_time=0.4)
         leg1b = Arrow(ex, bounce, buff=0, color=ACCENT_1, stroke_width=4, tip_length=0.18).set_opacity(0.6)
         leg2b = Arrow(bounce, end2, buff=0, color=ACCENT_2, stroke_width=5, tip_length=0.2)
         f2p = bounce + (end2 - bounce) * 0.55
@@ -1088,14 +1087,14 @@ class UtSeriesEp03(SyncedScene):
             return show, finish
 
         def art5():                       # the angle on the probe
-            top = 0.7
-            blk = SteelBlock(7.0, 2.8).move_to([0.3, top - 1.4, 0])
+            top = 0.15
+            blk = SteelBlock(7.0, 2.2).move_to([0.3, top - 1.1, 0])
             wp = wedge_probe(-1.4, top, size=1.4)
             ex = np.array([-1.4, top, 0.0])
             a = np.radians(60)
-            end = ex + np.array([np.sin(a), -np.cos(a), 0.0]) * 2.6
+            end = ex + np.array([np.sin(a), -np.cos(a), 0.0]) * 2.0
             ray = Arrow(ex, end, buff=0, color=ACCENT_3, stroke_width=5, tip_length=0.2)
-            normal = DashedLine(ex, ex + DOWN * 2.0, color=GREY_INK, stroke_width=2)
+            normal = DashedLine(ex, ex + DOWN * 1.6, color=GREY_INK, stroke_width=2)
             arc = Arc(radius=0.9, start_angle=-PI / 2, angle=a, arc_center=ex, color=ACCENT_2, stroke_width=4)
             ask = label("?°", FS_LABEL, ACCENT_2, weight=BOLD).move_to(ex + np.array([0.75, -1.2, 0.0]))
             ans = label("60°", FS_LABEL, ACCENT_2, weight=BOLD).move_to(ask)
@@ -1113,10 +1112,10 @@ class UtSeriesEp03(SyncedScene):
             v1 = V1Block(x0=-5.4, y_top=0.9)
             P = v1.P
             wp = wedge_probe(P[0] + 1.2, v1.y_top, facing=-1, size=1.2)
-            ask = label("exit point?", FS_NOTE, ACCENT_2, weight=BOLD).move_to([P[0] + 2.7, v1.y_top + 0.85, 0])
+            ask = label("exit point?", FS_NOTE, ACCENT_2, weight=BOLD).move_to([P[0] - 1.2, v1.y_top + 0.9, 0])
             dot = Dot(P, radius=0.1, color=ACCENT_2)
-            lab = label("exit point = centre of the arc", FS_NOTE, ACCENT_2, weight=BOLD).move_to([P[0] - 0.4, v1.y_top + 0.85, 0])
-            lead = Arrow(lab.get_bottom() + DOWN * 0.03, P + UP * 0.1, buff=0.04, color=ACCENT_2, stroke_width=3, tip_length=0.15)
+            lab = label("exit point = centre of the arc", FS_NOTE, ACCENT_2, weight=BOLD).move_to([P[0] - 1.9, v1.y_top + 0.9, 0])
+            lead = Arrow(lab.get_right() + RIGHT * 0.03, P + UP * 0.08, buff=0.04, color=ACCENT_2, stroke_width=3, tip_length=0.15)
 
             def show():
                 self.play(Create(v1.body), FadeIn(v1.hole_big), FadeIn(v1.insert), FadeIn(v1.hole_small), FadeIn(v1.scale),
