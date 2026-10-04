@@ -1,6 +1,6 @@
 """ut_series: shared drawing primitives for the ultrasonic-testing episodes.
 
-    from ut_visuals import wavefront
+    from ut_visuals import wavefront, Probe, SteelBlock, AScan, tag_line
 
 `wavefront` is the one way every episode draws an ultrasonic pulse travelling through a part:
 a few arcs, like the Wi-Fi icon. They are the wave fronts of the pulse: convex in the direction
@@ -15,6 +15,7 @@ coming back, ACCENT_3 the transmitted pulse.
 """
 from manim import *
 
+from explainer import *    # noqa: F401,F403  (theme colours, label, fonts, icon, badge, fit)
 from explainer import ACCENT_1
 
 
@@ -65,3 +66,144 @@ def wavefront(length=0.9, amp=0.28, cycles=None, color=ACCENT_1, direction=DOWN,
     g.set_stroke(opacity=1)
     g.move_to(ORIGIN)
     return g.rotate(angle_of_vector(direction) - angle_of_vector(DOWN), about_point=ORIGIN)
+
+
+# ---------------- Shared by episodes 2-4 (the same shapes episode 1 builds inside its script) ----------------
+class SteelBlock(VGroup):
+    """A steel part seen in section: a filled rectangle. `body` is the rectangle."""
+
+    def __init__(self, width=7.0, height=3.0):
+        body = Rectangle(width=width, height=height, color=INK, stroke_width=4)
+        body.set_fill(PANEL_FILL, 1)
+        super().__init__(body)
+        self.body = body
+
+
+class Probe(VGroup):
+    """An ultrasonic probe: housing, crystal (the face) and a cable stub. Its face is the
+    bottom edge (the top edge when flip=True). `face_point()` is the centre of the face."""
+
+    def __init__(self, width=0.9, height=0.6, color=ACCENT_1, flip=False):
+        housing = RoundedRectangle(width=width, height=height, corner_radius=0.08,
+                                   color=color, stroke_width=4).set_fill(BG, 1)
+        crystal = Rectangle(width=width * 0.85, height=0.12, color=color, stroke_width=3)
+        crystal.set_fill(color, 1).next_to(housing, DOWN, buff=0)
+        cable = Line(housing.get_top(), housing.get_top() + UP * 0.35, color=GREY_INK,
+                     stroke_width=5)
+        super().__init__(cable, housing, crystal)
+        if flip:
+            self.rotate(PI)
+        self.housing, self.crystal, self.cable, self.flip = housing, crystal, cable, flip
+
+    def face_point(self):
+        return self.crystal.get_top() if self.flip else self.crystal.get_bottom()
+
+
+def wrap_two_lines(text, size, weight=None):
+    """The text as two labels split at the space that makes the wider one narrowest."""
+    kw = {} if weight is None else {"weight": weight}
+    words = text.split()
+    best = None
+    for i in range(1, len(words)):
+        a, b = label(" ".join(words[:i]), size, **kw), label(" ".join(words[i:]), size, **kw)
+        w = max(a.width, b.width)
+        if best is None or w < best[0]:
+            best = (w, a, b)
+    return best[1], best[2]
+
+
+def tag_line(text, icon_name, color, width=3.9, size=FS_AXIS):
+    """A short note without a frame: a Tabler icon in `color` and the text (two lines when it
+    does not fit `width`). Parts: icon, txt."""
+    ic = icon(icon_name, color, 0.4)
+    room = width - 0.65
+    one = label(text, size, INK)
+    if one.width <= room:
+        txt = one
+    else:
+        a, b = wrap_two_lines(text, size)
+        txt = VGroup(a, b).arrange(DOWN, aligned_edge=LEFT, buff=0.06)
+    g = VGroup(ic, txt).arrange(RIGHT, buff=0.2)
+    g.icon, g.txt = ic, txt
+    return g
+
+
+def signal_bar(frame, level, color):
+    """The fill of a horizontal meter `frame` up to `level` (0-1)."""
+    r = Rectangle(width=max((frame.width - 0.08) * level, 0.02), height=frame.height - 0.08,
+                  color=color, stroke_width=0).set_fill(color, 1)
+    return r.align_to(frame, LEFT).shift(RIGHT * 0.04).match_y(frame)
+
+
+class AScan(VGroup):
+    """An A-scan screen: a framed plot with an x axis and an echo-amplitude axis.
+
+    `peaks` is a list of (x position in axis units, height); the signal is the sum of narrow peaks
+    of width `sigma` on a flat baseline. Parts of the group: frame, x_axis, y_axis, ticks,
+    tick_labels, x_caption, y_caption. `trace` (the signal drawn up to x), `cursor` and `pen` are
+    not in the group: the scene adds them and calls `update_trace(x)` / `set_cursor(x)`.
+    Positions are read from the frame at call time, so `shift` / `move_to` the group first; do not
+    scale it. `x_of(t)` is the screen x of axis value t, `apex(k)` the top of peak k."""
+
+    def __init__(self, peaks, width=6.4, height=2.5, t_min=-0.6, t_max=10.0,
+                 ticks=(0, 2, 4, 6, 8, 10), sigma=0.14, x_caption="Time (µs)",
+                 y_caption="Echo amplitude"):
+        self.peaks, self.t_min, self.t_max, self.sigma = list(peaks), t_min, t_max, sigma
+        self._lx, self._rx = -width / 2 + 0.25, width / 2 - 0.3
+        self._by = -height / 2 + 0.55
+        frame = Rectangle(width=width, height=height, color=INK, stroke_width=3)
+        frame.set_fill(PANEL_FILL, 1)
+        x_axis = Arrow([self._lx, self._by, 0], [width / 2 - 0.08, self._by, 0], buff=0,
+                       color=INK, stroke_width=3, tip_length=0.16)
+        y_axis = Arrow([self._lx, self._by, 0], [self._lx, height / 2 - 0.08, 0], buff=0,
+                       color=INK, stroke_width=3, tip_length=0.16)
+        tick_x = [self._lx + (t - t_min) * (self._rx - self._lx) / (t_max - t_min) for t in ticks]
+        tick_marks = VGroup(*[Line([x, self._by, 0], [x, self._by + 0.1, 0], color=INK,
+                                   stroke_width=3) for x in tick_x])
+        tick_labels = VGroup(*[label(f"{t:g}", FS_TAG - 2, GREY_INK).move_to([x, self._by - 0.28, 0])
+                               for t, x in zip(ticks, tick_x)])
+        xc = label(x_caption, FS_TAG, INK).next_to(frame, DOWN, 0.1).align_to(frame, RIGHT)
+        yc = label(y_caption, FS_TAG, INK).rotate(PI / 2).next_to(frame, LEFT, 0.1)
+        super().__init__(frame, x_axis, y_axis, tick_marks, tick_labels, xc, yc)
+        self.frame, self.x_axis, self.y_axis = frame, x_axis, y_axis
+        self.ticks, self.tick_labels, self.x_caption, self.y_caption = tick_marks, tick_labels, xc, yc
+        self.trace = VMobject(color=INK, stroke_width=3)
+        self.trace.set_points_as_corners([[0, 0, 0], [0.01, 0, 0]]).set_stroke(opacity=0)
+        self.cursor = Line(ORIGIN, UP, color=ACCENT_1, stroke_width=3)
+        self.cursor.set_stroke(opacity=0)
+        self.pen = Dot(ORIGIN, radius=0.08, color=ACCENT_1)
+        self.pen.set_opacity(0)
+
+    def x_of(self, t):
+        k = (self._rx - self._lx) / (self.t_max - self.t_min)
+        return self.frame.get_center()[0] + self._lx + (t - self.t_min) * k
+
+    def y_base(self):
+        return self.frame.get_center()[1] + self._by
+
+    def signal(self, t):
+        return sum(a * np.exp(-((t - tp) / self.sigma) ** 2) for tp, a in self.peaks)
+
+    def apex(self, k):
+        tp, a = self.peaks[k]
+        return np.array([self.x_of(tp), self.y_base() + a, 0.0])
+
+    def update_trace(self, t_end, step=None):
+        t_end = min(t_end, self.t_max)
+        step = step or (self.t_max - self.t_min) / 500
+        if t_end <= self.t_min + step:
+            self.trace.set_stroke(opacity=0)
+            self.pen.set_opacity(0)
+            return self.trace
+        ts = np.arange(self.t_min, t_end + 1e-9, step)
+        pts = [[self.x_of(t), self.y_base() + self.signal(t), 0.0] for t in ts]
+        self.trace.set_points_as_corners(pts)
+        self.trace.set_stroke(color=INK, width=3, opacity=1)
+        self.pen.set_opacity(1).move_to(pts[-1])
+        return self.trace
+
+    def set_cursor(self, t):
+        x = self.x_of(min(max(t, self.t_min), self.t_max))
+        self.cursor.put_start_and_end_on([x, self.y_base() - 0.08, 0], [x, self.y_base() + 0.5, 0])
+        self.cursor.set_stroke(opacity=1 if t >= self.t_min else 0)
+        return self.cursor
