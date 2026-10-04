@@ -222,11 +222,12 @@ class V1Block(VGroup):
         return label(f"{angle}", FS_TAG - 4, INK).move_to([self._tick_x[angle], self.y_top - row, 0])
 
 
-def wedge_probe(x_exit, y_top, facing=1, color=ACCENT_1, size=1.0, beta=D.PROBE_ANGLE, trim=0.0):
+def wedge_probe(x_exit, y_top, facing=1, color=ACCENT_1, size=1.0, beta=D.PROBE_ANGLE, wear=0.0):
     """An angle probe on a plastic wedge: the sole runs on both sides of the exit point, the crystal sits on the
     slanted top face perpendicular to the beam, and the beam crosses the wedge from the crystal's centre to the
     exit point (the wedge angle comes from Snell's law for the steel shear angle `beta`). facing = 1: the beam
-    goes to the right. `trim` shaves the front of the sole: the exit point slides back by `trim` (a worn wedge).
+    goes to the right. `wear` raises the front corner of the sole by that much (the front of the sole is worn away); the body then
+    has to be tilted forward about the back of the sole for the worn face to lie flat.
     Returns VGroup(wedge, crystal, beam_in) with .exit (the exit point), .wedge, .crystal."""
     a = np.arcsin(np.sin(np.radians(beta)) * D.V_L_PERSPEX / D.V_S_STEEL)
     L, hh = 0.85 * size, 0.32 * size
@@ -234,9 +235,9 @@ def wedge_probe(x_exit, y_top, facing=1, color=ACCENT_1, size=1.0, beta=D.PROBE_
     p = np.array([facing * np.cos(a), np.sin(a), 0.0])
     ex0 = np.array([x_exit, y_top, 0.0])
     cen = ex0 - b * L
-    ex = ex0 - np.array([facing * trim, 0.0, 0.0])
+    ex = ex0
     e_f, e_b = cen + p * hh, cen - p * hh
-    front_bottom = np.array([x_exit + facing * (0.38 * size - trim), y_top, 0.0])
+    front_bottom = np.array([x_exit + facing * 0.38 * size, y_top + wear, 0.0])
     back_bottom = np.array([x_exit - facing * (L * np.sin(a) + 0.5 * size), y_top, 0.0])
     wedge = Polygon(front_bottom, back_bottom, e_b, e_f, color=GREY_INK, stroke_width=3).set_fill(color, 0.18)
     crystal = Line(e_b, e_f, color=color, stroke_width=9)
@@ -289,7 +290,7 @@ class UtSeriesEp03(SyncedScene):
         self.add(scan.trace)
         self.sync(c("تَقْرَأُ"))
         new_ticks = VGroup(*[label(t, FS_TAG - 2, GREY_INK).move_to(old.get_center())
-                             for t, old in zip(("0", "10", "20", "30", "40", "50"), scan.tick_labels)])
+                             for t, old in zip([f"{u * D.V_L_STEEL / 2000:.0f}" for u in (0, 2, 4, 6, 8, 10)], scan.tick_labels)])
         new_cap = label("Distance (mm)", FS_TAG, INK).move_to(scan.x_caption).align_to(scan.x_caption, RIGHT)
         self.play(FadeOut(scan.tick_labels), FadeOut(scan.x_caption), run_time=0.4)
         self.play(FadeIn(new_ticks), FadeIn(new_cap), run_time=0.5)
@@ -374,21 +375,45 @@ class UtSeriesEp03(SyncedScene):
         idx_new = Line(w_new.exit, w_new.exit + UP * 0.32, color=ACCENT_2, stroke_width=6)
         idx_lab = label("exit point (index)", FS_TAG, ACCENT_2, weight=BOLD).move_to([w_new.exit[0] + 1.6, top_y + 0.9, 0])
         idx_lead = Arrow(idx_lab.get_left() + LEFT * 0.03, idx_new.get_end() + UP * 0.02, buff=0.05, color=ACCENT_2, stroke_width=3, tip_length=0.14)
-        tgt_old = w_new.exit + np.array([2.4, -1.6, 0.0])
+        b60 = np.radians(D.PROBE_ANGLE)
+        tgt_old = w_new.exit + 2.8 * np.array([np.sin(b60), -np.cos(b60), 0.0])
         beam = DashedLine(w_new.exit, tgt_old, color=ACCENT_1, stroke_width=3)
         self.sync(c("وَنُعِيدُ"))
         self.play(Create(plate), FadeIn(w_new), run_time=0.7)
         self.play(FadeIn(idx_new), FadeIn(idx_lab), GrowArrow(idx_lead), Create(beam), run_time=0.6)
         self.sync(c("يُغَيِّرُ"))
-        worn = wedge_probe(-0.6, top_y, size=1.6, trim=0.4)
-        beam2 = DashedLine(worn.exit, tgt_old + np.array([0.25, 0.0, 0.0]), color=ACCENT_1, stroke_width=3)
-        self.add(ghost)
-        self.play(Transform(w_new.wedge, worn.wedge), Transform(w_new.beam_in, worn.beam_in), Transform(w_new.crystal, worn.crystal),
-                  idx_new.animate.shift(LEFT * 0.4), Transform(beam, beam2), run_time=1.4)
+        # the sole wears away at the front: the body tips forward about the back of the sole
+        wear = 0.3
+        worn = wedge_probe(-0.6, top_y, size=1.6, wear=wear)
+        verts = worn.wedge.get_vertices()
+        back_pt, front_pt = verts[1], verts[0]
+        theta = float(np.arctan2(wear, front_pt[0] - back_pt[0]))
+        sliver = Polygon([back_pt[0], top_y, 0], [front_pt[0], top_y, 0], [front_pt[0], top_y + wear, 0],
+                         color=ALERT_C, stroke_width=2).set_fill(ALERT_C, 0.6)
+        ghost_beam = beam.copy().set_color(GREY_INK)
+        self.add(ghost, ghost_beam)
+        self.play(Transform(w_new.wedge, worn.wedge), FadeIn(sliver), run_time=0.5)
+        # new exit point and steel angle after the tilt (Snell's law, TCS-67 eq. 2.8)
+        def tilt(pt):
+            d = pt - back_pt
+            return back_pt + np.array([d[0] * np.cos(theta) + d[1] * np.sin(theta), -d[0] * np.sin(theta) + d[1] * np.cos(theta), 0.0])
+        cen2 = tilt(w_new.beam_in.get_start())
+        b_in = (w_new.exit - w_new.beam_in.get_start()) / np.linalg.norm(w_new.exit - w_new.beam_in.get_start())
+        b_in2 = tilt(back_pt + b_in) - back_pt
+        ex2 = cen2 + b_in2 * ((top_y - cen2[1]) / b_in2[1])
+        a_in2 = float(np.arccos(-b_in2[1]))
+        beta2 = float(np.arcsin(np.sin(a_in2) * D.V_S_STEEL / D.V_L_PERSPEX))
+        beam2 = DashedLine(ex2, ex2 + 2.8 * np.array([np.sin(beta2), -np.cos(beta2), 0.0]), color=ACCENT_1, stroke_width=3)
+        idx_new2 = Line(ex2, ex2 + UP * 0.32, color=ACCENT_2, stroke_width=6)
+        idx_lead2 = Arrow(idx_lab.get_left() + LEFT * 0.03, idx_new2.get_end() + UP * 0.02, buff=0.05, color=ACCENT_2,
+                          stroke_width=3, tip_length=0.14)
+        self.play(FadeOut(sliver),
+                  VGroup(w_new.wedge, w_new.crystal, w_new.beam_in).animate.rotate(-theta, about_point=back_pt),
+                  Transform(idx_new, idx_new2), Transform(idx_lead, idx_lead2), Transform(beam, beam2), run_time=1.0)
         shift_lab = label("wear moves the exit point and changes the angle", FS_NOTE, ALERT_C, weight=BOLD)
         shift_lab.move_to([0, 2.3, 0])
         self.sync(c("الخُرُوجِ"))
-        arrow_ = Arrow([-0.6, top_y + 0.55, 0], [-1.0, top_y + 0.55, 0], buff=0, color=ALERT_C, stroke_width=3, tip_length=0.12)
+        arrow_ = Arrow([w_new.exit[0], top_y - 0.25, 0], [ex2[0], top_y - 0.25, 0], buff=0, color=ALERT_C, stroke_width=3, tip_length=0.1)
         self.play(FadeIn(shift_lab), GrowArrow(arrow_), run_time=0.5)
         self.sync(self.end(1))
         self.clear()
@@ -492,6 +517,8 @@ class UtSeriesEp03(SyncedScene):
         self.sync(c("نَضْبِطُ"))
         k_delay = knob("Delay").move_to([-0.2, -2.85, 0])
         k_range = knob("Range").move_to([1.5, -2.85, 0])
+        k_delay.set_turn(0.3)
+        k_range.set_turn(0.7)
         self.play(FadeOut(weak), FadeIn(k_delay), FadeIn(k_range), run_time=0.4)
         self.sync(c("حَتَّى"))
         self.play(g.animate(run_time=2.4, rate_func=smooth).set_value(1.0),
@@ -612,11 +639,12 @@ class UtSeriesEp03(SyncedScene):
         wp = wedge_probe(-1.0, top, size=1.5)
         ex = np.array([-1.0, top, 0.0])
         rays = []
-        for ang, col, cue in ((45, ACCENT_1, "خَمْسٌ"), (60, ACCENT_3, "سِتُّونَ"), (70, ACCENT_2, "سَبْعُونَ")):
+        for ang, rad, cue in ((45, 0.75, "خَمْسٌ"), (60, 1.0, "سِتُّونَ"), (70, 1.25, "سَبْعُونَ")):
+            col = ACCENT_2                 # the refracted shear wave
             a = np.radians(ang)
             end = ex + np.array([np.sin(a), -np.cos(a), 0.0]) * 3.0
             r_ = Arrow(ex, end, buff=0, color=col, stroke_width=5, tip_length=0.2)
-            arc = Arc(radius=0.95, start_angle=-PI / 2, angle=a, arc_center=ex, color=col, stroke_width=3)
+            arc = Arc(radius=rad, start_angle=-PI / 2, angle=a, arc_center=ex, color=col, stroke_width=3)
             lab = label(f"{ang}°", FS_LABEL, col, weight=BOLD).move_to(end + np.array([0.45, -0.1, 0.0]))
             rays.append((cue, VGroup(r_, arc, lab)))
         normal = DashedLine(ex, ex + DOWN * 2.7, color=GREY_INK, stroke_width=2)
@@ -628,7 +656,7 @@ class UtSeriesEp03(SyncedScene):
             self.sync(c(cue))
             self.play(Create(g[0]), Create(g[1]), FadeIn(g[2]), run_time=0.5)
         self.sync(c("هِيَ"))
-        note = label("the shear-wave angle in the steel", FS_LABEL, ACCENT_3, weight=BOLD).move_to([0.5, -2.7, 0])
+        note = label("the shear-wave angle in the steel", FS_LABEL, ACCENT_2, weight=BOLD).move_to([0.5, -2.7, 0])
         self.play(FadeIn(note), run_time=0.5)
         self.sync(self.end(3))
         self.clear()
@@ -697,6 +725,7 @@ class UtSeriesEp03(SyncedScene):
         self.sync(c("وَلِمُعَايَرَةِ"))
         self.play(FadeOut(lab_i), FadeOut(lead_i), FadeOut(idx), FadeOut(peak), run_time=0.4)
         k_rng = knob("Range").move_to([3.4, -1.45, 0])
+        k_rng.set_turn(0.3)
         self.play(FadeIn(k_rng), run_time=0.3)
         self.sync(c("نَجْعَلُ"))
         self.play(rng.animate(run_time=1.4, rate_func=smooth).set_value(1.0), UpdateFromAlphaFunc(k_rng, lambda m, a: m.set_turn(0.3 + 0.35 * a)))
@@ -1021,7 +1050,7 @@ class UtSeriesEp03(SyncedScene):
 
             def finish(*extra):
                 new_ticks = VGroup(*[label(t_, FS_TAG - 2, GREY_INK).move_to(old.get_center())
-                                     for t_, old in zip(("0", "10", "20", "30", "40"), scan.tick_labels)])
+                                     for t_, old in zip([f"{u * D.V_L_STEEL / 2000:.0f}" for u in (0, 25, 50, 75, 100)], scan.tick_labels)])
                 self.play(FadeOut(scan.x_caption), FadeOut(scan.tick_labels), FadeIn(new_cap), FadeIn(new_ticks), FadeIn(ref),
                           FadeIn(ref_t), FadeOut(ask), *extra, run_time=0.7)
                 self.remove(scan.trace)
@@ -1093,12 +1122,12 @@ class UtSeriesEp03(SyncedScene):
             ex = np.array([-1.4, top, 0.0])
             a = np.radians(60)
             end = ex + np.array([np.sin(a), -np.cos(a), 0.0]) * 2.0
-            ray = Arrow(ex, end, buff=0, color=ACCENT_3, stroke_width=5, tip_length=0.2)
+            ray = Arrow(ex, end, buff=0, color=ACCENT_2, stroke_width=5, tip_length=0.2)
             normal = DashedLine(ex, ex + DOWN * 1.6, color=GREY_INK, stroke_width=2)
             arc = Arc(radius=0.9, start_angle=-PI / 2, angle=a, arc_center=ex, color=ACCENT_2, stroke_width=4)
             ask = label("?°", FS_LABEL, ACCENT_2, weight=BOLD).move_to(ex + np.array([0.75, -1.2, 0.0]))
             ans = label("60°", FS_LABEL, ACCENT_2, weight=BOLD).move_to(ask)
-            ans2 = label("= the shear-wave angle in the steel", FS_NOTE, ACCENT_2, weight=BOLD).move_to([3.0, 1.25, 0])
+            ans2 = label("= shear wave", FS_NOTE, ACCENT_2, weight=BOLD).move_to([3.0, 1.25, 0])
 
             def show():
                 self.play(Create(blk), FadeIn(wp), run_time=0.6)
