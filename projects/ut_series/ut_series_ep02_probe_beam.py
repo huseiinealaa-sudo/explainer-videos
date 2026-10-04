@@ -831,7 +831,7 @@ class UtSeriesEp02(SyncedScene):
             b = Rectangle(width=n_mm * 0.05, height=0.34, color=col, stroke_width=0).set_fill(col, 1)
             b.move_to([3.5 + b.width / 2, 2.3 - 1.0 * k, 0])
             bars.add(b)
-            names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.05).align_to(b, LEFT))
+            names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.13).align_to(b, LEFT))
         head = label("Near field length N", FS_TAG, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
         self.play(FadeIn(head), run_time=0.3)
         self.sync(c("البَلُّورَةُ"))
