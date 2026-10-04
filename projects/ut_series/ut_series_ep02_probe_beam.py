@@ -181,33 +181,31 @@ CONE_SCALE = 0.11       # units per mm of crystal diameter (the same as the near
 
 
 class BeamCone(VGroup):
-    """A probe of diameter `d_mm` on `top_y` and its far-field beam: two edge lines spreading with
-    the half angle `theta_deg` (to the beam edge) down to `depth` units, a dashed axis, and the
-    half-angle arc with its value. Parts: probe, cone, axis, arc, value, flank_x(y) (the x of the
-    right edge at height y)."""
+    """A probe of diameter `d_mm` on `top_y` and its far-field beam: a cone from a virtual apex on the
+    axis at the crystal's centre spreading with the half angle `theta_deg` (to the beam edge) down to
+    `depth` units, so a bigger crystal (smaller angle) gives a narrower beam at every depth; a dashed
+    axis, and the half-angle arc at the apex. Parts: probe, cone, axis, arc, chord(depth)."""
 
-    def __init__(self, x, d_mm, theta_deg, top_y=1.9, depth=3.9, color=ACCENT_1, cable=True):
+    def __init__(self, x, d_mm, theta_deg, top_y=1.9, depth=3.9, color=ACCENT_1, cable=True, arc_r=1.3):
         w = d_mm * CONE_SCALE
         t = np.tan(np.radians(theta_deg))
         self.x, self.w, self.t, self.top_y, self.depth_u = x, w, t, top_y, depth     # (`depth` is a Mobject property)
         self.probe = Probe(width=w / 0.85, height=0.55, color=color).next_to(np.array([x, top_y, 0.0]), UP, 0)
         if not cable:
             self.probe.remove(self.probe.cable)
-        r_end = [x + w / 2 + depth * t, top_y - depth, 0]
-        l_end = [x - w / 2 - depth * t, top_y - depth, 0]
-        self.cone = Polygon([x - w / 2, top_y, 0], [x + w / 2, top_y, 0], r_end, l_end,
+        apex = np.array([x, top_y, 0.0])
+        self.cone = Polygon(apex, [x + depth * t, top_y - depth, 0], [x - depth * t, top_y - depth, 0],
                             color=color, stroke_width=3).set_fill(color, 0.12)
-        self.axis = DashedLine([x, top_y, 0], [x, top_y - depth, 0], color=GREY_INK, stroke_width=2)
-        edge = np.array([x + w / 2, top_y, 0.0])
-        self.guide = DashedLine(edge, edge + DOWN * 1.5, color=INK, stroke_width=2)
+        self.axis = DashedLine(apex, [x, top_y - depth, 0], color=GREY_INK, stroke_width=2)
         th = np.radians(theta_deg)
-        self.arc = Arc(radius=1.3, start_angle=-PI / 2, angle=th, arc_center=edge, color=ACCENT_2, stroke_width=5)
+        self.arc = Arc(radius=arc_r, start_angle=-PI / 2, angle=th, arc_center=apex, color=ACCENT_2, stroke_width=5)
+        self.guide = VGroup()                          # (kept for the scenes: the axis is the reference line)
         self.theta = theta_deg
-        super().__init__(self.probe, self.cone, self.axis, self.guide, self.arc)
+        super().__init__(self.probe, self.cone, self.axis, self.arc)
 
     def chord(self, depth_units):
         """Half width of the beam at `depth_units` below the crystal."""
-        return self.w / 2 + depth_units * self.t
+        return depth_units * self.t
 
 
 # ---- Segment 6 helpers: grains, scattering arrows, a frequency dial ----
@@ -247,7 +245,9 @@ class FrequencyDial(VGroup):
         self.needle = Line(ORIGIN, radius * 0.85 * UP, color=ACCENT_2, stroke_width=6)
         self.hub = Dot(ORIGIN, radius=0.08, color=INK)
         self.caption = label(caption, FS_TAG, INK, weight=BOLD).move_to([0, -0.4, 0])
-        super().__init__(self.arc, self.ticks, self.needle, self.hub, self.caption)
+        self.low = label("low", FS_TAG - 3, GREY_INK).move_to([-radius, -0.25, 0])
+        self.high = label("high", FS_TAG - 3, GREY_INK).move_to([radius, -0.25, 0])
+        super().__init__(self.arc, self.ticks, self.needle, self.hub, self.caption, self.low, self.high)
         self.value = 0.5
         self.set_value(0.5)
 
@@ -305,8 +305,8 @@ class UtSeriesEp02(SyncedScene):
         clock.add_updater(lambda m, dt: m.increment_value(dt))
         self.add(clock)
         self.sync(c("يُسَلَّطُ"))
-        plus.move_to([XC + 1.55, BLK_TOP + 1.0, 0])
-        minus.move_to([XC + 1.55, BLK_TOP + 0.4, 0])
+        plus.next_to(cry.top_plate, RIGHT, 0.1)
+        minus.next_to(cry.bottom_plate, RIGHT, 0.1)
         volt_lab = label("voltage applied", FS_TAG, ACCENT_2).next_to(plus, RIGHT, 0.15).shift(DOWN * 0.45)
         self.play(FadeIn(plus), FadeIn(minus), FadeIn(volt_lab), run_time=0.4)
         self.play(osc.animate(run_time=0.6).set_value(0.16))
@@ -328,6 +328,13 @@ class UtSeriesEp02(SyncedScene):
         self.sync(c("وَبِهٰذَا"))
         self.play(FadeOut(press), FadeOut(press_lab), FadeOut(meter), FadeOut(meter_lab),
                   FadeOut(fill), sq.animate.set_value(0.0), run_time=0.5)
+        both = VGroup(*wrap_two_lines("one crystal sends and receives", FS_TAG, weight=BOLD)).arrange(DOWN, buff=0.06)
+        both.set_color(ACCENT_1).move_to([XC + 3.2, BLK_TOP + 0.6, 0])
+        two_way = DoubleArrow([XC + 1.35, BLK_TOP + 0.5, 0], [XC + 1.95, BLK_TOP + 0.5, 0], buff=0, color=ACCENT_1,
+                              stroke_width=4, tip_length=0.14)
+        self.sync(c("يُرْسِلُ"))
+        self.play(FadeIn(both), GrowFromCenter(two_way), osc.animate(run_time=0.4).set_value(0.14), run_time=0.5)
+        self.play(osc.animate(run_time=0.3).set_value(0.0))
 
         # ---- the pulse sends, the echo returns, the screen shows it ----
         PEAKS = [(0.0, 1.3), (5.5, 0.85)]
@@ -342,6 +349,7 @@ class UtSeriesEp02(SyncedScene):
         flaw = Ellipse(width=0.7, height=0.24, color=ACCENT_4, stroke_width=4)
         flaw.set_fill(ACCENT_4, 0.4).move_to([XC, BLK_TOP - 1.45, 0])
         self.sync(c("نَبْضَةُ"))
+        self.play(FadeOut(both), FadeOut(two_way), run_time=0.3)
         self.play(FadeIn(pulser), FadeIn(flaw), FadeIn(scan), FadeIn(scan_tag), run_time=0.6)
         self.add(scan.trace)
         T_SW0, T_SW1 = c("تَجْعَلُ") + 0.3, c("إِشَارَةً") + 1.6      # the screen's sweep follows the clock
@@ -378,7 +386,7 @@ class UtSeriesEp02(SyncedScene):
         quartz = chip_box("Quartz", ACCENT_1, FS_NOTE)
         ceram = chip_box("Polarized ceramic:\nbarium titanate, PZT", ACCENT_1, FS_NOTE)
         mats = VGroup(quartz, ceram).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
-        mats.move_to([3.6, -1.35, 0])
+        mats.move_to([3.6, -1.65, 0])
         mat_head = label("Crystal materials", FS_TAG, GREY_INK).next_to(mats, UP, 0.15).align_to(mats, LEFT)
         self.play(FadeIn(mat_head), FadeIn(quartz, shift=RIGHT * 0.2), run_time=0.5)
         self.sync(c("وَالسِّيرَامِيكُ"))
@@ -457,6 +465,7 @@ class UtSeriesEp02(SyncedScene):
         net.move_to([PX, case_top - 0.5, 0])
         net_sym = label("L C", FS_TAG, ACCENT_2, weight=BOLD).move_to(net)
         wire_in = VGroup(
+            Line(crys.get_left(), [PX - PW / 2 + 0.1, crys.get_center()[1], 0], color=ACCENT_2, stroke_width=4),
             Line([PX - PW / 2 + 0.1, crys.get_center()[1], 0], [PX - PW / 2 + 0.1, net.get_center()[1], 0],
                  color=ACCENT_2, stroke_width=4),
             Line([PX - PW / 2 + 0.1, net.get_center()[1], 0], net.get_left(), color=ACCENT_2, stroke_width=4))
@@ -478,7 +487,7 @@ class UtSeriesEp02(SyncedScene):
         self.play(FadeIn(lab_cry), run_time=0.4)
         self.sync(c("مَادَّةُ"))
         self.play(FadeIn(backing), FadeIn(hatch_rows), run_time=0.4)
-        lab_back = side_label("Backing (damping)", backing, GREY_INK)
+        lab_back = side_label("Backing", backing, GREY_INK)
         self.play(FadeIn(lab_back), run_time=0.4)
         # the back vibration enters the backing and dies away
         self.sync(c("الِاهْتِزَازَ"))
@@ -522,14 +531,14 @@ class UtSeriesEp02(SyncedScene):
                                .scale(0.08).move_to([x, y - 0.12, 0]))
         legend = VGroup(Triangle(color=ACCENT_4, stroke_width=2).set_fill(ACCENT_4, 1).scale(0.09),
                         label("two close flaws", FS_TAG, ACCENT_4, weight=BOLD)).arrange(RIGHT, buff=0.12)
-        legend.move_to([3.9, 3.5, 0])
+        legend.move_to([3.9, 3.55, 0])
         self.play(FadeIn(strong.frame), FadeIn(strong.base), FadeIn(h_s), run_time=0.4)
         self.play(Create(strong.trace, run_time=1.2, rate_func=linear))
         self.play(FadeIn(flaw_ticks[0:2]), FadeIn(legend), run_time=0.4)
-        res_s = tag_line("Two flaws told apart", "check", OK_C, width=4.6, size=FS_TAG)
-        pen_s = tag_line("less energy: lower sensitivity", "alert-triangle", ALERT_C, width=4.8, size=FS_TAG)
+        res_s = tag_line("Two flaws told apart", "check", OK_C, width=6.2, size=FS_TAG)
+        pen_s = tag_line("less energy: lower sensitivity", "alert-triangle", ALERT_C, width=6.2, size=FS_TAG)
         res_s.next_to(strong, DOWN, 0.12).align_to(strong, LEFT)
-        pen_s.next_to(res_s, DOWN, 0.08).align_to(res_s, LEFT)
+        pen_s.next_to(res_s, DOWN, 0.18).align_to(res_s, LEFT)
         self.sync(c("فَنُمَيِّزُ"))
         self.play(FadeIn(res_s, shift=RIGHT * 0.2), run_time=0.5)
         self.sync(c("لٰكِنَّهُ"))
@@ -538,10 +547,10 @@ class UtSeriesEp02(SyncedScene):
         self.play(FadeIn(light.frame), FadeIn(light.base), FadeIn(h_l), run_time=0.4)
         self.play(Create(light.trace, run_time=1.4, rate_func=linear))
         self.play(FadeIn(flaw_ticks[2:4]), run_time=0.4)
-        res_l = tag_line("Longer pulse: the two flaws merge", "x", ALERT_C, width=5.0, size=FS_TAG)
-        pen_l = tag_line("more energy: higher sensitivity", "bolt", OK_C, width=4.8, size=FS_TAG)
+        res_l = tag_line("Longer pulse: the flaws merge", "x", ALERT_C, width=6.2, size=FS_TAG)
+        pen_l = tag_line("more energy: higher sensitivity", "bolt", OK_C, width=6.2, size=FS_TAG)
         res_l.next_to(light, DOWN, 0.12).align_to(light, LEFT)
-        pen_l.next_to(res_l, DOWN, 0.08).align_to(res_l, LEFT)
+        pen_l.next_to(res_l, DOWN, 0.18).align_to(res_l, LEFT)
         self.sync(c("نَبْضَةً", 2))
         self.play(FadeIn(res_l, shift=RIGHT * 0.2), run_time=0.5)
         self.sync(c("وَحَسَاسِيَّةً"))
@@ -608,9 +617,10 @@ class UtSeriesEp02(SyncedScene):
         self.sync(c("وَالمُزْدَوَجُ"))
         self.play(FadeIn(p2.frame), FadeIn(p2.title), run_time=0.4)
         self.play(Create(blk2), FadeIn(tw), FadeIn(send_t), FadeIn(recv_t), run_time=0.5)
+        self.sync(c("وَأُخْرَى"))
+        self.play(FadeIn(near), FadeIn(dz), FadeIn(dz_note), run_time=0.4)
         self.sync(c("حَاجِزٌ"))
         self.play(Indicate(barrier, color=INK, scale_factor=1.6), run_time=0.5)
-        self.play(FadeIn(near), FadeIn(dz), FadeIn(dz_note), run_time=0.4)
         self.sync(c("المِنْطَقَةُ"))
         self.play(dz.animate.stretch_to_fit_height(0.12).align_to(blk2, UP).set_fill(ACCENT_4, 0.22),
                   ReplacementTransform(dz_note, ok_note), run_time=0.6)
@@ -628,17 +638,21 @@ class UtSeriesEp02(SyncedScene):
         weld = Polygon([cx + 0.7, cy, 0], [cx + 1.5, cy, 0], [cx + 1.3, cy + 0.14, 0], [cx + 0.9, cy + 0.14, 0],
                        color=GREY_INK, stroke_width=2).set_fill(LIGHT_INK, 0.6)
         wx0 = cx + 1.1
-        crack = Line([wx0 - 0.28, cy - 0.35, 0], [wx0 + 0.2, cy - 0.85, 0], color=ACCENT_4, stroke_width=6)
         wedge = Polygon([cx - 1.4, cy, 0], [cx - 0.4, cy, 0], [cx - 1.4, cy + 0.6, 0],
                         color=GREY_INK, stroke_width=3).set_fill(ACCENT_1, 0.15)
         wprobe = Probe(width=0.55, height=0.3).rotate(-0.9).move_to([cx - 1.18, cy + 0.42, 0])
-        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).next_to(wedge, DOWN, 0.55).shift(LEFT * 0.15)
+        wedge_t = label("wedge", FS_TAG - 3, GREY_INK).move_to([cx - 0.5, cy + 0.6, 0])
         # the beam leaves the wedge at its exit point and runs down to the crack
         ex = np.array([cx - 0.7, cy, 0.0])
         hit = np.array([wx0 - 0.04, cy - 0.6, 0.0])
         beam_dir = hit - ex
         beam = DashedLine(ex, hit, color=ACCENT_1, stroke_width=3)
-        vert = DashedLine([hit[0] + 0.45, cy - 0.02, 0], [hit[0] + 0.45, cy - 1.05, 0], color=GREY_INK, stroke_width=2)
+        n_hat = np.array([-beam_dir[1], beam_dir[0], 0.0]) / np.linalg.norm(beam_dir)        # perpendicular to the beam
+        if n_hat[1] < 0:
+            n_hat = -n_hat
+        crack = Line(hit - n_hat * 0.5, hit + n_hat * 0.5, color=ACCENT_4, stroke_width=6)
+        vert = DashedLine([hit[0], cy - 0.02, 0], crack.get_end() + UP * 0.0, color=GREY_INK, stroke_width=2)
+        vdef = Arrow(crack.get_end(), crack.get_end() + np.array([0.55, 0.12, 0.0]), buff=0, color=ACCENT_2, stroke_width=3, tip_length=0.12)
         vert_note = label("vertical beam: weak echo", FS_TAG - 2, GREY_INK, weight=BOLD).move_to(p3.note)
         self.sync(c("وَالمَائِلُ"))
         self.play(FadeIn(p3.frame), FadeIn(p3.title), run_time=0.4)
@@ -654,6 +668,7 @@ class UtSeriesEp02(SyncedScene):
         shoot(hit, ex + beam_dir * 0.1, ACCENT_2, 0.5, angled=-beam_dir)
         self.sync(c("قَدْ"))
         self.play(Create(vert), run_time=0.4)
+        self.play(GrowArrow(vdef), run_time=0.3)
         self.play(FadeIn(vert_note), run_time=0.3)
         self.sync(c("العَمُودِيَّةَ") + 0.3)
         self.play(ReplacementTransform(vert_note, p3.note), run_time=0.3)
@@ -662,8 +677,9 @@ class UtSeriesEp02(SyncedScene):
         cx, cy = -2.3, BOT_Y
         p4 = type_panel(cx, cy, "Immersion probe", "Automatic testing")
         blk4 = SteelBlock(3.0, 0.55).move_to([cx, cy - 0.55 - 0.275, 0])
-        water = Rectangle(width=3.7, height=1.05, color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.18)
-        water.align_to(blk4, DOWN).move_to([cx, cy - 0.55 + 0.525, 0])
+        water = Rectangle(width=3.7, height=1.7, color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.18)
+        water.move_to([cx, cy - 1.15 + 0.85, 0])
+        water.set_z_index(-1)
         pr4 = small_probe().move_to([cx - 0.6, cy + 0.3, 0])
         wnote = label("water is the couplant", FS_TAG - 2, ACCENT_1, weight=BOLD).move_to(p4.note)
         self.sync(c("وَفِي"))
@@ -684,7 +700,7 @@ class UtSeriesEp02(SyncedScene):
         p5 = type_panel(cx, cy, "Focused probe", "Small flaws at a set depth")
         blk5 = part_block(cx, cy - 0.05, height=1.0)
         pr5 = Probe(width=1.0, height=0.45).next_to(blk5, UP, 0.0)
-        lens = Arc(radius=0.9, start_angle=-PI / 2 - 0.55, angle=1.1, color=ACCENT_3, stroke_width=6)
+        lens = Arc(radius=0.9, start_angle=-PI / 2 - 0.55, angle=1.1, color=INK, stroke_width=6)
         lens.move_to(pr5.get_bottom() + DOWN * 0.04, aligned_edge=UP)
         fx, fy = cx, cy - 0.05 - 0.55
         edge_l, edge_r = pr5.get_bottom() + LEFT * 0.4, pr5.get_bottom() + RIGHT * 0.4
@@ -692,7 +708,7 @@ class UtSeriesEp02(SyncedScene):
                       Line(edge_r, [fx, fy, 0], color=ACCENT_1, stroke_width=3))
         small = Ellipse(width=0.22, height=0.14, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.6)
         small.move_to([fx, fy, 0])
-        lens_t = label("lens", FS_TAG - 3, ACCENT_3, weight=BOLD).next_to(pr5, RIGHT, 0.15).shift(DOWN * 0.1)
+        lens_t = label("lens", FS_TAG - 3, INK, weight=BOLD).next_to(pr5, RIGHT, 0.15).shift(DOWN * 0.1)
         self.sync(c("وَالمُرَكَّزُ"))
         self.play(FadeIn(p5.frame), FadeIn(p5.title), run_time=0.4)
         self.play(Create(blk5), FadeIn(pr5), run_time=0.5)
@@ -711,13 +727,13 @@ class UtSeriesEp02(SyncedScene):
         c = lambda phrase, nth=1: self.cue(4, phrase, nth)
         S = self.start(4)
         N_MM, D_MM = D.NEAR_FIELD, D.PROBE_D_MM
-        sc = NF_SCALE
+        sc = 0.075                                          # units per mm: room for the far field below 3N
         BX, TOP = -4.6, 2.4                                 # beam axis x, surface height
         yd = lambda s: TOP - s * sc                         # screen height of depth s (mm)
-        DEPTH_MM = 3 * N_MM + 2
+        DEPTH_MM = 4.5 * N_MM
         block = SteelBlock(2.8, DEPTH_MM * sc).move_to([BX, TOP - DEPTH_MM * sc / 2, 0])
         probe = Probe(width=D_MM * sc / 0.85, height=0.6).next_to(block, UP, 0)
-        beam = beam_outline(BX, TOP, N_MM, D_MM, D.BEAM_HALF_ANGLES[0], DEPTH_MM)
+        beam = beam_outline(BX, TOP, N_MM, D_MM, D.BEAM_HALF_ANGLES[0], DEPTH_MM, scale=sc)
         # the intensity along the axis, to the right of the block (the same depth axis)
         PX0, PAMP = -2.7, 2.5
         s_all = np.linspace(1.0, DEPTH_MM, 1500)
@@ -758,7 +774,7 @@ class UtSeriesEp02(SyncedScene):
         # ---- a flaw in the near field: several echoes, changing height ----
         near_flaw = Ellipse(width=0.34, height=0.16, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.7)
         near_flaw.move_to([BX, yd(0.5 * N_MM), 0])
-        far_flaw = near_flaw.copy().move_to([BX, yd(2.0 * N_MM), 0])
+        far_flaw = near_flaw.copy().move_to([BX, yd(3.8 * N_MM), 0])
         scan_a = AScan([(0.0, 1.2), (3.2, 0.5), (4.1, 1.0), (5.0, 0.35)], width=3.4, height=1.6, t_min=-0.6,
                        t_max=7.0, ticks=(), sigma=0.14, x_caption="", y_caption="")
         scan_a.shift(np.array([5.2, 2.55, 0.0]) - scan_a.frame.get_center())
@@ -795,7 +811,7 @@ class UtSeriesEp02(SyncedScene):
         f_ = Text("N  =  D²  ÷  (4 λ)", font_size=32)
         v_ = Text(f"=  {D.PROBE_D_MM:.0f}²  ÷  (4 × {D.LAMBDA_EP2:.2f})", font_size=28, color=GREY_INK)
         r_ = Text(f"N = {D.NEAR_FIELD:.1f} mm", font_size=36, color=ACCENT_4, weight=BOLD)
-        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.5), 3.4).move_to([5.1, -0.9, 0])
+        calc = fit(VGroup(f_, v_, r_).arrange(DOWN, buff=0.5), 3.3).move_to([4.9, -0.9, 0])
         calc_frame = SurroundingRectangle(r_, color=ACCENT_4, buff=0.28, corner_radius=0.1, stroke_width=4)
         self.play(Write(f_, run_time=1.2))
         # the given values, each when its word is spoken
@@ -803,11 +819,12 @@ class UtSeriesEp02(SyncedScene):
         spec_d = label(f"D = {D.PROBE_D_MM:.0f} mm", FS_LABEL, INK, weight=BOLD)
         spec_f = label(f"f = {D.PROBE_F_MHZ:.0f} MHz", FS_LABEL, INK, weight=BOLD)
         spec_l = label(f"λ = {D.LAMBDA_EP2:.2f} mm", FS_LABEL, INK, weight=BOLD)
-        specs = VGroup(spec_d, spec_f, spec_l).arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([5.2, 2.3, 0])
+        specs = VGroup(spec_d, spec_f, spec_l).arrange(DOWN, aligned_edge=LEFT, buff=0.18).move_to([4.9, 2.3, 0])
         d_dim.put_start_and_end_on(probe.crystal.get_corner(UL) + UP * 0.35 + LEFT * 0.0,
                                    probe.crystal.get_corner(UR) + UP * 0.35)
         self.sync(c("قُطْرُهُ"))
-        self.play(FadeIn(spec_d, shift=LEFT * 0.2), GrowFromCenter(d_dim), run_time=0.5)
+        d_lab = label("D", FS_TAG, INK, weight=BOLD).next_to(d_dim, UP, 0.08)
+        self.play(FadeIn(spec_d, shift=LEFT * 0.2), GrowFromCenter(d_dim), FadeIn(d_lab), run_time=0.5)
         self.sync(c("وَتَرَدُّدُهُ"))
         self.play(FadeIn(spec_f, shift=LEFT * 0.2), run_time=0.5)
         self.sync(c("طُولُهُ"))
@@ -823,13 +840,13 @@ class UtSeriesEp02(SyncedScene):
         self.play(FadeIn(near_zone), FadeIn(close_flaw, scale=0.5), run_time=0.6)
         # ---- the result for the technician: a bigger crystal or a higher frequency lengthens N ----
         self.sync(c("وَالنَّتِيجَةُ") - 0.2)
-        self.play(*[FadeOut(m) for m in (calc, calc_frame, specs, d_dim)], run_time=0.5)
+        self.play(*[FadeOut(m) for m in (calc, calc_frame, specs, d_dim, d_lab)], run_time=0.5)
         cases = [("2 MHz, 10 mm", D.NEAR_FIELDS[1], GREY_INK), ("4 MHz, 10 mm", D.NEAR_FIELDS[0], ACCENT_4),
                  ("4 MHz, 20 mm", D.NEAR_FIELDS[2], ACCENT_2)]
         bars, names = VGroup(), VGroup()
         for k, (nm, n_mm, col) in enumerate(cases):
-            b = Rectangle(width=n_mm * 0.05, height=0.34, color=col, stroke_width=0).set_fill(col, 1)
-            b.move_to([3.5 + b.width / 2, 2.3 - 1.0 * k, 0])
+            b = Rectangle(width=n_mm * 0.048, height=0.34, color=col, stroke_width=0).set_fill(col, 1)
+            b.move_to([3.3 + b.width / 2, 2.3 - 1.0 * k, 0])
             bars.add(b)
             names.add(label(nm, FS_TAG, INK).next_to(b, UP, 0.13).align_to(b, LEFT))
         head = label("Near field length N", FS_TAG, INK, weight=BOLD).next_to(names[0], UP, 0.2).align_to(names[0], LEFT)
@@ -838,7 +855,9 @@ class UtSeriesEp02(SyncedScene):
         self.play(GrowFromEdge(bars[1], LEFT), FadeIn(names[1]), run_time=0.5)
         self.play(GrowFromEdge(bars[2], LEFT), FadeIn(names[2]), run_time=0.7)
         self.sync(c("التَّرَدُّدُ"))
+        cmp_arrow = Arrow([3.3 + bars[0].width + 0.05, 2.3, 0], [3.3 + bars[1].width, 1.3, 0], buff=0.05, color=INK, stroke_width=3, tip_length=0.15)
         self.play(GrowFromEdge(bars[0], LEFT), FadeIn(names[0]), run_time=0.5)
+        self.play(Create(cmp_arrow), run_time=0.4)
         # remedies
         twin_p = VGroup(RoundedRectangle(width=0.9, height=0.45, corner_radius=0.07, color=INK, stroke_width=4).set_fill(BG, 1),
                         Line(ORIGIN, UP * 0.4, color=INK, stroke_width=5))
@@ -874,7 +893,7 @@ class UtSeriesEp02(SyncedScene):
         ang = D.BEAM_HALF_ANGLES
         ref = BeamCone(-4.7, D.BEAM_CASES[0][1], ang[0])
         wide = BeamCone(0.0, D.BEAM_CASES[1][1], ang[1])
-        narrow = BeamCone(4.7, D.BEAM_CASES[2][1], ang[2])
+        narrow = BeamCone(4.7, D.BEAM_CASES[2][1], ang[2], arc_r=2.0)
 
         def caption(cone, text):
             """The first caption line under a cone: its case and its half angle (a visual result)."""
@@ -882,7 +901,7 @@ class UtSeriesEp02(SyncedScene):
         cap_ref = caption(ref, f"4 MHz · 10 mm · {ang[0]:.1f}°")
         cap_wide = caption(wide, f"2 MHz · 10 mm · {ang[1]:.1f}°")
         cap_narrow = caption(narrow, f"4 MHz · 20 mm · {ang[2]:.1f}°")
-        edge_lab = label("half angle, to the beam edge", FS_TAG - 2, GREY_INK).move_to([ref.x, -3.0, 0])
+        edge_lab = label("half angle, to the beam edge", FS_TAG - 2, GREY_INK).move_to([ref.x, -3.1, 0])
 
         # the first cone
         self.sync(S + 0.1)
@@ -892,8 +911,8 @@ class UtSeriesEp02(SyncedScene):
         self.sync(c("كَمَخْرُوطٍ") + 0.3)
         self.play(Create(ref.guide), Create(ref.arc), FadeIn(edge_lab), run_time=0.7)
         # bigger crystal or higher frequency: a narrower beam
-        up1 = tag_line("bigger crystal", "arrows-exchange", INK, width=3.4)
-        up2 = tag_line("higher frequency", "wifi", INK, width=3.4)
+        up1 = chip_box("bigger crystal", INK, FS_TAG)
+        up2 = chip_box("higher frequency", INK, FS_TAG)
         arrow_n = label("→ narrower beam", FS_NOTE, ACCENT_3, weight=BOLD)
         head = VGroup(up1, up2).arrange(RIGHT, buff=0.7)
         head_all = VGroup(head, arrow_n).arrange(RIGHT, buff=0.5).move_to([1.4, 3.4, 0])
@@ -932,14 +951,14 @@ class UtSeriesEp02(SyncedScene):
         # half the frequency, about twice the angle
         self.sync(c("فَإِذَا"))
         self.play(Create(wide.guide), Create(wide.arc), run_time=0.6)
-        rule_w = label("½ frequency → about 2× angle", FS_TAG - 2, ACCENT_2, weight=BOLD)
+        rule_w = label("½ frequency → ≈ 2× angle", FS_TAG - 3, ACCENT_2, weight=BOLD)
         rule_w.next_to(note_w, DOWN, 0.1)
         self.sync(c("اتَّسَعَتِ"))
         self.play(FadeIn(rule_w), Indicate(cap_wide, color=ACCENT_2, scale_factor=1.1), run_time=0.6)
         # double the diameter, about half the angle
         self.sync(c("ضَاعَفْنَا"))
-        rule_n = label("2× diameter → about ½ angle", FS_TAG - 3, ACCENT_2, weight=BOLD)
-        rule_n.next_to(note_n, DOWN, 0.1).shift(LEFT * 0.12)
+        rule_n = label("2× diameter → ≈ ½ angle", FS_TAG - 3, ACCENT_2, weight=BOLD)
+        rule_n.next_to(note_n, DOWN, 0.1)
         self.play(FadeIn(rule_n), Indicate(cap_narrow, color=ACCENT_2, scale_factor=1.1), run_time=0.6)
         self.sync(self.end(5))
         self.clear()
@@ -978,14 +997,14 @@ class UtSeriesEp02(SyncedScene):
         # absorption: the pulse warms the material
         self.sync(c("وَالِامْتِصَاصُ"))
         p_a = lane_pulse(0.9)
-        glow = Rectangle(width=BW - 0.2, height=BH - 0.2, color=ACCENT_2, stroke_width=0).set_fill(ACCENT_2, 0.0)
+        glow = Rectangle(width=BW - 0.2, height=BH - 0.2, color=ALERT_C, stroke_width=0).set_fill(ALERT_C, 0.0)
         glow.move_to(blk_a)
-        heat = icon("flame", ACCENT_2, 0.6).move_to(blk_a.get_corner(UR) + LEFT * 0.4 + UP * 0.45)
+        heat = icon("flame", ALERT_C, 0.6).move_to(blk_a.get_corner(UR) + LEFT * 0.4 + UP * 0.45)
         heat_t = label("heat", FS_TAG, INK, weight=BOLD).next_to(heat, LEFT, 0.12)
         self.add(glow, p_a)
         self.play(p_a.animate(run_time=2.2, rate_func=linear).move_to([6.3, y_ax, 0])
                   .stretch(0.35, 1).set_stroke(opacity=0.25),
-                  glow.animate(run_time=2.2).set_fill(ACCENT_2, 0.3), FadeIn(heat, run_time=1.0),
+                  glow.animate(run_time=2.2).set_fill(ALERT_C, 0.22), FadeIn(heat, run_time=1.0),
                   FadeIn(heat_t, run_time=1.0))
         # ---- coarse grain scatters more; a higher frequency scatters more ----
         self.sync(c("وَيَزْدَادُ"))
@@ -995,12 +1014,16 @@ class UtSeriesEp02(SyncedScene):
         self.play(ReplacementTransform(fine, coarse), run_time=0.8)
         coarse_t = tag_line("coarse grain: more scattering", "alert-triangle", ALERT_C, width=5.6, size=FS_NOTE)
         coarse_t.move_to([-3.6, -0.95, 0])
+        scat2 = VGroup()
+        for xh in (-5.2, -4.0, -2.8, -1.6):
+            for dy in (0.62, -0.62):
+                scat2.add(Arrow([xh, 0.9 + 0.05 * np.sign(dy), 0], [xh + 0.35, 0.9 + dy, 0], buff=0, color=ACCENT_2, stroke_width=3, tip_length=0.12))
         self.sync(c("خُشُونَةِ"))
         self.play(FadeIn(coarse_t), run_time=0.4)
         p_c = lane_pulse(-6.2)
         self.add(p_c)
         self.play(p_c.animate(run_time=1.0, rate_func=linear).move_to([-3.4, y_ax, 0]).stretch(0.45, 1)
-                  .set_stroke(opacity=0.35))
+                  .set_stroke(opacity=0.35), LaggedStart(*[FadeIn(a_) for a_ in scat2], lag_ratio=0.15, run_time=1.0))
         # a higher frequency: tighter waves scatter more
         self.sync(c("ارْتِفَاعِ"))
         long_w = wavefront(length=1.1, amp=0.3, cycles=3, color=ACCENT_1, direction=RIGHT, n=3, spread=0.85)
@@ -1012,7 +1035,7 @@ class UtSeriesEp02(SyncedScene):
         self.play(FadeIn(fr_hi, shift=LEFT * 0.2), run_time=0.5)
         # ---- so coarse-grained parts are tested at a lower frequency ----
         self.sync(c("لِذٰلِكَ") - 0.2)
-        self.play(FadeOut(fr), FadeOut(coarse_t), run_time=0.4)
+        self.play(FadeOut(fr), FadeOut(coarse_t), FadeOut(scat2), run_time=0.4)
         dial = FrequencyDial(radius=1.2).move_to([3.7, 0.2, 0])
         dial.set_value(0.8)
         self.play(FadeIn(dial), run_time=0.4)
@@ -1145,7 +1168,8 @@ class UtSeriesEp02(SyncedScene):
             base = Line([xs0, y0, 0], [xs0, y0 - N_MM * sc, 0], color=GREY_INK, stroke_width=2)
             blk = SteelBlock(1.7, N_MM * sc).move_to([-3.4, y0 - N_MM * sc / 2, 0])
             pr = mini_probe().next_to(blk, UP, 0)
-            lab = label("near field: intensity swings", FS_NOTE, ACCENT_4, weight=BOLD).move_to([3.4, 0.9, 0])
+            flaw_q = Ellipse(width=0.3, height=0.14, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8).move_to([-3.4, y0 - 0.5 * N_MM * sc, 0])
+            lab = label("near field: intensity swings", FS_NOTE, ACCENT_4, weight=BOLD).move_to([3.7, 0.9, 0])
             sc_ = AScan([(0.0, 1.2), (3.2, 0.5), (4.1, 1.0), (5.0, 0.35)], width=3.6, height=1.6, t_min=-0.6,
                         t_max=7.0, ticks=(), sigma=0.14, x_caption="", y_caption="")
             sc_.shift(np.array([3.4, -0.5, 0.0]) - sc_.frame.get_center())
@@ -1153,7 +1177,7 @@ class UtSeriesEp02(SyncedScene):
             multi = label("one flaw, several indications", FS_TAG, ACCENT_4, weight=BOLD).next_to(sc_.frame, DOWN, 0.12)
 
             def show():
-                self.play(Create(blk), FadeIn(pr), FadeIn(base), run_time=0.5)
+                self.play(Create(blk), FadeIn(pr), FadeIn(base), FadeIn(flaw_q), run_time=0.5)
                 self.play(Create(curve, run_time=1.0, rate_func=linear), FadeIn(lab))
 
             def finish(*extra):
@@ -1185,11 +1209,11 @@ class UtSeriesEp02(SyncedScene):
             return show, finish
 
         def art7():                       # a bigger crystal narrows the beam
-            a = BeamCone(-3.4, D.BEAM_CASES[0][1], D.BEAM_HALF_ANGLES[0], top_y=0.7, depth=2.3, cable=False)
-            b = BeamCone(3.4, D.BEAM_CASES[2][1], D.BEAM_HALF_ANGLES[2], top_y=0.7, depth=2.3, cable=False)
+            a = BeamCone(-3.4, D.BEAM_CASES[0][1], D.BEAM_HALF_ANGLES[0], top_y=0.7, depth=2.6, cable=False)
+            b = BeamCone(3.4, D.BEAM_CASES[2][1], D.BEAM_HALF_ANGLES[2], top_y=0.7, depth=2.6, cable=False, arc_r=2.0)
             qa = label("?", FS_TITLE, ACCENT_2, weight=BOLD).move_to([0, -0.4, 0])
-            na = label("10 mm crystal", FS_TAG, INK, weight=BOLD).move_to([-3.4, -2.0, 0])
-            nb = label("20 mm crystal", FS_TAG, INK, weight=BOLD).move_to([3.4, -2.0, 0])
+            na = label("10 mm crystal", FS_TAG, INK, weight=BOLD).move_to([-3.4, -2.15, 0])
+            nb = label("20 mm crystal", FS_TAG, INK, weight=BOLD).move_to([3.4, -2.15, 0])
 
             def show():
                 self.play(FadeIn(a.probe), FadeIn(a.cone), FadeIn(a.axis), FadeIn(na), run_time=0.6)
