@@ -209,3 +209,102 @@ class AScan(VGroup):
         self.cursor.put_start_and_end_on([x, self.y_base() - 0.08, 0], [x, self.y_base() + 0.5, 0])
         self.cursor.set_stroke(opacity=1 if t >= self.t_min else 0)
         return self.cursor
+
+
+# ---------------- Added for episode 4 (weld drawings); shared by any later episode ----------------
+import ut_series_data as D                                    # noqa: E402  (the wedge uses the perspex and shear velocities)
+
+
+def knob(caption, size=0.55, color=INK):
+    """A round knob with a pointer (`pointer` turns with `set_turn(0..1)`) and a caption below.
+    (The same drawing as the `knob` of episode 3's script, which keeps its own copy.)"""
+    ring = Circle(radius=size, color=color, stroke_width=4).set_fill(PANEL_FILL, 1)
+    ptr = Line(ORIGIN, UP * size * 0.8, color=ACCENT_2, stroke_width=5)
+    cap = label(caption, FS_TAG, INK, weight=BOLD).next_to(ring, DOWN, 0.12)
+    g = VGroup(ring, ptr, cap)
+    g.ring, g.pointer, g.caption, g.size = ring, ptr, cap, size
+
+    def set_turn(v):
+        a = PI * 0.75 - v * PI * 1.5            # sweeps from the lower left to the lower right
+        c0 = ring.get_center()
+        ptr.put_start_and_end_on(c0, c0 + size * 0.8 * np.array([np.cos(a), np.sin(a), 0]))
+        return g
+    g.set_turn = set_turn
+    set_turn(0.5)
+    return g
+
+
+def wedge_probe(x_exit, y_top, facing=1, color=ACCENT_1, size=1.0, beta=D.PROBE_ANGLE):
+    """An angle probe on a plastic wedge (as episode 3): the sole runs on both sides of the exit point, the
+    crystal sits on the slanted top face perpendicular to the beam. facing = 1: the beam goes to the right.
+    Returns VGroup(wedge, crystal, beam_in) with .exit (the exit point), .wedge, .crystal, .beam_in."""
+    a = np.arcsin(np.sin(np.radians(beta)) * D.V_L_PERSPEX / D.V_S_STEEL)
+    L, hh = 0.85 * size, 0.32 * size
+    b = np.array([facing * np.sin(a), -np.cos(a), 0.0])
+    p = np.array([facing * np.cos(a), np.sin(a), 0.0])
+    ex0 = np.array([x_exit, y_top, 0.0])
+    cen = ex0 - b * L
+    e_f, e_b = cen + p * hh, cen - p * hh
+    front_bottom = np.array([x_exit + facing * 0.38 * size, y_top, 0.0])
+    back_bottom = np.array([x_exit - facing * (L * np.sin(a) + 0.5 * size), y_top, 0.0])
+    wedge = Polygon(front_bottom, back_bottom, e_b, e_f, color=GREY_INK, stroke_width=3).set_fill(color, 0.18)
+    crystal = Line(e_b, e_f, color=color, stroke_width=9)
+    beam_in = DashedLine(cen, ex0, color=color, stroke_width=2)
+    g = VGroup(wedge, crystal, beam_in)
+    g.exit, g.wedge, g.crystal, g.beam_in = ex0, wedge, crystal, beam_in
+    return g
+
+
+class WeldSection(VGroup):
+    """A single-vee butt weld in section: two plates, the vee filled with weld metal, a cap above and a root bead
+    below. The top surface is at `y_top`, the weld centre line at x = `cx`, the plates run `half_w` to each side.
+    `prep_deg` is the weld preparation angle (the whole vee); a fusion face is inclined prep/2 from the vertical.
+    Parts: plate_l, plate_r, weld, cap, root, face_l, face_r (the fusion faces, top to bottom).
+    `face_point(side, frac)`: the point on the fusion face of side +1 (right) / -1 (left), frac 0 at the top
+    surface and 1 at the bottom. `surface_x(dist)`: x on the top surface `dist` units from the centre line."""
+
+    def __init__(self, cx=0.0, y_top=1.0, t=1.4, prep_deg=60.0, half_w=6.0, gap=0.1):
+        self.cx, self.y_top, self.t, self.prep, self.half_w, self.gap = cx, y_top, t, prep_deg, half_w, gap
+        yb = y_top - t
+        w = gap + t * np.tan(np.radians(prep_deg / 2))
+        self.w, self.y_bot = w, yb
+        left = Polygon([cx - half_w, y_top, 0], [cx - w, y_top, 0], [cx - gap, yb, 0], [cx - half_w, yb, 0],
+                       color=INK, stroke_width=4).set_fill(PANEL_FILL, 1)
+        right = Polygon([cx + half_w, y_top, 0], [cx + w, y_top, 0], [cx + gap, yb, 0], [cx + half_w, yb, 0],
+                        color=INK, stroke_width=4).set_fill(PANEL_FILL, 1)
+        weld = Polygon([cx - w, y_top, 0], [cx + w, y_top, 0], [cx + gap, yb, 0], [cx - gap, yb, 0],
+                       color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16)
+        xs = np.linspace(-w - 0.12, w + 0.12, 24)
+        cap = Polygon(*[[cx + x, y_top + 0.17 * (1 - (x / (w + 0.12)) ** 2), 0] for x in xs],
+                      color=INK, stroke_width=3).set_fill(ACCENT_2, 0.16)
+        rx = np.linspace(-gap - 0.1, gap + 0.1, 12)
+        root = Polygon(*[[cx + x, yb - 0.11 * (1 - (x / (gap + 0.1)) ** 2), 0] for x in rx],
+                       color=INK, stroke_width=3).set_fill(ACCENT_2, 0.16)
+        face_l = Line([cx - w, y_top, 0], [cx - gap, yb, 0], color=INK, stroke_width=4)
+        face_r = Line([cx + w, y_top, 0], [cx + gap, yb, 0], color=INK, stroke_width=4)
+        super().__init__(left, right, weld, cap, root, face_l, face_r)
+        self.plate_l, self.plate_r, self.weld, self.cap, self.root = left, right, weld, cap, root
+        self.face_l, self.face_r = face_l, face_r
+
+    def face_point(self, side, frac):
+        x_top, x_bot = self.cx + side * self.w, self.cx + side * self.gap
+        return np.array([x_top + (x_bot - x_top) * frac, self.y_top - self.t * frac, 0.0])
+
+    def surface_x(self, dist):
+        return self.cx + dist
+
+
+def vee_arrow_to(frm, to, color=ACCENT_1, width=4, dashed=True):
+    """A beam leg from `frm` to `to` (an arrow, dashed or plain) for the section drawings."""
+    return (DashedLine(frm, to, color=color, stroke_width=width) if dashed
+            else Arrow(frm, to, buff=0, color=color, stroke_width=width, tip_length=0.16))
+
+
+def small_scan(center, peaks, width=6.0, height=2.3, t_max=110.0, ticks=(0, 25, 50, 75, 100), sigma=0.9,
+               x_caption="Distance (mm)", y_caption="Echo amplitude", t_min=-6.0):
+    """An AScan placed with its frame centred on `center`, its trace fully drawn (`trace` is not added)."""
+    sc = AScan(peaks, width=width, height=height, t_min=t_min, t_max=t_max, ticks=ticks, sigma=sigma,
+               x_caption=x_caption, y_caption=y_caption)
+    sc.shift(np.array([center[0], center[1], 0.0]) - sc.frame.get_center())
+    sc.update_trace(sc.t_max)
+    return sc

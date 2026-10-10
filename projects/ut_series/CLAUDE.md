@@ -10,8 +10,8 @@ Four episodes, 3–5 minutes each without the review segment, about 17 minutes i
 | 1 | The principle | §1.1.2.6 (p. 9), ch. 2 (pp. 99–132), §3.1 (pp. 133–136) | narration for approval |
 | 2 | The probe and the beam | §2.6 (pp. 118–122), §3.2 (pp. 137–149), §3.3.4 (p. 153), §2.5 (pp. 124–131), §2.8 (pp. 128–131) | produced; waits for the owner's review |
 | 3 | Calibration and angle-beam testing | §2.4.2 (pp. 112–115), §5.1–5.8 (pp. 178–202), §6 (p. 215), §8.4.1 (pp. 278–279) | produced; waits for the owner's review |
-| 4 | Flaw evaluation and the report, with a glance at PAUT and TOFD | — | not started |
-Episode 1 was produced first and approved; episodes 2 and 3 were produced after the owner's approval of the narration; episode 4 waits.
+| 4 | Weld examination and flaw evaluation, with a glance at PAUT and TOFD | §6.1.3 (pp. 213–221), §8.2–8.7 (pp. 276–297), §9.1–9.2 (pp. 299–309) | narration approved 2026-10-10; in production |
+Episode 1 was produced first and approved; episodes 2 and 3 were produced after the owner's approval of the narration; episode 4's narration was approved on 2026-10-10 (no model episode: the series level was already approved).
 
 ## Theme
 - `project.toml` → `[style] theme`: chosen here **light** (the white board), 1080p (`[render] resolution`). Colours in scripts are the theme names (`INK`, `ACCENT_1` …), never literals.
@@ -35,6 +35,13 @@ Episode 1 was produced first and approved; episodes 2 and 3 were produced after 
   | µs | مِيكْرُوثَانِيَةٍ |
   | mm | مِلِّيمِتْرٍ |
   | aluminium | الأَلُمْنْيُومِ |
+  | dB | دِيسِيبِلْ |
+  | DAC | دِي إِيهْ سِي |
+  | DGS | دِي جِي إِسْ |
+  | ASME | إِيهْ إِسْ إِمْ إِي |
+  | AWS | إِيهْ دَبْلْيُو إِسْ |
+  | API | إِيهْ بِي آيْ |
+  The code names and numbers (Section VIII, D1.1, 1104) appear on screen only.
 
 ## Videos
 | # | Script / output | Topic | Status |
@@ -42,6 +49,7 @@ Episode 1 was produced first and approved; episodes 2 and 3 were produced after 
 | 1 | `ut_series_ep01_principle` | The principle of ultrasonic testing | approved model (merged) |
 | 2 | `ut_series_ep02_probe_beam` | The probe and the beam | produced, 6:24 (content 4:31 + review 1:52) |
 | 3 | `ut_series_ep03_calibration` | Calibration and angle-beam testing | produced, 6:41 (content 4:50 + review 1:52) |
+| 4 | `ut_series_ep04_weld_evaluation` | Weld examination and flaw evaluation | in production |
 
 ## Terminology and on-screen conventions
 - probe = المجس; couplant = الوسيط; pulse-echo = النبضة والصدى; through-transmission = النفاذ; resonance = الرنين; attenuation = التوهين; acoustic impedance = المعاوقة الصوتية.
@@ -65,3 +73,4 @@ Episode 1 was produced first and approved; episodes 2 and 3 were produced after 
 - 2026-10-02: tool fix allowed in this session: the light theme's `faint` and `accent2` raised to 4.5:1 contrast (may change old projects when they are re-rendered).
 - 2026-10-02: the two known failing tests (`test_seg3_tag_touching_the_rays_is_found`, the `small round badge '10'` case) are not fixed here.
 - 2026-10-02: approved the episode-1 narration with changes: TCS-67 values for the shear and air figures; the R formula spoken as the square of the quotient and drawn with its brackets; the full calibration sentence in segment 5; all advantages and limits spoken in segment 1 (no grey chips) with the material-properties sentence; 4:53 accepted; multiple echoes and t = v ÷ 2f moved to episode 3; review questions in English on screen and Arabic in the voice; the corrections merged into the source file; `CLAUDE.md` line 161 corrected.
+- 2026-10-10: episode 4 narration approved with corrections 1–11 of `sources/ut_series_ep04_weld_evaluation.md` (slag echo is high and steady when orbited; four probe movements; one TOFD dead zone; no scale/rust, no heat-affected zone, no inspector level or signature in the report list); estimated 5:08 accepted without cutting; ASME is spoken «إِيهْ إِسْ إِمْ إِي»; no code acceptance limit anywhere (the record and evaluation lines are `ILLUSTRATIVE_*`, drawn without numbers and tagged "Illustrative").
