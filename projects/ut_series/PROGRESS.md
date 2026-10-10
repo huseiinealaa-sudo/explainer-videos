@@ -72,3 +72,13 @@ Started 2026-10-10 21:26:08 UTC (PR opened at the time stated in the pull reques
 Whole-video automatic runs (all run by haiku agents, read by the manager from the counts and reports): 7. Critical findings after each: 32 -> 3 -> 0 (before the critic), 2 -> 0 (after round 1), 3 distinct -> 0 (after round 2; the changed entries 2-3 re-run once more), 0 (final run before the 1080p render, 0 improvements too).
 Critic (`video-critic`, 3 calls): round 1 FIX (5 critical, 3 important, 16 improvements); round 2 FIX (1 critical, 1 important, 14 improvements); round 3 PASS (0 critical, 0 important, 6 improvements, 4 applied after the round without a new review: Q3 check icon, Q5 marks, TOFD gap label row, PAUT front angle). Open (listed in the pull request): the widening-cone sketch of segment 2, the two-pan balance of segment 5.
 Agents of the whole production: 14 `general-purpose` agents on model haiku (13 previews/QA runs and 1 final render), 3 `video-critic` calls, 0 `scene-builder`, 0 `render-runner`, 0 `Explore`. Environment: Python 3.13, manim 0.22.0 in the virtual environment of the root `CLAUDE.md`; the preview/QA runs: 13 whole-video or segment runs.
+
+## Episode and full series
+
+| File | Duration | Size | Git hash (12) |
+|---|---|---|---|
+| ep4 `ut_series_ep04_weld_evaluation` | 6:57.90 (content 5:07.8 + review 1:50.1) | 15.83 MiB (16,598,027 bytes) | f21a64e7479d (no file before; checked by the manager with `git hash-object`, equal to the "after" row of the RENDER_OK table) |
+| full `ut_series_full` (4 episodes + 3 title cards, stream copy) | 26:45.34 | 65.58 MiB (68,772,582 bytes) | f2e5aa14a4d6 |
+
+Episodes 1-3 were not re-rendered: their hashes before and after the join are cd08dc9be34a, c5461bb3e973, ae0a9110d285. Final renders of episode 4: 1 (1920x1080, RENDER_OK). Estimated content in the approval message: 5:08; measured 5:07.8.
+

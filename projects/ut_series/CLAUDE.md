@@ -10,7 +10,7 @@ Four episodes, 3–5 minutes each without the review segment, about 17 minutes i
 | 1 | The principle | §1.1.2.6 (p. 9), ch. 2 (pp. 99–132), §3.1 (pp. 133–136) | narration for approval |
 | 2 | The probe and the beam | §2.6 (pp. 118–122), §3.2 (pp. 137–149), §3.3.4 (p. 153), §2.5 (pp. 124–131), §2.8 (pp. 128–131) | produced; waits for the owner's review |
 | 3 | Calibration and angle-beam testing | §2.4.2 (pp. 112–115), §5.1–5.8 (pp. 178–202), §6 (p. 215), §8.4.1 (pp. 278–279) | produced; waits for the owner's review |
-| 4 | Weld examination and flaw evaluation, with a glance at PAUT and TOFD | §6.1.3 (pp. 213–221), §8.2–8.7 (pp. 276–297), §9.1–9.2 (pp. 299–309) | narration approved 2026-10-10; in production |
+| 4 | Weld examination and flaw evaluation, with a glance at PAUT and TOFD | §6.1.3 (pp. 213–221), §8.2–8.7 (pp. 276–297), §9.1–9.2 (pp. 299–309) | produced; waits for the owner's review |
 Episode 1 was produced first and approved; episodes 2 and 3 were produced after the owner's approval of the narration; episode 4's narration was approved on 2026-10-10 (no model episode: the series level was already approved).
 
 ## Theme
@@ -49,7 +49,8 @@ Episode 1 was produced first and approved; episodes 2 and 3 were produced after 
 | 1 | `ut_series_ep01_principle` | The principle of ultrasonic testing | approved model (merged) |
 | 2 | `ut_series_ep02_probe_beam` | The probe and the beam | produced, 6:24 (content 4:31 + review 1:52) |
 | 3 | `ut_series_ep03_calibration` | Calibration and angle-beam testing | produced, 6:41 (content 4:50 + review 1:52) |
-| 4 | `ut_series_ep04_weld_evaluation` | Weld examination and flaw evaluation | in production |
+| 4 | `ut_series_ep04_weld_evaluation` | Weld examination and flaw evaluation | produced, 6:57.9 (content 5:07.8 + review 1:50.1) |
+| — | `ut_series_full_series` | the four episodes joined with title cards (no re-render) | `output/ut_series_full.mp4`, 26:45, 68.8 MB |
 
 ## Terminology and on-screen conventions
 - probe = المجس; couplant = الوسيط; pulse-echo = النبضة والصدى; through-transmission = النفاذ; resonance = الرنين; attenuation = التوهين; acoustic impedance = المعاوقة الصوتية.
