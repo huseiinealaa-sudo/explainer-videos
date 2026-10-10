@@ -1188,7 +1188,7 @@ class UtSeriesEp04(SyncedScene):
                 return DashedVMobject(vm, num_dashes=44, dashed_ratio=0.55) if dashed else vm
             dac = curve(H, ACCENT_3, width=6)
             rec = curve(lambda s: H(s) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100, ACCENT_2, True)
-            lab = label("recording level (illustrative)", FS_TAG, ACCENT_2, weight=BOLD).move_to([-0.3, 1.55, 0])
+            lab = label("recording level (illustrative)", FS_TAG, ACCENT_2, weight=BOLD).move_to([1.6, 0.95, 0])
             lo = Dot([sc.x_of(30), sc.y_base() + H(30) * D.ILLUSTRATIVE_ECHO_LOW_PCT_DAC / 100, 0], radius=0.08, color=GREY_INK)
             hi = Dot([sc.x_of(60), sc.y_base() + H(60) * D.AMP_PCT_DAC / 100, 0], radius=0.1, color=ACCENT_4)
             no = icon("x", GREY_INK, 0.45).move_to([sc.x_of(30), sc.y_base() + 0.75, 0])
