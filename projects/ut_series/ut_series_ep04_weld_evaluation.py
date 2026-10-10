@@ -403,7 +403,7 @@ class UtSeriesEp04(SyncedScene):
         rec = curve(lambda s: H(s) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100, ACCENT_2, dashed=True, width=5)
         rec_lab = label("Recording level", FS_TAG + 2, ACCENT_2, weight=BOLD).move_to([CX, 2.45, 0])
         note = VGroup(label("Illustrative levels", FS_TAG, INK, weight=BOLD), label("(not code values)", FS_TAG - 4, GREY_INK))
-        note.arrange(DOWN, buff=0.05).move_to([CX, 1.1, 0])
+        note.arrange(DOWN, buff=0.05).move_to([CX, 1.2, 0])
         self.sync(c("تَسْجِيلٍ"))
         sw_rec = DashedLine(ORIGIN, RIGHT * 0.5, color=ACCENT_2, stroke_width=5, dash_length=0.1).next_to(rec_lab, LEFT, 0.15)
         self.play(Create(rec, run_time=1.0, rate_func=linear), FadeIn(rec_lab, shift=UP * 0.1), FadeIn(sw_rec))
@@ -412,7 +412,7 @@ class UtSeriesEp04(SyncedScene):
         s_lo, s_fl = 30.0, 60.0
         lo_h = H(s_lo) * D.ILLUSTRATIVE_ECHO_LOW_PCT_DAC / 100
         fl_h = H(s_fl) * D.AMP_PCT_DAC / 100
-        ign = chip("Ignored", "x", GREY_INK, 2.5).move_to([CX, 0.45, 0])
+        ign = chip("Ignored", "x", GREY_INK, 2.5).move_to([CX, 0.3, 0])
         self.sync(c("صَدًى", 1) - 0.2)
         shown["echoes"].append((s_lo, lo_h))
         lo_dot = Dot([scan.x_of(s_lo), scan.y_base() + lo_h, 0], radius=0.08, color=GREY_INK)
@@ -423,12 +423,12 @@ class UtSeriesEp04(SyncedScene):
         shown["echoes"].append((s_fl, fl_h))
         fl_dot = Dot([scan.x_of(s_fl), scan.y_base() + fl_h, 0], radius=0.1, color=ACCENT_4)
         self.play(GrowFromCenter(fl_dot), run_time=0.3)
-        head = chip("Investigate & record", "search", ACCENT_3, 3.4).move_to([CX, -0.45, 0])
+        head = chip("Investigate & record", "search", ACCENT_3, 3.4).move_to([CX, -0.55, 0])
         rows = VGroup(tag_line("location", "map-pin", INK, width=3.2, size=FS_TAG),
                       tag_line("type", "search", INK, width=3.2, size=FS_TAG),
                       tag_line("length", "ruler", INK, width=3.2, size=FS_TAG),
                       tag_line("amplitude vs the curve", "chart-bar", INK, width=3.7, size=FS_TAG))
-        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.2).move_to([CX, -2.15, 0]).align_to(head, LEFT)
+        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.2).move_to([CX, -2.25, 0]).align_to(head, LEFT)
         self.sync(c("نَتَحَرَّى"))
         self.play(FadeIn(head, shift=UP * 0.1), run_time=0.4)
         for r_, w_ in zip(rows, ("مَوْقِعَهُ", "وَنَوْعَهُ", "وَطُولَهُ", "وَسَعَتَهُ")):
@@ -475,7 +475,7 @@ class UtSeriesEp04(SyncedScene):
         vis = ValueTracker(0.0)
         plate = Rectangle(width=10.0, height=3.4, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1).move_to([-1.6, 1.5, 0])
         band = Rectangle(width=10.0, height=1.0, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([-1.6, BAND_Y, 0])
-        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([-6.1, BAND_Y, 0])
+        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([1.6, BAND_Y, 0])
         flaw = Rectangle(width=X(FB) - X(FA), height=0.4, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8)
         flaw.move_to([(X(FA) + X(FB)) / 2, BAND_Y, 0])
         ruler = Line([X(100), -0.75, 0], [X(150), -0.75, 0], color=INK, stroke_width=3)
