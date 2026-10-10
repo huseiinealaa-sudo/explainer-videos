@@ -78,7 +78,7 @@ Agents of the whole production: 14 `general-purpose` agents on model haiku (13 p
 | File | Duration | Size | Git hash (12) |
 |---|---|---|---|
 | ep4 `ut_series_ep04_weld_evaluation` | 6:57.90 (content 5:07.8 + review 1:50.1) | 15.83 MiB (16,598,027 bytes) | f21a64e7479d (no file before; checked by the manager with `git hash-object`, equal to the "after" row of the RENDER_OK table) |
-| full `ut_series_full` (4 episodes + 3 title cards, stream copy) | 26:45.34 | 65.58 MiB (68,772,582 bytes) | f2e5aa14a4d6 |
+| full `ut_series_full` (4 episodes + 3 title cards, stream copy) | 26:45.34 | 65.59 MiB (68,772,582 bytes) | f2e5aa14a4d6 |
 
 Episodes 1-3 were not re-rendered: their hashes before and after the join are cd08dc9be34a, c5461bb3e973, ae0a9110d285. Final renders of episode 4: 1 (1920x1080, RENDER_OK). Estimated content in the approval message: 5:08; measured 5:07.8.
 
