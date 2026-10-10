@@ -664,8 +664,8 @@ class UtSeriesEp04(SyncedScene):
         # ---- four flaws: how each echo behaves while the probe moves ----
         self.sync(c("المَسَامَةُ") - 0.4)
         self.clear(run_time=0.5)
-        PW, PH = 6.5, 3.2
-        centers = [(-3.6, 1.7), (3.6, 1.7), (-3.6, -1.75), (3.6, -1.75)]
+        PW, PH = 6.5, 3.3
+        centers = [(-3.6, 1.75), (3.6, 1.75), (-3.6, -1.7), (3.6, -1.7)]
         titles = ("Isolated pore", "Porosity", "Slag inclusion", "Planar flaw")
         cap_cols = (INK, INK, INK, ALERT_C)
 
@@ -693,8 +693,8 @@ class UtSeriesEp04(SyncedScene):
             return g
 
         # (a) the isolated pore: a poor reflector, the same small echo from every side
-        F = [np.array([centers[k][0] - 1.6, centers[k][1] + 0.0, 0.0]) for k in range(4)]
-        R_P = 0.95
+        F = [np.array([centers[k][0] - 1.6, centers[k][1] + 0.2, 0.0]) for k in range(4)]
+        R_P = 0.8
         ph_a = ValueTracker(0.0)
         fr_a, tt_a = frame_of(0)
         pore = Circle(radius=0.11, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.9).move_to(F[0])
@@ -702,7 +702,7 @@ class UtSeriesEp04(SyncedScene):
         sc_a.trace.add_updater(lambda m: None)
         orb = lambda k_, ph: (F[k_][0] + R_P * np.sin(ph), F[k_][1] - R_P * np.cos(ph), ph)
         pr_a = mk_probe(*orb(0, 0.0), size=0.55, beam=0.4)
-        n_a = note_of(0, "small, and the same from every side")
+        n_a = note_of(0, "small, the same from every side")
         self.sync(c("المَسَامَةُ") - 0.1)
         self.play(FadeIn(fr_a), FadeIn(tt_a), FadeIn(pore), FadeIn(sc_a), FadeIn(sc_a.trace), FadeIn(pr_a), run_time=0.7)
         self.sync(c("كُرَوِيَّةٌ"))
@@ -716,22 +716,22 @@ class UtSeriesEp04(SyncedScene):
         ph_b = ValueTracker(0.0)
         fr_b, tt_b = frame_of(1)
         pores = VGroup(*[Circle(radius=0.055, color=ACCENT_4, stroke_width=2).set_fill(ACCENT_4, 0.9)
-                         .move_to(np.array([centers[1][0] - 1.6 + dx, centers[1][1] + dy, 0.0]))
+                         .move_to(np.array([centers[1][0] - 1.6 + dx, centers[1][1] + 0.2 + dy, 0.0]))
                          for dx, dy in ((-0.45, 0.1), (-0.2, -0.12), (0.05, 0.14), (0.28, -0.05), (0.5, 0.1), (-0.05, -0.2))])
         sc_b = scan_of(1, [(0, 0.75)] + [(s_, 0.2) for s_ in (40, 46, 52, 58, 64, 70)], sigma=0.9)
         sc_b.trace.clear_updaters()
         sc_b.trace.add_updater(lambda m: (setattr(sc_b, "peaks", [(0, 0.75)] + [
             (s_, 0.06 + 0.2 * (0.5 + 0.5 * np.sin(5.0 * ph_b.get_value() + 1.3 * i))) for i, s_ in enumerate((40, 46, 52, 58, 64, 70))]),
                                           sc_b.update_trace(sc_b.t_max)))
-        pr_b = mk_probe(centers[1][0] - 1.6, centers[1][1] - R_P, 0.0, size=0.55, beam=0.4)
-        n_b = note_of(1, "many tiny echoes, rising and falling")
+        pr_b = mk_probe(centers[1][0] - 1.6, centers[1][1] + 0.2 - R_P, 0.0, size=0.55, beam=0.4)
+        n_b = note_of(1, "tiny echoes, rising and falling")
         self.sync(c("وَالمَسَامِيَّةُ") - 0.2)
         self.play(FadeIn(fr_b), FadeIn(tt_b), FadeIn(pores), FadeIn(sc_b), FadeIn(sc_b.trace), FadeIn(pr_b), run_time=0.7)
         self.sync(c("كَثِيرَةٌ"))
         self.play(FadeIn(n_b, shift=UP * 0.1), run_time=0.4)
         self.sync(c("تَرْتَفِعُ"))
         self.play(UpdateFromAlphaFunc(pr_b, lambda m, a: (ph_b.set_value(1.6 * np.sin(a * TAU)),
-                                                         m.become(mk_probe(centers[1][0] - 1.6 + 0.55 * np.sin(a * TAU), centers[1][1] - R_P, 0.0,
+                                                         m.become(mk_probe(centers[1][0] - 1.6 + 0.55 * np.sin(a * TAU), centers[1][1] + 0.2 - R_P, 0.0,
                                                                            size=0.55, beam=0.4)))), run_time=3.4)
         sc_b.trace.clear_updaters()
 
@@ -746,7 +746,7 @@ class UtSeriesEp04(SyncedScene):
         shown_c = {"peaks": [(0, 0.75)]}
         sc_c.trace.add_updater(lambda m: (setattr(sc_c, "peaks", shown_c["peaks"]), sc_c.update_trace(sc_c.t_max)))
         pr_c = mk_probe(*orb(2, 0.0), size=0.55, beam=0.4)
-        n_c = note_of(2, "tall, many peaks, steady when orbited")
+        n_c = note_of(2, "tall, many peaks, steady all round")
         self.sync(c("وَالخَبَثُ") - 0.2)
         self.play(FadeIn(fr_c), FadeIn(tt_c), FadeIn(blob), FadeIn(sc_c), FadeIn(sc_c.trace), FadeIn(pr_c), run_time=0.7)
         self.sync(c("عَالِيًا"))
@@ -769,7 +769,7 @@ class UtSeriesEp04(SyncedScene):
         sc_d.trace.add_updater(lambda m: (setattr(sc_d, "peaks", [(0, 0.75)] + ([(50, 0.8 * np.exp(-(ph_d.get_value() / 0.3) ** 2))] if shown_d["on"] else [])),
                                           sc_d.update_trace(sc_d.t_max)))
         pr_d = mk_probe(*orb(3, 0.0), size=0.55, beam=0.4)
-        n_d = note_of(3, "strong square on, drops sharply otherwise", ALERT_C)
+        n_d = note_of(3, "strong square on, then drops", ALERT_C)
         self.sync(c("وَالعَيْبُ") - 0.2)
         self.play(FadeIn(fr_d), FadeIn(tt_d), FadeIn(bar), FadeIn(sc_d), FadeIn(sc_d.trace), FadeIn(pr_d), run_time=0.7)
         self.sync(c("قَوِيٌّ"))
@@ -789,10 +789,10 @@ class UtSeriesEp04(SyncedScene):
         wd = WeldSection(cx=-4.4, y_top=1.3, t=1.2, half_w=1.6)
         dot1 = Dot(wd.face_point(1, 0.8) + LEFT * 0.04, radius=0.08, color=ACCENT_4)
         dot2 = Dot([wd.cx, wd.y_top - 0.6, 0], radius=0.08, color=ACCENT_4)
-        loc_t = label("Location in the weld", FS_TAG, INK, weight=BOLD).move_to([-4.4, -0.55, 0])
+        loc_t = label("Location", FS_NOTE, INK, weight=BOLD).move_to([-4.4, -0.75, 0])
         beh = small_scan([0.2, 0.5], [(0, 0.8), (50, 0.9), (62, 0.5)], width=3.0, height=1.8, t_max=110.0, ticks=(0,),
                          x_caption="", y_caption="")
-        beh_t = label("Behaviour when the probe moves", FS_TAG, INK, weight=BOLD).move_to([0.2, -0.55, 0])
+        beh_t = label("Behaviour", FS_NOTE, INK, weight=BOLD).move_to([0.2, -0.8, 0])
         plus = label("+", FS_HEADING, INK, weight=BOLD).move_to([-2.1, 0.5, 0])
         eq = label("=", FS_HEADING, INK, weight=BOLD).move_to([2.35, 0.5, 0])
         ftype = chip("Flaw type", "search", ACCENT_3, 2.9).move_to([4.7, 0.5, 0])
@@ -807,11 +807,320 @@ class UtSeriesEp04(SyncedScene):
         self.sync(self.end(4))
         self.clear()
 
+    # ---------------- Segment 5: the code decides; the report (§8.6, §8.7) ----------------
     def seg5(self):
-        self.sync(self.end(5))
+        c = lambda phrase, nth=1: self.cue(5, phrase, nth)
+        S = self.start(5)
+        # ---- the inspector reports; the code decides ----
+        insp = chip("Inspector: reports", "user", INK, 3.6).move_to([-4.3, 2.9, 0])
+        no = icon("x", ALERT_C, 0.5).next_to(insp, RIGHT, 0.25)
+        arrow1 = Arrow([-1.2, 2.9, 0], [0.1, 2.9, 0], buff=0, color=INK, stroke_width=4, tip_length=0.2)
+        code = chip("The code decides", "scale", ACCENT_3, 3.6).move_to([2.4, 2.9, 0])
+        sub = label("named in the contract", FS_TAG, GREY_INK).next_to(code, DOWN, 0.12)
+        names = VGroup(chip("ASME VIII", "book", ACCENT_1, 3.1), chip("AWS D1.1", "book", ACCENT_1, 3.1),
+                       chip("API 1104", "book", ACCENT_1, 3.1)).arrange(RIGHT, buff=0.35).move_to([0, 1.2, 0])
+        self.sync(c("لَيْسَ"))
+        self.play(FadeIn(insp, shift=RIGHT * 0.15), run_time=0.4)
+        self.sync(c("لِلْفَاحِصِ"))
+        self.play(FadeIn(no, scale=0.6), run_time=0.3)
+        self.sync(c("بَلْ"))
+        self.play(GrowArrow(arrow1), FadeIn(code, shift=LEFT * 0.15), FadeIn(sub), run_time=0.6)
+        for k, w_ in enumerate(("إِيهْ", "دَبْلْيُو", "بِي")):
+            self.sync(c(w_, 1 if w_ != "إِيهْ" else 1))
+            self.play(FadeIn(names[k], shift=UP * 0.15), run_time=0.4)
+        # ---- what the criteria rest on ----
+        facts = VGroup(chip("Amplitude vs the reference", "chart-bar", INK, 4.0), chip("Flaw length", "ruler", INK, 3.0),
+                       chip("Flaw type", "search", INK, 2.7)).arrange(RIGHT, buff=0.4).move_to([0, -0.4, 0])
+        self.sync(c("سَعَةِ"))
+        self.play(FadeIn(facts[0], shift=UP * 0.15), run_time=0.4)
+        self.sync(c("طُولِ"))
+        self.play(FadeIn(facts[1], shift=UP * 0.15), run_time=0.4)
+        self.sync(c("وَنَوْعِهِ"))
+        self.play(FadeIn(facts[2], shift=UP * 0.15), run_time=0.4)
+        # ---- cracks, lack of fusion and lack of penetration are rejected whatever their length ----
+        card = RoundedRectangle(width=11.4, height=1.9, corner_radius=0.2, color=ACCENT_4, stroke_width=4).set_fill(PANEL_FILL, 1)
+        card.move_to([0, -2.5, 0])
+        items = VGroup(tag_line("cracks", "alert-triangle", ALERT_C, width=3.2), tag_line("lack of fusion", "alert-triangle", ALERT_C, width=4.0),
+                       tag_line("lack of penetration", "alert-triangle", ALERT_C, width=4.7)).arrange(RIGHT, buff=0.55)
+        items.move_to(card.get_center() + UP * 0.35)
+        stamp = label("Rejected, whatever the length", FS_NOTE, ALERT_C, weight=BOLD).move_to(card.get_center() + DOWN * 0.5)
+        self.sync(c("يَرْفُضُ"))
+        self.play(Create(card), run_time=0.5)
+        self.sync(c("الشُّقُوقَ"))
+        self.play(FadeIn(items[0], shift=UP * 0.1), run_time=0.35)
+        self.sync(c("وَعَدَمَ", 1))
+        self.play(FadeIn(items[1], shift=UP * 0.1), run_time=0.35)
+        self.sync(c("وَعَدَمَ", 2))
+        self.play(FadeIn(items[2], shift=UP * 0.1), run_time=0.35)
+        self.sync(c("مَهْمَا"))
+        self.play(FadeIn(stamp, scale=1.15), run_time=0.5)
 
+        # ---- the report makes the test repeatable ----
+        self.sync(c("وَالتَّقْرِيرُ") - 0.3)
+        self.clear(run_time=0.5)
+        FSZ = FS_TAG - 2
+        MONO_W = Text("M" * 20, font=MONO, font_size=FSZ).width / 20          # width of one character
+        LINES = [("ULTRASONIC TEST REPORT   (illustrative)", BOLD),
+                 (f"Component / weld : butt weld, {D.PLATE_T:.0f} mm plate", NORMAL),
+                 ("Procedure / code : as named in the contract", NORMAL),
+                 ("Instrument       : flaw detector", NORMAL),
+                 (f"Probe            : {D.PROBE_ANGLE:.0f} deg angle probe, {D.F_PROBE:.0f} MHz", NORMAL),
+                 ("Calibration      : V1 block, DAC curve, couplant", NORMAL),
+                 ("Scan areas       : both sides, half and full skip", NORMAL)]
+        rows = VGroup(*[Text(t, font=MONO, font_size=FSZ, weight=w) for t, w in LINES])
+        COLS = (0, 6, 13, 22, 30, 38)
+        head = [("No.", "Depth", "Surface", "Length", "Amp.", "Type"), ("", "(mm)", "(mm)", "(mm)", "(%DAC)", "")]
+        data = (("1", f"{D.REPORT_DEPTH:.1f}", f"{D.REPORT_SURFACE_DIST:.1f}", f"{D.REPORT_LENGTH:.0f}", f"{D.AMP_PCT_DAC}", D.REPORT_TYPE),)
+
+        def cell_row(vals, weight=NORMAL):
+            cells = VGroup(*[Text(v, font=MONO, font_size=FSZ, weight=weight) if v else Rectangle(width=0.01, height=0.01, stroke_width=0, fill_opacity=0) for v in vals])
+            for cell, col in zip(cells, COLS):
+                cell.move_to(ORIGIN)
+            return cells
+        tbl_rows = [cell_row(head[0], BOLD), cell_row(head[1]), cell_row(data[0])]
+        res_row = Text(f"Result            : {D.REPORT_RESULT}", font=MONO, font_size=FSZ, weight=BOLD)
+        who_row = Text("Inspector / date  : (name) / (date)", font=MONO, font_size=FSZ)
+        # stack the rows; the table rows are laid out on the character grid of the text rows
+        stack = VGroup(*rows, *[VGroup(*r) for r in tbl_rows], res_row, who_row).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+        left_x = stack.get_left()[0]
+        for r in tbl_rows:
+            for cell, col in zip(r, COLS):
+                cell.move_to([left_x + col * MONO_W + cell.width / 2, r[0].get_center()[1], 0])
+        paper = Rectangle(width=stack.width + 0.6, height=stack.height + 0.5, stroke_width=3, color=LINE_C).set_fill(BG, 1)
+        doc = VGroup(paper, stack.move_to(paper))
+        doc.scale_to_fit_height(5.6)
+        if doc.width > 12.4:
+            doc.scale_to_fit_width(12.4)
+        doc.move_to([0, 0.05, 0])
+        rows_all = list(rows) + [VGroup(*r) for r in tbl_rows] + [res_row, who_row]
+        self.play(Create(paper), run_time=0.5)
+        reveal = [("القِطْعَةَ", [0, 1]), ("وَالإِجْرَاءَ", [2]), ("وَالجِهَازَ", [3]), ("وَالمِجَسَّاتِ", [4]), ("وَالمُعَايَرَةَ", [5]),
+                  ("وَمَنَاطِقَ", [6]), ("وَجَدْوَلَ", [7, 8, 9]), ("وَالنَّتِيجَةَ", [10]), ("وَاسْمَ", [11])]
+        for word, idx in reveal:
+            self.sync(c(word))
+            self.play(*[FadeIn(rows_all[i], shift=RIGHT * 0.1) for i in idx], run_time=0.4)
+        self.sync(c("وَهٰذَا"))
+        data_cells = rows_all[9]
+        self.play(Create(SurroundingRectangle(data_cells, color=ACCENT_3, buff=0.08, stroke_width=3)), run_time=0.5)
+        boxes = VGroup()
+        for word, k in (("عُمْقُهُ", 1), ("وَطُولُهُ", 3), ("وَسَعَتُهُ", 4)):
+            self.sync(c(word))
+            b_ = SurroundingRectangle(data_cells[k], color=ACCENT_4, buff=0.06, stroke_width=4)
+            boxes.add(b_)
+            self.play(Create(b_), run_time=0.4)
+        self.sync(self.end(5))
+        self.clear()
+
+    # ---------------- Segment 6: a glimpse of PAUT and TOFD, and the series in one line (§9.1-9.2) ----------------
     def seg6(self):
+        c = lambda phrase, nth=1: self.cue(6, phrase, nth)
+        S = self.start(6)
+
+        # ================= phased array =================
+        TOPY, T = -0.6, 1.4
+        wd = WeldSection(cx=-2.0, y_top=TOPY, t=T, half_w=4.6)           # the plate runs from x = -6.6 to 2.6
+        EX, N, PITCH = -5.1, 8, 0.29
+        el_x = [EX + (i - (N - 1) / 2) * PITCH for i in range(N)]
+        block = Rectangle(width=N * PITCH + 0.2, height=0.42, color=ACCENT_1, stroke_width=3).set_fill(PANEL_FILL, 1)
+        block.move_to([EX, TOPY + 0.21, 0])
+        elems = VGroup(*[Rectangle(width=0.2, height=0.15, color=ACCENT_1, stroke_width=2).set_fill(ACCENT_1, 0.9)
+                         .move_to([x, TOPY + 0.075, 0]) for x in el_x])
+        array = VGroup(block, elems)
+        paut_t = label("Phased array (PAUT)", FS_NOTE, ACCENT_1, weight=BOLD).move_to([-4.3, 3.3, 0])
+
+        def vpath(alpha, color=ACCENT_1, width=4):
+            a = np.radians(alpha)
+            p0 = np.array([EX, TOPY, 0.0])
+            p1 = np.array([EX + T * np.tan(a), TOPY - T, 0.0])
+            p2 = np.array([EX + 2 * T * np.tan(a), TOPY, 0.0])
+            return VGroup(DashedLine(p0, p1, color=color, stroke_width=width), DashedLine(p1, p2, color=color, stroke_width=width))
+
+        self.sync(c("المَصْفُوفَةِ") - 0.2)
+        self.play(FadeIn(wd), FadeIn(array), FadeIn(paut_t), run_time=0.7)
+        t_many = tag_line("many small elements", "settings", INK, width=4.6).move_to([-3.9, 2.55, 0])
+        self.sync(c("عَنَاصِرَ"))
+        self.play(FadeIn(t_many, shift=RIGHT * 0.1), LaggedStart(*[Indicate(e, color=ACCENT_2, scale_factor=1.5) for e in elems],
+                                                                  lag_ratio=0.2, run_time=1.4))
+        # delays: each element fires a little later than the one before
+        DT = 0.149
+        bars = VGroup(*[Rectangle(width=0.2, height=0.12 + 0.1 * i, color=ACCENT_2, stroke_width=2).set_fill(ACCENT_2, 0.7)
+                        .move_to([x, TOPY + 0.55 + (0.12 + 0.1 * i) / 2, 0]) for i, x in enumerate(el_x)])
+        t_delay = tag_line("computed time delays", "clock", ACCENT_2, width=4.6).move_to([-3.9, 1.9, 0])
+        tw = ValueTracker(0.0)
+        arcs = VGroup()
+
+        def arcs_update(m):
+            parts = []
+            for i, x in enumerate(el_x):
+                r = min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.3)
+                if r > 0.04:
+                    parts.append(Arc(radius=r, start_angle=PI + 0.35, angle=PI - 0.7, arc_center=[x, TOPY, 0],
+                                     color=ACCENT_1, stroke_width=2))
+            m.become(VGroup(*parts))
+        arcs.add_updater(arcs_update)
+        self.sync(c("بِتَأْخِيرَاتٍ"))
+        self.play(LaggedStart(*[FadeIn(b_, shift=UP * 0.1) for b_ in bars], lag_ratio=0.1, run_time=0.9), FadeIn(t_delay, shift=RIGHT * 0.1))
+        self.add(arcs)
+        self.play(tw.animate(run_time=2.1, rate_func=linear).set_value(2.6))
+        # steered, then focused, without moving the probe
+        self.sync(c("فَتُوَجَّهُ"))
+        arcs.clear_updaters()
+        beam = vpath(45)
+        t_steer = tag_line("beam steered electronically", "arrows-exchange", ACCENT_1, width=5.4).move_to([-3.9, 1.35, 0])
+        self.play(FadeOut(arcs), FadeIn(beam), FadeIn(t_steer, shift=RIGHT * 0.1), run_time=0.5)
+        self.play(Transform(beam, vpath(60)), run_time=0.9)
+        self.sync(c("وَتُرَكَّزُ"))
+        fx, fy = -4.1, TOPY - 0.95
+        focus_lines = VGroup(*[Line([el_x[i], TOPY, 0], [fx, fy, 0], color=ACCENT_2, stroke_width=3) for i in (0, 3, 7)])
+        fdot = Dot([fx, fy, 0], radius=0.1, color=ACCENT_4)
+        self.play(FadeOut(beam), FadeOut(t_steer), Create(focus_lines), GrowFromCenter(fdot), run_time=0.7)
+        t_focus = tag_line("beam focused electronically", "eye", ACCENT_2, width=5.4).move_to([-3.9, 1.35, 0])
+        self.play(FadeIn(t_focus, shift=RIGHT * 0.1), run_time=0.4)
+        self.sync(c("دُونَ"))
+        t_still = tag_line("the probe does not move", "check", OK_C, width=5.0).move_to([-3.9, 2.55, 0])
+        self.play(FadeOut(t_many), FadeIn(t_still, shift=RIGHT * 0.1), run_time=0.5)
+        # the sector scan: a fan of angles and a cross-section image
+        self.sync(c("وَالمَسْحُ") - 0.1)
+        self.play(FadeOut(VGroup(bars, t_delay, focus_lines, fdot, t_focus, t_still)), run_time=0.5)
+        AX, AY, RIMG = 3.3, 3.2, 3.3
+        pt = lambda ang, r: np.array([AX + r * np.sin(np.radians(ang)), AY - r * np.cos(np.radians(ang)), 0.0])
+        arc_out = ArcBetweenPoints(pt(35, RIMG), pt(70, RIMG), angle=-np.radians(35), color=GREY_INK, stroke_width=3)
+        edge1 = Line(pt(35, 0.0), pt(35, RIMG), color=GREY_INK, stroke_width=3)
+        edge2 = Line(pt(70, 0.0), pt(70, RIMG), color=GREY_INK, stroke_width=3)
+        sector = VGroup(edge1, edge2, arc_out)
+        lines = VGroup(*[Line(pt(a_, 0.0), pt(a_, RIMG), color=LINE_C, stroke_width=2) for a_ in np.linspace(36, 69, 12)])
+        s_lab = label("S-scan: a cross-section image", FS_TAG, INK, weight=BOLD).move_to([4.2, 0.2, 0])
+        al = ValueTracker(35.0)
+        fan = always_redraw(lambda: vpath(al.get_value(), ACCENT_2, 3))
+        flaw_pl = Dot(wd.face_point(-1, 0.86), radius=0.09, color=ACCENT_4)
+        spot = Dot(pt(67.4, 2.8), radius=0.1, color=ACCENT_4)
+        self.sync(c("القِطَاعِيُّ"))
+        self.play(Create(sector), FadeIn(flaw_pl), run_time=0.6)
+        self.sync(c("يَكْنُسُ"))
+        self.add(fan)
+        self.play(al.animate(run_time=2.6, rate_func=linear).set_value(70.0),
+                  LaggedStart(*[Create(l_) for l_ in lines], lag_ratio=0.09, run_time=2.6))
+        self.remove(fan)
+        self.sync(c("لِمَقْطَعِ") - 0.2)
+        self.play(GrowFromCenter(spot), FadeIn(s_lab, shift=UP * 0.1), run_time=0.5)
+
+        # ================= time of flight diffraction =================
+        self.sync(c("وَفِي") - 0.1)
+        self.clear(run_time=0.5)
+        TY, TT = 1.7, 1.6
+        wd2 = WeldSection(cx=0.0, y_top=TY, t=TT, half_w=5.6)
+        XT, XR = -1.9, 1.9
+        pt_t, pr_t = wedge_probe(XT, TY, facing=1, size=0.9), wedge_probe(XR, TY, facing=-1, size=0.9)
+        tofd_t = label("TOFD", FS_NOTE, ACCENT_1, weight=BOLD).move_to([-5.8, 3.3, 0])
+        tx = label("transmitter", FS_TAG, INK, weight=BOLD).move_to([XT - 0.6, 2.85, 0])
+        rx = label("receiver", FS_TAG, INK, weight=BOLD).move_to([XR + 0.6, 2.85, 0])
+        TS, RS = np.array([XT, TY, 0.0]), np.array([XR, TY, 0.0])
+        crack = VGroup(Line([0, TY - 0.45, 0], [0, TY - 1.1, 0], color=ACCENT_4, stroke_width=6),
+                       Dot([0, TY - 0.45, 0], radius=0.07, color=ACCENT_3), Dot([0, TY - 1.1, 0], radius=0.07, color=ACCENT_4))
+        up_tip, low_tip = crack[1], crack[2]
+        ray_up = always_redraw(lambda: VGroup(Line(TS, up_tip.get_center(), color=ACCENT_3, stroke_width=2),
+                                              Line(up_tip.get_center(), RS, color=ACCENT_3, stroke_width=2)))
+        ray_low = always_redraw(lambda: VGroup(Line(TS, low_tip.get_center(), color=ACCENT_4, stroke_width=2),
+                                               Line(low_tip.get_center(), RS, color=ACCENT_4, stroke_width=2)))
+        scr = AScan([], width=9.4, height=2.4, t_min=0.0, t_max=100.0, ticks=(), sigma=1.3, x_caption="Arrival time", y_caption="")
+        scr.shift(np.array([0.0, -1.95, 0.0]) - scr.frame.get_center())
+        shown = {"peaks": []}
+        scr.trace.add_updater(lambda m: (setattr(scr, "peaks", shown["peaks"]), scr.update_trace(scr.t_max)))
+        PK = {"lat": (18, 0.95), "up": (42, 0.55), "low": (54, 0.5), "bw": (78, 0.9)}
+
+        def peak_label(key, text, color, side=0):
+            t_, h_ = PK[key]
+            lab = label(text, FS_TAG - 4, color, weight=BOLD)
+            if side == 0:
+                return lab.move_to([scr.x_of(t_), scr.y_base() + h_ + 0.28, 0])
+            lab.move_to([scr.x_of(t_) + side * 0.0, scr.y_base() + h_ + 0.28, 0])
+            return lab.next_to([scr.x_of(t_), scr.y_base() + h_ + 0.28, 0], RIGHT if side > 0 else LEFT, 0.06)
+        l_lat = peak_label("lat", "lateral wave", ACCENT_1)
+        l_up = peak_label("up", "upper tip", ACCENT_3, -1)
+        l_low = peak_label("low", "lower tip", ACCENT_4, 1)
+        l_bw = peak_label("bw", "back wall", ACCENT_2)
+        self.sync(c("زَمَنِ", 1) + 0.0)
+        self.play(FadeIn(wd2), FadeIn(tofd_t), run_time=0.6)
+        self.sync(c("مِجَسَّانِ"))
+        self.play(FadeIn(pt_t), FadeIn(pr_t), run_time=0.5)
+        self.sync(c("مُرْسِلٌ"))
+        self.play(FadeIn(tx, shift=DOWN * 0.1), run_time=0.4)
+        self.sync(c("وَمُسْتَقْبِلٌ"))
+        self.play(FadeIn(rx, shift=DOWN * 0.1), run_time=0.4)
+        # first: the lateral wave along the surface
+        self.sync(c("تَصِلُ") - 0.1)
+        self.play(FadeIn(scr), run_time=0.4)
+        self.add(scr.trace)
+        self.sync(c("أَوَّلًا"))
+        travel(self, wf(ACCENT_1, RIGHT, amp=0.12, length=0.4), [[XT + 0.1, TY + 0.06, 0], [XR - 0.1, TY + 0.06, 0]], 0.9)
+        shown["peaks"] = [PK["lat"]]
+        self.play(FadeIn(l_lat, shift=UP * 0.1), run_time=0.3)
+        # last: the back-wall echo
+        self.sync(c("وَأَخِيرًا"))
+        bw_pts = [[XT, TY, 0], [0, TY - TT, 0], [XR, TY, 0]]
+        bw_path = VGroup(DashedLine(bw_pts[0], bw_pts[1], color=ACCENT_2, stroke_width=3), DashedLine(bw_pts[1], bw_pts[2], color=ACCENT_2, stroke_width=3))
+        self.play(Create(bw_path), run_time=0.5)
+        travel(self, wf(ACCENT_2, DOWN, amp=0.12, length=0.4), bw_pts, 0.9)
+        shown["peaks"] = [PK["lat"], PK["bw"]]
+        self.sync(c("الخَلْفِيِّ"))
+        self.play(FadeIn(l_bw, shift=UP * 0.1), run_time=0.3)
+        # between: the diffraction from the two tips of a crack
+        self.sync(c("وَبَيْنَهُمَا"))
+        self.play(GrowFromCenter(crack), run_time=0.5)
+        self.sync(c("إِشَارَتَا"))
+        self.add(ray_up, ray_low)
+        self.wait(0.5)
+        shown["peaks"] = [PK["lat"], PK["up"], PK["bw"]]
+        self.sync(c("الحَيْدِ", 2))
+        self.play(FadeIn(l_up, shift=UP * 0.1), run_time=0.3)
+        shown["peaks"] = [PK["lat"], PK["up"], PK["low"], PK["bw"]]
+        self.sync(c("طَرَفَيِ"))
+        self.play(FadeIn(l_low, shift=UP * 0.1), run_time=0.3)
+        # the gap between the two diffraction signals gives the height
+        gap = DoubleArrow([scr.x_of(PK["up"][0]), scr.y_base() - 0.4, 0], [scr.x_of(PK["low"][0]), scr.y_base() - 0.4, 0], buff=0,
+                          color=ACCENT_3, stroke_width=3, tip_length=0.1)
+        gap_lab = label("gap = crack height", FS_TAG - 4, ACCENT_3, weight=BOLD).next_to(gap, DOWN, 0.08)
+        hgt = DoubleArrow([0.5, TY - 0.45, 0], [0.5, TY - 1.1, 0], buff=0, color=ACCENT_3, stroke_width=3, tip_length=0.1)
+        self.sync(c("ارْتِفَاعَهُ") - 0.3)
+        self.play(GrowArrow(gap), FadeIn(gap_lab), GrowArrow(hgt), run_time=0.6)
+        # whichever way the crack leans, its two tips still diffract
+        self.sync(c("اتِّجَاهِ") - 0.3)
+        self.play(FadeOut(hgt), Rotate(crack, angle=np.radians(35), about_point=np.array([0, TY - 0.78, 0])), run_time=0.8)
+        self.play(Rotate(crack, angle=-np.radians(70), about_point=np.array([0, TY - 0.78, 0])), run_time=1.0)
+        # the dead zone just under the surface
+        self.sync(c("مِنْطَقَةٌ") - 0.2)
+        self.play(Rotate(crack, angle=np.radians(35), about_point=np.array([0, TY - 0.78, 0])), run_time=0.5)
+        dz = Rectangle(width=XR - XT, height=0.32, color=ALERT_C, stroke_width=0).set_fill(ALERT_C, 0.28).move_to([0, TY - 0.16 - 0.0, 0])
+        dz_t = tag_line("dead zone under the surface", "alert-triangle", ALERT_C, width=5.4).move_to([0, 0.05 - 0.2, 0])
+        self.play(FadeIn(dz), FadeIn(dz_t, shift=UP * 0.1), run_time=0.5)
+
+        # ================= the series in one line =================
+        self.sync(c("وَهٰكَذَا") - 0.2)
+        ray_up.clear_updaters()
+        ray_low.clear_updaters()
+        scr.trace.clear_updaters()
+        self.clear(run_time=0.5)
+        xs = [-5.0, -1.7, 1.7, 5.0]
+        steps = (("Principle", "wifi"), ("Probe and beam", "tool"), ("Calibration", "ruler"), ("Flaw evaluation", "clipboard-check"))
+        nodes = VGroup()
+        for k, ((nm, ic), x) in enumerate(zip(steps, xs)):
+            ring = Circle(radius=0.78, color=ACCENT_1, stroke_width=5).set_fill(PANEL_FILL, 1)
+            ic_ = icon(ic, ACCENT_1, 0.85).move_to(ring)
+            lab_ = label(nm, FS_NOTE, INK, weight=BOLD).next_to(ring, DOWN, 0.25)
+            bd = badge(k + 1, ACCENT_1, 0.28).next_to(ring, UP, 0.2)
+            g = VGroup(ring, ic_, lab_, bd).move_to([x, 0.3, 0]) if False else VGroup(ring, ic_, lab_, bd)
+            g.shift(np.array([x, 0.3, 0.0]) - ring.get_center())
+            nodes.add(g)
+        arrows = VGroup(*[Arrow([xs[k] + 0.95, 0.3, 0], [xs[k + 1] - 0.95, 0.3, 0], buff=0, color=INK, stroke_width=4, tip_length=0.2)
+                          for k in range(3)])
+        for k, (word, nth) in enumerate((("المَبْدَأِ", 1), ("المِجَسِّ", 2), ("المُعَايَرَةِ", 1), ("الحُكْمِ", 1))):
+            self.sync(c(word, nth) - 0.1)
+            anims = [FadeIn(nodes[k], scale=0.8)]
+            if k > 0:
+                anims.append(GrowArrow(arrows[k - 1]))
+            self.play(*anims, run_time=0.5)
         self.sync(self.end(6))
+        self.clear()
 
     def seg7(self):
         self.sync(self.end(len(NARRATION)))
