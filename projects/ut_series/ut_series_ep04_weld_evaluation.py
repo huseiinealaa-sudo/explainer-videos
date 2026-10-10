@@ -356,7 +356,7 @@ class UtSeriesEp04(SyncedScene):
         H = lambda s: 3.0 * np.exp(-s / 45.0)                    # the DAC curve: identical reflectors fall with the path
         scan = AScan([(0, 1.8)], width=8.2, height=3.8, t_min=-6.0, t_max=110.0, ticks=(0, 25, 50, 75, 100), sigma=0.9,
                      x_caption="Sound path (mm)", y_caption="Echo amplitude")
-        scan.shift(np.array([-1.7, 0.25, 0.0]) - scan.frame.get_center())
+        scan.shift(np.array([-2.0, 0.25, 0.0]) - scan.frame.get_center())
         shown = {"echoes": [(14, 0.6), (27, 1.1), (41, 0.35), (57, 0.8), (72, 0.45), (90, 0.9)]}
         scan.trace.add_updater(lambda m: (setattr(scan, "peaks", [(0, 1.8)] + shown["echoes"]), scan.update_trace(scan.t_max)))
         CX = 4.65                                                # centre of the right-hand column
@@ -441,7 +441,7 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("لِلتَّقْيِيمِ"))
         self.play(Indicate(fl_dot, color=ACCENT_4, scale_factor=1.6), run_time=0.6)
         per = tag_line("the percentages differ from code to code", "arrows-exchange", INK, width=7.2, size=FS_TAG)
-        per.move_to([-1.7, -2.9, 0])
+        per.move_to([-2.0, -2.9, 0])
         self.sync(c("وَالنِّسَبُ"))
         self.play(FadeIn(per, shift=UP * 0.1), run_time=0.4)
         self.sync(c("تَخْتَلِفُ"))
@@ -919,7 +919,7 @@ class UtSeriesEp04(SyncedScene):
         # ================= phased array =================
         TOPY, T = -0.6, 1.4
         wd = WeldSection(cx=-2.0, y_top=TOPY, t=T, half_w=4.6)           # the plate runs from x = -6.6 to 2.6
-        EX, N, PITCH = -5.1, 8, 0.29
+        EX, N, PITCH = -4.7, 8, 0.29
         el_x = [EX + (i - (N - 1) / 2) * PITCH for i in range(N)]
         block = Rectangle(width=N * PITCH + 0.2, height=0.42, color=ACCENT_1, stroke_width=3).set_fill(PANEL_FILL, 1)
         block.move_to([EX, TOPY + 0.21, 0])
@@ -947,13 +947,13 @@ class UtSeriesEp04(SyncedScene):
                         .move_to([x, TOPY + 0.55 + (0.12 + 0.1 * i) / 2, 0]) for i, x in enumerate(el_x)])
         t_delay = tag_line("computed time delays", "clock", ACCENT_2, width=4.6).move_to([-3.9, 1.9, 0])
         tw = ValueTracker(0.0)
-        arcs = VGroup(*[Arc(radius=0.05, start_angle=PI + 0.35, angle=PI - 0.7, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
+        arcs = VGroup(*[Arc(radius=0.05, start_angle=PI + 0.8, angle=PI - 1.3, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
                         for x in el_x])
 
         def arcs_update(m):
             for i, (x, a_) in enumerate(zip(el_x, m)):
                 r = min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.3)
-                new = Arc(radius=max(r, 0.05), start_angle=PI + 0.35, angle=PI - 0.7, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
+                new = Arc(radius=max(r, 0.05), start_angle=PI + 0.8, angle=PI - 1.3, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
                 new.set_stroke(opacity=1.0 if r > 0.04 else 0.0)
                 a_.become(new)
         arcs.add_updater(arcs_update)
@@ -969,7 +969,7 @@ class UtSeriesEp04(SyncedScene):
         self.play(FadeOut(arcs), FadeIn(beam), FadeIn(t_steer, shift=RIGHT * 0.1), run_time=0.5)
         self.play(Transform(beam, vpath(60)), run_time=0.9)
         self.sync(c("وَتُرَكَّزُ"))
-        fx, fy = -4.1, TOPY - 0.95
+        fx, fy = -3.7, TOPY - 0.95
         focus_lines = VGroup(*[Line([el_x[i], TOPY, 0], [fx, fy, 0], color=ACCENT_2, stroke_width=3) for i in (0, 3, 7)])
         fdot = Dot([fx, fy, 0], radius=0.1, color=ACCENT_4)
         self.play(FadeOut(beam), FadeOut(t_steer), Create(focus_lines), GrowFromCenter(fdot), run_time=0.7)
@@ -992,7 +992,7 @@ class UtSeriesEp04(SyncedScene):
         al = ValueTracker(35.0)
         fan = always_redraw(lambda: vpath(al.get_value(), ACCENT_2, 3))
         flaw_pl = Dot(wd.face_point(-1, 0.86), radius=0.09, color=ACCENT_4)
-        spot = Dot(pt(67.4, 2.8), radius=0.1, color=ACCENT_4)
+        spot = Dot(pt(64.3, 2.5), radius=0.1, color=ACCENT_4)
         self.sync(c("القِطَاعِيُّ"))
         self.play(Create(sector), FadeIn(flaw_pl), run_time=0.6)
         self.sync(c("يَكْنُسُ"))
@@ -1091,8 +1091,8 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("مِنْطَقَةٌ") - 0.2)
         self.play(Rotate(crack, angle=np.radians(35), about_point=np.array([0, TY - 0.78, 0])), run_time=0.5)
         dz = Rectangle(width=XR - XT, height=0.32, color=ALERT_C, stroke_width=0).set_fill(ALERT_C, 0.28).move_to([0, TY - 0.16 - 0.0, 0])
-        dz_t = tag_line("dead zone under the surface", "alert-triangle", ALERT_C, width=5.4).move_to([-3.6, -0.4, 0])
-        dz_lead = Arrow(dz_t.get_top() + UP * 0.04 + RIGHT * 1.6, [-1.3, TY - 0.2, 0], buff=0.05, color=ALERT_C, stroke_width=3, tip_length=0.14)
+        dz_t = tag_line("dead zone under the surface", "alert-triangle", ALERT_C, width=6.4).move_to([-4.0, -0.4, 0])
+        dz_lead = Arrow(dz_t.get_top() + UP * 0.04 + RIGHT * 1.8, [-1.3, TY - 0.2, 0], buff=0.05, color=ALERT_C, stroke_width=3, tip_length=0.14)
         self.play(FadeIn(dz), FadeIn(dz_t, shift=UP * 0.1), GrowArrow(dz_lead), run_time=0.5)
 
         # ================= the series in one line =================
@@ -1188,7 +1188,7 @@ class UtSeriesEp04(SyncedScene):
                 return DashedVMobject(vm, num_dashes=44, dashed_ratio=0.55) if dashed else vm
             dac = curve(H, ACCENT_3, width=6)
             rec = curve(lambda s: H(s) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100, ACCENT_2, True)
-            lab = label("recording level (illustrative)", FS_TAG, ACCENT_2, weight=BOLD).move_to([2.9, 1.35, 0])
+            lab = label("recording level (illustrative)", FS_TAG, ACCENT_2, weight=BOLD).move_to([-0.3, 1.55, 0])
             lo = Dot([sc.x_of(30), sc.y_base() + H(30) * D.ILLUSTRATIVE_ECHO_LOW_PCT_DAC / 100, 0], radius=0.08, color=GREY_INK)
             hi = Dot([sc.x_of(60), sc.y_base() + H(60) * D.AMP_PCT_DAC / 100, 0], radius=0.1, color=ACCENT_4)
             no = icon("x", GREY_INK, 0.45).move_to([sc.x_of(30), sc.y_base() + 0.75, 0])
@@ -1308,26 +1308,27 @@ class UtSeriesEp04(SyncedScene):
             return show, finish
 
         def art8():                       # TOFD: the arrival times of the two tip signals give the height
-            TY, TT = 1.4, 1.2
+            TY, TT = 1.0, 1.0
             wd = WeldSection(cx=0.0, y_top=TY, t=TT, half_w=5.0)
             TS, RS = np.array([-1.7, TY, 0.0]), np.array([1.7, TY, 0.0])
             pa, pb = wedge_probe(-1.7, TY, facing=1, size=0.8), wedge_probe(1.7, TY, facing=-1, size=0.8)
-            cr = VGroup(Line([0, TY - 0.35, 0], [0, TY - 0.9, 0], color=ACCENT_4, stroke_width=6),
-                        Dot([0, TY - 0.35, 0], radius=0.07, color=ACCENT_3), Dot([0, TY - 0.9, 0], radius=0.07, color=ACCENT_4))
-            rays = VGroup(Line(TS, [0, TY - 0.35, 0], color=ACCENT_3, stroke_width=2), Line([0, TY - 0.35, 0], RS, color=ACCENT_3, stroke_width=2),
-                          Line(TS, [0, TY - 0.9, 0], color=ACCENT_4, stroke_width=2), Line([0, TY - 0.9, 0], RS, color=ACCENT_4, stroke_width=2))
-            sc = small_scan([0.0, -1.55], [(18, 0.85), (42, 0.5), (54, 0.45), (78, 0.8)], width=8.4, height=2.2, t_min=0.0, t_max=100.0,
+            cr = VGroup(Line([0, TY - 0.25, 0], [0, TY - 0.7, 0], color=ACCENT_4, stroke_width=6),
+                        Dot([0, TY - 0.25, 0], radius=0.07, color=ACCENT_3), Dot([0, TY - 0.7, 0], radius=0.07, color=ACCENT_4))
+            rays = VGroup(Line(TS, [0, TY - 0.25, 0], color=ACCENT_3, stroke_width=2), Line([0, TY - 0.25, 0], RS, color=ACCENT_3, stroke_width=2),
+                          Line(TS, [0, TY - 0.7, 0], color=ACCENT_4, stroke_width=2), Line([0, TY - 0.7, 0], RS, color=ACCENT_4, stroke_width=2))
+            sc = small_scan([0.0, -1.2], [(18, 0.7), (42, 0.42), (54, 0.38), (78, 0.65)], width=8.4, height=1.8, t_min=0.0, t_max=100.0,
                             ticks=(), sigma=1.3, x_caption="Arrival time", y_caption="")
-            gap = DoubleArrow([sc.x_of(42), sc.y_base() - 0.35, 0], [sc.x_of(54), sc.y_base() - 0.35, 0], buff=0, color=ACCENT_3, stroke_width=3,
-                              tip_length=0.1)
-            gl = label("this gap gives the height", FS_TAG - 2, ACCENT_3, weight=BOLD).next_to(gap, DOWN, 0.06)
-            hg = DoubleArrow([0.5, TY - 0.35, 0], [0.5, TY - 0.9, 0], buff=0, color=ACCENT_3, stroke_width=3, tip_length=0.1)
+            gap = DoubleArrow([sc.x_of(42) + 0.1, sc.y_base() + 0.1, 0], [sc.x_of(54) - 0.1, sc.y_base() + 0.1, 0], buff=0, color=ACCENT_3,
+                              stroke_width=3, tip_length=0.1)
+            gl = label("this gap gives the height", FS_TAG - 2, ACCENT_3, weight=BOLD).move_to([(sc.x_of(42) + sc.x_of(54)) / 2 + 2.2, sc.y_base() + 1.0, 0])
+            glead = DashedLine(gl.get_left() + LEFT * 0.04, gap.get_center() + UP * 0.05, color=ACCENT_3, stroke_width=2)
+            hg = DoubleArrow([0.5, TY - 0.25, 0], [0.5, TY - 0.7, 0], buff=0, color=ACCENT_3, stroke_width=3, tip_length=0.1)
 
             def show():
                 self.play(FadeIn(wd), FadeIn(pa), FadeIn(pb), FadeIn(cr), FadeIn(rays), FadeIn(sc), FadeIn(sc.trace), run_time=0.9)
 
             def finish(*extra):
-                self.play(GrowArrow(gap), FadeIn(gl), GrowArrow(hg), *extra, run_time=0.8)
+                self.play(GrowArrow(gap), FadeIn(gl), Create(glead), GrowArrow(hg), *extra, run_time=0.8)
             return show, finish
 
         arts = [art1, art2, art3, art4, art5, art6, art7, art8]
