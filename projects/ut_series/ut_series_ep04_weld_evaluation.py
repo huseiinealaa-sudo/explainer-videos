@@ -359,7 +359,7 @@ class UtSeriesEp04(SyncedScene):
         scan.shift(np.array([-1.7, 0.25, 0.0]) - scan.frame.get_center())
         shown = {"echoes": [(14, 0.6), (27, 1.1), (41, 0.35), (57, 0.8), (72, 0.45), (90, 0.9)]}
         scan.trace.add_updater(lambda m: (setattr(scan, "peaks", [(0, 1.8)] + shown["echoes"]), scan.update_trace(scan.t_max)))
-        CX = 4.8                                                 # centre of the right-hand column
+        CX = 4.65                                                # centre of the right-hand column
 
         def curve(f, color, dashed=False, s0=3.0, s1=100.0, width=6):
             vm = VMobject(color=color, stroke_width=width)
@@ -458,7 +458,7 @@ class UtSeriesEp04(SyncedScene):
         MM, BW = 0.17, 8.0                                       # units per mm on the ruler; the beam width on the weld, mm
         FA, FB = D.POS_6DB_1, D.POS_6DB_2                        # the flaw's two ends as the 6 dB marks will find them
         X = lambda mm: -5.9 + MM * (mm - 100.0)
-        BAND_Y = 1.7
+        BAND_Y = 1.5
 
         def amp(pos):
             ov = max(0.0, min(pos + BW / 2, FB) - max(pos - BW / 2, FA))
@@ -466,32 +466,36 @@ class UtSeriesEp04(SyncedScene):
 
         pos = ValueTracker(104.0)
         vis = ValueTracker(0.0)
-        plate = Rectangle(width=10.0, height=3.0, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1).move_to([-1.6, 1.6, 0])
-        band = Rectangle(width=10.0, height=0.9, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([-1.6, BAND_Y, 0])
-        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([-5.9, 2.78, 0])
-        flaw = Rectangle(width=X(FB) - X(FA), height=0.35, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8)
+        plate = Rectangle(width=10.0, height=3.4, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1).move_to([-1.6, 1.5, 0])
+        band = Rectangle(width=10.0, height=1.0, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([-1.6, BAND_Y, 0])
+        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([2.7, 2.85, 0])
+        flaw = Rectangle(width=X(FB) - X(FA), height=0.4, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8)
         flaw.move_to([(X(FA) + X(FB)) / 2, BAND_Y, 0])
-        ruler = Line([X(100), -0.5, 0], [X(150), -0.5, 0], color=INK, stroke_width=3)
-        rticks = VGroup(*[Line([X(m), -0.5, 0], [X(m), -0.65, 0], color=INK, stroke_width=3) for m in range(100, 151, 10)])
-        rlabs = VGroup(*[label(str(m), FS_TAG - 4, GREY_INK).move_to([X(m), -0.9, 0]) for m in range(100, 151, 10)])
-        runit = label("mm", FS_TAG - 4, GREY_INK).move_to([X(150) + 0.5, -0.9, 0])
+        ruler = Line([X(100), -0.75, 0], [X(150), -0.75, 0], color=INK, stroke_width=3)
+        rticks = VGroup(*[Line([X(m), -0.75, 0], [X(m), -0.9, 0], color=INK, stroke_width=3) for m in range(100, 151, 10)])
+        rlabs = VGroup(*[label(str(m), FS_TAG - 4, GREY_INK).move_to([X(m), -1.15, 0]) for m in range(100, 151, 10)])
+        runit = label("mm", FS_TAG - 4, GREY_INK).move_to([X(150) + 0.5, -1.15, 0])
 
         probe = VGroup(RoundedRectangle(width=0.9, height=0.6, corner_radius=0.08, color=ACCENT_1, stroke_width=4).set_fill(BG, 1),
                        Polygon([-0.2, 0.3, 0], [0.2, 0.3, 0], [0, 0.55, 0], color=ACCENT_1, stroke_width=3).set_fill(ACCENT_1, 0.5))
-        probe.add_updater(lambda m: m.move_to([X(pos.get_value()), 0.62, 0]))
+        probe.add_updater(lambda m: m.move_to([X(pos.get_value()), 0.4, 0]))
         cone = Polygon([0, 0, 0], [1, 0, 0], [1, 1, 0], color=ACCENT_1, stroke_width=0)
 
         def cone_update(m):
             x0 = X(pos.get_value())
             half = BW * MM / 2
-            m.become(Polygon([x0 - 0.17, 1.17, 0], [x0 + 0.17, 1.17, 0], [x0 + half, BAND_Y, 0], [x0 - half, BAND_Y, 0],
-                             color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.2 * vis.get_value()))
+            m.become(Polygon([x0 - 0.17, 0.95, 0], [x0 + 0.17, 0.95, 0], [x0 + half, BAND_Y, 0], [x0 - half, BAND_Y, 0],
+                             color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.32 * vis.get_value()))
         cone.add_updater(cone_update)
-        axis_line = DashedLine([0, 1.17, 0], [0, 2.35, 0], color=ACCENT_1, stroke_width=3)
-        axis_line.add_updater(lambda m: m.put_start_and_end_on([X(pos.get_value()), 1.17, 0], [X(pos.get_value()), 2.35, 0]))
+        foot = Rectangle(width=BW * MM, height=0.5, color=ACCENT_1, stroke_width=3)
+        foot.add_updater(lambda m: m.become(Rectangle(width=BW * MM, height=0.5, color=ACCENT_1, stroke_width=3)
+                                            .set_fill(ACCENT_1, 0.25 * vis.get_value()).set_stroke(opacity=vis.get_value())
+                                            .move_to([X(pos.get_value()), BAND_Y, 0])))
+        axis_line = DashedLine([0, 0.95, 0], [0, 2.3, 0], color=ACCENT_1, stroke_width=3)
+        axis_line.add_updater(lambda m: m.put_start_and_end_on([X(pos.get_value()), 0.95, 0], [X(pos.get_value()), 2.3, 0]))
         axis_line.set_stroke(opacity=0)
 
-        MX, MY, MH = 5.7, 1.8, 3.0
+        MX, MY, MH = 5.95, 1.7, 2.8
         meter = Rectangle(width=0.7, height=MH, color=INK, stroke_width=3).set_fill(PANEL_FILL, 1).move_to([MX, MY, 0])
         fill = Rectangle(width=0.62, height=0.02, color=ACCENT_2, stroke_width=0).set_fill(ACCENT_2, 1)
         fill.add_updater(lambda m: m.become(Rectangle(width=0.62, height=max(amp(pos.get_value()) * (MH - 0.1), 0.02),
@@ -499,16 +503,16 @@ class UtSeriesEp04(SyncedScene):
                                             .move_to([MX, MY - MH / 2 + 0.05 + max(amp(pos.get_value()) * (MH - 0.1), 0.02) / 2, 0])))
         half_y = MY - MH / 2 + 0.05 + 0.5 * (MH - 0.1)
         half_line = DashedLine([MX - 0.35, half_y, 0], [MX + 0.35, half_y, 0], color=ACCENT_4, stroke_width=4)
-        mcap = label("Echo height", FS_TAG - 2, INK, weight=BOLD).move_to([MX, 0.0, 0])
-        full_tag = label("set to full", FS_TAG - 2, ACCENT_2, weight=BOLD).move_to([MX, 3.6, 0])
-        drop_tag = label("6 dB drop", FS_TAG, ACCENT_4, weight=BOLD).move_to([MX - 1.45, half_y, 0])
+        mcap = label("Echo height", FS_TAG - 2, INK, weight=BOLD).move_to([MX, 0.05, 0])
+        full_tag = label("set to full", FS_TAG - 2, ACCENT_2, weight=BOLD).move_to([MX, 3.5, 0])
+        drop_tag = label("6 dB drop", FS_TAG, ACCENT_4, weight=BOLD).move_to([MX - 1.6, half_y, 0])
 
         # ---- the probe finds the maximum, then moves along the flaw until the echo has halved ----
         self.play(FadeIn(plate), FadeIn(band), FadeIn(wlab), FadeIn(flaw), Create(ruler), FadeIn(rticks), FadeIn(rlabs),
                   FadeIn(runit), FadeIn(meter), FadeIn(mcap), run_time=0.8)
         self.add(fill)
         self.sync(c("نُحَرِّكُ"))
-        self.add(probe, cone)
+        self.add(cone, foot, probe)
         self.play(vis.animate(run_time=0.4).set_value(1.0))
         self.play(pos.animate(run_time=1.9, rate_func=smooth).set_value(123.5))
         self.sync(c("أَقْصَاهُ") + 0.2)
@@ -522,8 +526,8 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("مِحْوَرُ"))
         self.add(axis_line)
         self.play(axis_line.animate(run_time=0.4).set_stroke(opacity=1))
-        out_t = label("outside", FS_TAG, GREY_INK, weight=BOLD).move_to([X(FA) - 1.0, 2.75, 0])
-        in_t = label("on the flaw", FS_TAG, ACCENT_4, weight=BOLD).move_to([X(FA) + 1.1, 2.75, 0])
+        out_t = label("outside", FS_TAG, GREY_INK, weight=BOLD).move_to([X(FA) - 1.0, 2.55, 0])
+        in_t = label("on the flaw", FS_TAG, ACCENT_4, weight=BOLD).move_to([X(FA) + 1.1, 2.55, 0])
         self.sync(c("نِصْفُهَا") - 0.1)
         self.play(FadeIn(in_t, shift=DOWN * 0.1), run_time=0.4)
         self.sync(c("وَنِصْفُهَا") - 0.1)
@@ -534,7 +538,7 @@ class UtSeriesEp04(SyncedScene):
         self.remove(axis_line)
 
         def mark(mm):
-            return Line([X(mm), -0.28, 0], [X(mm), -0.7, 0], color=ACCENT_3, stroke_width=7)
+            return Line([X(mm), -0.5, 0], [X(mm), -0.95, 0], color=ACCENT_3, stroke_width=7)
         m1 = mark(FA)
         self.sync(c("مَوْضِعَ"))
         self.play(Create(m1), run_time=0.4)
@@ -543,15 +547,15 @@ class UtSeriesEp04(SyncedScene):
         m2 = mark(FB)
         self.sync(c("وَالمَسَافَةُ") - 0.2)
         self.play(Create(m2), run_time=0.4)
-        len_arrow = DoubleArrow([X(FA), -1.35, 0], [X(FB), -1.35, 0], buff=0, color=ACCENT_3, stroke_width=4, tip_length=0.16)
-        len_lab = label("length", FS_TAG, ACCENT_3, weight=BOLD).move_to([(X(FA) + X(FB)) / 2, -1.75, 0])
+        len_arrow = DoubleArrow([X(FA), -1.7, 0], [X(FB), -1.7, 0], buff=0, color=ACCENT_3, stroke_width=4, tip_length=0.16)
+        len_lab = label("length", FS_TAG, ACCENT_3, weight=BOLD).move_to([(X(FA) + X(FB)) / 2, -2.1, 0])
         self.sync(c("العَلَامَتَيْنِ"))
         self.play(GrowArrow(len_arrow), run_time=0.5)
         self.sync(c("طُولُ"))
         self.play(FadeIn(len_lab, shift=UP * 0.1), run_time=0.4)
         # ---- the worked example (the only one of the episode) ----
-        l1 = label(f"{D.POS_6DB_1:.0f} mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([X(FA) - 0.95, -1.35, 0])
-        l2 = label(f"{D.POS_6DB_2:.0f} mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([X(FB) + 0.95, -1.35, 0])
+        l1 = label(f"{D.POS_6DB_1:.0f} mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([X(FA) - 0.95, -1.7, 0])
+        l2 = label(f"{D.POS_6DB_2:.0f} mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([X(FB) + 0.95, -1.7, 0])
         self.sync(c("عَشَرَ", 1) + 0.1)
         self.play(FadeIn(l1, shift=RIGHT * 0.1), run_time=0.4)
         self.sync(c("وَثَلَاثِينَ", 1) + 0.1)
@@ -561,7 +565,7 @@ class UtSeriesEp04(SyncedScene):
         n112 = label(f"{D.POS_6DB_1:.0f}", FS_EQUATION, ACCENT_3, weight=BOLD)
         eq = label("=", FS_EQUATION, INK, weight=BOLD)
         res = label(f"{D.FLAW_LENGTH:.0f} mm", FS_EQUATION, ACCENT_4, weight=BOLD)
-        calc = VGroup(n135, minus, n112, eq, res).arrange(RIGHT, buff=0.32).move_to([-1.65, -2.85, 0])
+        calc = VGroup(n135, minus, n112, eq, res).arrange(RIGHT, buff=0.32).move_to([-1.65, -3.0, 0])
         self.sync(c("مِئَةٌ", 1))
         self.play(FadeIn(n135, shift=UP * 0.15), run_time=0.4)
         self.sync(c("نَاقِصُ"))
@@ -573,24 +577,24 @@ class UtSeriesEp04(SyncedScene):
         # ---- what the method is for ----
         self.sync(c("وَهٰذِهِ") - 0.1)
         self.play(FadeOut(calc), run_time=0.4)
-        len_tag = tag_line("gives the length, not the height", "ruler", ACCENT_3, width=6.2).move_to([-1.65, -2.8, 0])
+        len_tag = tag_line("gives the length, not the height", "ruler", ACCENT_3, width=6.2).move_to([-1.65, -3.0, 0])
         self.sync(c("لِلطُّولِ"))
         self.play(FadeIn(len_tag, shift=UP * 0.1), run_time=0.4)
-        beam_b = DoubleArrow([X(123.5) - BW * MM / 2, 2.6, 0], [X(123.5) + BW * MM / 2, 2.6, 0], buff=0, color=ACCENT_1,
+        beam_b = DoubleArrow([X(123.5) - BW * MM / 2, 2.4, 0], [X(123.5) + BW * MM / 2, 2.4, 0], buff=0, color=ACCENT_1,
                              stroke_width=3, tip_length=0.12)
         beam_l = label("beam width", FS_TAG - 4, ACCENT_1, weight=BOLD).next_to(beam_b, UP, 0.06)
         self.sync(c("وَتَصْلُحُ"))
         self.play(FadeOut(VGroup(l1, l2, len_arrow, len_lab, m1, m2, half_line, drop_tag)), pos.animate(run_time=0.9).set_value(123.5), run_time=0.9)
         self.sync(c("الأَكْبَرِ"))
         self.play(GrowArrow(beam_b), FadeIn(beam_l), run_time=0.5)
-        ok_t = icon("check", OK_C, 0.5).move_to([X(FB) + 1.2, 2.55, 0])
+        ok_t = icon("check", OK_C, 0.5).move_to([X(FB) + 1.2, 2.45, 0])
         self.play(FadeIn(ok_t, scale=0.6), run_time=0.3)
         self.sync(c("وَالأَصْغَرُ") - 0.1)
         small = Dot([X(123.5), BAND_Y, 0], radius=0.09, color=ACCENT_4)
         self.play(FadeOut(len_tag), FadeOut(ok_t), ReplacementTransform(flaw, small), run_time=0.6)
-        sm_tag = tag_line("smaller than the beam: compare the echo with", "alert-triangle", ALERT_C, width=6.9).move_to([-1.65, -1.75, 0])
-        c_dac = chip("DAC curve", "chart-line", ACCENT_3, 2.9).move_to([-3.4, -2.75, 0])
-        c_dgs = chip("DGS diagram", "chart-bar", ACCENT_1, 3.3).move_to([0.2, -2.75, 0])
+        sm_tag = tag_line("smaller than the beam: compare the echo with", "alert-triangle", ALERT_C, width=6.9).move_to([-1.65, -1.9, 0])
+        c_dac = chip("DAC curve", "chart-line", ACCENT_3, 2.9).move_to([-3.4, -3.0, 0])
+        c_dgs = chip("DGS diagram", "chart-bar", ACCENT_1, 3.3).move_to([0.2, -3.0, 0])
         self.sync(c("نُقَدِّرُهُ"))
         self.play(FadeIn(sm_tag, shift=UP * 0.1), run_time=0.4)
         self.sync(c("بِمُنْحَنَى"))
@@ -598,12 +602,210 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("بِمُخَطَّطِ"))
         self.play(FadeIn(c_dgs, shift=UP * 0.1), run_time=0.4)
         self.sync(self.end(3))
-        for m_ in (probe, cone, fill):
+        for m_ in (probe, cone, foot, fill):
             m_.clear_updaters()
         self.clear()
 
+    # ---------------- Segment 4: telling the flaw type from the echo (§8.5) ----------------
     def seg4(self):
+        c = lambda phrase, nth=1: self.cue(4, phrase, nth)
+        S = self.start(4)
+
+        def mk_probe(x, y, ang, size=1.0, beam=1.3, color=ACCENT_1):
+            """A plan-view angle probe centred on (x, y), pointing up when ang = 0 (turned counter-clockwise by ang)."""
+            body = RoundedRectangle(width=0.9 * size, height=0.55 * size, corner_radius=0.08, color=color, stroke_width=4).set_fill(BG, 1)
+            nose = Polygon([-0.2 * size, 0.275 * size, 0], [0.2 * size, 0.275 * size, 0], [0, 0.5 * size, 0],
+                           color=color, stroke_width=3).set_fill(color, 0.5)
+            bm = DashedLine([0, 0.5 * size, 0], [0, 0.5 * size + beam, 0], color=color, stroke_width=2)
+            g = VGroup(body, nose, bm)
+            g.rotate(ang, about_point=ORIGIN)
+            return g.shift(np.array([x, y, 0.0]))
+
+        # ---- the four probe movements, in plan view ----
+        FX, FY = -2.5, 1.0                                       # the flaw, in the weld band
+        plate = Rectangle(width=7.8, height=4.2, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1).move_to([-2.5, 0.2, 0])
+        band = Rectangle(width=7.8, height=0.8, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([-2.5, FY, 0])
+        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([-5.8, 1.9, 0])
+        flaw = Dot([FX, FY, 0], radius=0.13, color=ACCENT_4)
+        R_ORB = 1.8
+        glyph = [DoubleArrow([0, -0.4, 0], [0, 0.4, 0], buff=0, color=ACCENT_1, stroke_width=4, tip_length=0.15),
+                 DoubleArrow([-0.4, 0, 0], [0.4, 0, 0], buff=0, color=ACCENT_1, stroke_width=4, tip_length=0.15),
+                 Arc(radius=0.33, start_angle=0.5, angle=4.6, color=ACCENT_1, stroke_width=4).add_tip(tip_length=0.15),
+                 VGroup(Arc(radius=0.5, start_angle=PI * 0.2, angle=PI * 0.6, arc_center=[0, -0.45, 0], color=ACCENT_1,
+                            stroke_width=4).add_tip(tip_length=0.15), Dot([0, 0.05, 0], radius=0.07, color=ACCENT_4))]
+        names = ("Transverse", "Lateral", "Rotational", "Orbital")
+        rows = VGroup()
+        for k, (g_, nm) in enumerate(zip(glyph, names)):
+            g_.move_to([3.2, 2.2 - 1.3 * k, 0])
+            t_ = label(nm, FS_NOTE, INK, weight=BOLD).next_to(g_, RIGHT, 0.35)
+            rows.add(VGroup(g_, t_))
+        P0 = np.array([FX, -0.75, 0.0])
+        probe = mk_probe(*P0[:2], 0.0)
+        self.play(FadeIn(plate), FadeIn(band), FadeIn(wlab), FadeIn(flaw), run_time=0.7)
+        self.sync(c("بِأَرْبَعِ"))
+        self.play(FadeIn(probe), run_time=0.4)
+        self.sync(c("إِلَى"))
+        self.play(FadeIn(rows[0], shift=LEFT * 0.15), run_time=0.4)
+        self.play(UpdateFromAlphaFunc(probe, lambda m, a: m.become(mk_probe(P0[0], P0[1] + 0.6 * np.sin(a * TAU), 0.0))), run_time=1.6)
+        self.sync(c("وَجَانِبِيًّا"))
+        self.play(FadeIn(rows[1], shift=LEFT * 0.15), run_time=0.4)
+        self.play(UpdateFromAlphaFunc(probe, lambda m, a: m.become(mk_probe(P0[0] + 1.0 * np.sin(a * TAU), P0[1], 0.0))), run_time=1.6)
+        self.sync(c("وَدَوَرَانًا"))
+        self.play(FadeIn(rows[2], shift=LEFT * 0.15), run_time=0.4)
+        self.play(UpdateFromAlphaFunc(probe, lambda m, a: m.become(mk_probe(P0[0], P0[1], 0.6 * np.sin(a * TAU)))), run_time=1.6)
+        self.sync(c("وَحَرَكَةً"))
+        self.play(FadeIn(rows[3], shift=LEFT * 0.15), run_time=0.4)
+
+        def orbit(m, a):
+            th = 0.75 * np.sin(a * TAU)
+            m.become(mk_probe(FX + R_ORB * np.sin(th), FY - R_ORB * np.cos(th), th, beam=R_ORB - 0.55))
+        self.play(UpdateFromAlphaFunc(probe, orbit), run_time=1.8)
+
+        # ---- four flaws: how each echo behaves while the probe moves ----
+        self.sync(c("المَسَامَةُ") - 0.4)
+        self.clear(run_time=0.5)
+        PW, PH = 6.5, 3.2
+        centers = [(-3.6, 1.7), (3.6, 1.7), (-3.6, -1.75), (3.6, -1.75)]
+        titles = ("Isolated pore", "Porosity", "Slag inclusion", "Planar flaw")
+        cap_cols = (INK, INK, INK, ALERT_C)
+
+        def frame_of(k):
+            px, py = centers[k]
+            fr = RoundedRectangle(width=PW, height=PH, corner_radius=0.15, color=INK, stroke_width=3).set_fill(BG, 1).move_to([px, py, 0])
+            tt = label(titles[k], FS_TAG, INK, weight=BOLD).move_to([px - PW / 2 + 0.2 + 0.0, py + PH / 2 - 0.3, 0])
+            tt.align_to(fr, LEFT).shift(RIGHT * 0.2)
+            return fr, tt
+
+        def scan_of(k, peaks, sigma=1.0):
+            px, py = centers[k]
+            sc = small_scan([px + 1.6, py - 0.1], peaks, width=2.9, height=1.6, t_max=110.0, ticks=(0,), sigma=sigma,
+                            x_caption="", y_caption="")
+            return sc
+
+        def note_of(k, text, color=INK, icon_name=None):
+            px, py = centers[k]
+            t_ = label(text, FS_TAG - 2, color, weight=BOLD)
+            return t_.move_to([px, py - PH / 2 + 0.32, 0])
+
+        def probe_updater(k, ph, fn):
+            """The panel's probe follows tracker `ph` through fn(ph) -> (x, y, angle)."""
+            g = mk_probe(*fn(ph.get_value()), size=0.55, beam=0.5)
+            return g
+
+        # (a) the isolated pore: a poor reflector, the same small echo from every side
+        F = [np.array([centers[k][0] - 1.6, centers[k][1] + 0.0, 0.0]) for k in range(4)]
+        R_P = 0.95
+        ph_a = ValueTracker(0.0)
+        fr_a, tt_a = frame_of(0)
+        pore = Circle(radius=0.11, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.9).move_to(F[0])
+        sc_a = scan_of(0, [(0, 0.75), (50, 0.28)])
+        sc_a.trace.add_updater(lambda m: None)
+        orb = lambda k_, ph: (F[k_][0] + R_P * np.sin(ph), F[k_][1] - R_P * np.cos(ph), ph)
+        pr_a = mk_probe(*orb(0, 0.0), size=0.55, beam=0.4)
+        n_a = note_of(0, "small, and the same from every side")
+        self.sync(c("المَسَامَةُ") - 0.1)
+        self.play(FadeIn(fr_a), FadeIn(tt_a), FadeIn(pore), FadeIn(sc_a), FadeIn(sc_a.trace), FadeIn(pr_a), run_time=0.7)
+        self.sync(c("كُرَوِيَّةٌ"))
+        self.play(Indicate(pore, color=ACCENT_4, scale_factor=1.8), run_time=0.7)
+        self.sync(c("ضَعِيفٌ"))
+        self.play(FadeIn(n_a, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("يَتَغَيَّرُ", 1) - 0.3)
+        self.play(UpdateFromAlphaFunc(pr_a, lambda m, a: m.become(mk_probe(*orb(0, 0.8 * np.sin(a * TAU)), size=0.55, beam=0.4))), run_time=3.0)
+
+        # (b) porosity: many tiny echoes that rise and fall quickly and smoothly
+        ph_b = ValueTracker(0.0)
+        fr_b, tt_b = frame_of(1)
+        pores = VGroup(*[Circle(radius=0.055, color=ACCENT_4, stroke_width=2).set_fill(ACCENT_4, 0.9)
+                         .move_to(np.array([centers[1][0] - 1.6 + dx, centers[1][1] + dy, 0.0]))
+                         for dx, dy in ((-0.45, 0.1), (-0.2, -0.12), (0.05, 0.14), (0.28, -0.05), (0.5, 0.1), (-0.05, -0.2))])
+        sc_b = scan_of(1, [(0, 0.75)] + [(s_, 0.2) for s_ in (40, 46, 52, 58, 64, 70)], sigma=0.9)
+        sc_b.trace.clear_updaters()
+        sc_b.trace.add_updater(lambda m: (setattr(sc_b, "peaks", [(0, 0.75)] + [
+            (s_, 0.06 + 0.2 * (0.5 + 0.5 * np.sin(5.0 * ph_b.get_value() + 1.3 * i))) for i, s_ in enumerate((40, 46, 52, 58, 64, 70))]),
+                                          sc_b.update_trace(sc_b.t_max)))
+        pr_b = mk_probe(centers[1][0] - 1.6, centers[1][1] - R_P, 0.0, size=0.55, beam=0.4)
+        n_b = note_of(1, "many tiny echoes, rising and falling")
+        self.sync(c("وَالمَسَامِيَّةُ") - 0.2)
+        self.play(FadeIn(fr_b), FadeIn(tt_b), FadeIn(pores), FadeIn(sc_b), FadeIn(sc_b.trace), FadeIn(pr_b), run_time=0.7)
+        self.sync(c("كَثِيرَةٌ"))
+        self.play(FadeIn(n_b, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("تَرْتَفِعُ"))
+        self.play(UpdateFromAlphaFunc(pr_b, lambda m, a: (ph_b.set_value(1.6 * np.sin(a * TAU)),
+                                                         m.become(mk_probe(centers[1][0] - 1.6 + 0.55 * np.sin(a * TAU), centers[1][1] - R_P, 0.0,
+                                                                           size=0.55, beam=0.4)))), run_time=3.4)
+        sc_b.trace.clear_updaters()
+
+        # (c) slag: a tall, many-peaked "pine tree" echo that stays when the probe goes round
+        fr_c, tt_c = frame_of(2)
+        blob_pts = [(-0.28, -0.05), (-0.1, 0.2), (0.15, 0.17), (0.3, -0.02), (0.12, -0.2), (-0.15, -0.16)]
+        blob = Polygon(*[np.array([F[2][0] + x, F[2][1] + y, 0.0]) for x, y in blob_pts], color=ACCENT_4,
+                       stroke_width=3).set_fill(ACCENT_4, 0.85)
+        pine = [(0, 0.75), (44, 0.35), (47, 0.62), (50, 0.45), (53, 0.8), (56, 0.52), (59, 0.68)]
+        sc_c = scan_of(2, [(0, 0.75)], sigma=1.1)
+        sc_c.trace.clear_updaters()
+        shown_c = {"peaks": [(0, 0.75)]}
+        sc_c.trace.add_updater(lambda m: (setattr(sc_c, "peaks", shown_c["peaks"]), sc_c.update_trace(sc_c.t_max)))
+        pr_c = mk_probe(*orb(2, 0.0), size=0.55, beam=0.4)
+        n_c = note_of(2, "tall, many peaks, steady when orbited")
+        self.sync(c("وَالخَبَثُ") - 0.2)
+        self.play(FadeIn(fr_c), FadeIn(tt_c), FadeIn(blob), FadeIn(sc_c), FadeIn(sc_c.trace), FadeIn(pr_c), run_time=0.7)
+        self.sync(c("عَالِيًا"))
+        shown_c["peaks"] = [(0, 0.75), (47, 0.62), (53, 0.8)]
+        self.wait(0.5)
+        self.sync(c("مُتَعَدِّدَ"))
+        shown_c["peaks"] = pine
+        self.play(FadeIn(n_c, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("يَتَغَيَّرُ", 2) - 0.2)
+        self.play(UpdateFromAlphaFunc(pr_c, lambda m, a: m.become(mk_probe(*orb(2, 0.8 * np.sin(a * TAU)), size=0.55, beam=0.4))), run_time=3.0)
+        sc_c.trace.clear_updaters()
+
+        # (d) a planar flaw: strong square on, much weaker from any other side
+        ph_d = ValueTracker(0.0)
+        fr_d, tt_d = frame_of(3)
+        bar = Rectangle(width=1.0, height=0.09, color=ACCENT_4, stroke_width=2).set_fill(ACCENT_4, 0.9).move_to(F[3])
+        sc_d = scan_of(3, [(0, 0.75), (50, 0.8)], sigma=1.0)
+        sc_d.trace.clear_updaters()
+        shown_d = {"on": False}
+        sc_d.trace.add_updater(lambda m: (setattr(sc_d, "peaks", [(0, 0.75)] + ([(50, 0.8 * np.exp(-(ph_d.get_value() / 0.3) ** 2))] if shown_d["on"] else [])),
+                                          sc_d.update_trace(sc_d.t_max)))
+        pr_d = mk_probe(*orb(3, 0.0), size=0.55, beam=0.4)
+        n_d = note_of(3, "strong square on, drops sharply otherwise", ALERT_C)
+        self.sync(c("وَالعَيْبُ") - 0.2)
+        self.play(FadeIn(fr_d), FadeIn(tt_d), FadeIn(bar), FadeIn(sc_d), FadeIn(sc_d.trace), FadeIn(pr_d), run_time=0.7)
+        self.sync(c("قَوِيٌّ"))
+        shown_d["on"] = True
+        self.play(Indicate(sc_d.frame, color=ACCENT_2, scale_factor=1.03), run_time=0.6)
+        self.sync(c("وَيَهْبِطُ"))
+        self.play(FadeIn(n_d, shift=UP * 0.1), run_time=0.4)
+        self.play(UpdateFromAlphaFunc(pr_d, lambda m, a: (ph_d.set_value(0.9 * a),
+                                                         m.become(mk_probe(*orb(3, 0.9 * a), size=0.55, beam=0.4)))), run_time=2.2)
+        self.sync(c("الأَخْطَرُ"))
+        self.play(Indicate(fr_d, color=ALERT_C, scale_factor=1.02), run_time=0.7)
+        sc_d.trace.clear_updaters()
+
+        # ---- the verdict joins the location with the behaviour ----
+        self.sync(c("وَيَجْمَعُ") - 0.2)
+        self.clear(run_time=0.5)
+        wd = WeldSection(cx=-4.4, y_top=1.3, t=1.2, half_w=1.6)
+        dot1 = Dot(wd.face_point(1, 0.8) + LEFT * 0.04, radius=0.08, color=ACCENT_4)
+        dot2 = Dot([wd.cx, wd.y_top - 0.6, 0], radius=0.08, color=ACCENT_4)
+        loc_t = label("Location in the weld", FS_TAG, INK, weight=BOLD).move_to([-4.4, -0.55, 0])
+        beh = small_scan([0.2, 0.5], [(0, 0.8), (50, 0.9), (62, 0.5)], width=3.0, height=1.8, t_max=110.0, ticks=(0,),
+                         x_caption="", y_caption="")
+        beh_t = label("Behaviour when the probe moves", FS_TAG, INK, weight=BOLD).move_to([0.2, -0.55, 0])
+        plus = label("+", FS_HEADING, INK, weight=BOLD).move_to([-2.1, 0.5, 0])
+        eq = label("=", FS_HEADING, INK, weight=BOLD).move_to([2.35, 0.5, 0])
+        ftype = chip("Flaw type", "search", ACCENT_3, 2.9).move_to([4.7, 0.5, 0])
+        one = chip("one echo shape alone", "x", ALERT_C, 5.0).move_to([0.0, -2.3, 0])
+        self.sync(c("المَوْقِعَ") - 0.1)
+        self.play(FadeIn(wd), FadeIn(dot1), FadeIn(dot2), FadeIn(loc_t), run_time=0.6)
+        self.sync(c("السُّلُوكِ") - 0.1)
+        self.play(FadeIn(plus), FadeIn(beh), FadeIn(beh.trace), FadeIn(beh_t), run_time=0.6)
+        self.play(FadeIn(eq), FadeIn(ftype, shift=LEFT * 0.15), run_time=0.5)
+        self.sync(c("شَكْلَ") - 0.1)
+        self.play(FadeIn(one, shift=UP * 0.1), run_time=0.5)
         self.sync(self.end(4))
+        self.clear()
 
     def seg5(self):
         self.sync(self.end(5))
