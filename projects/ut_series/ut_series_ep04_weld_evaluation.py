@@ -11,7 +11,7 @@ from explainer import *
 import numpy as np
 import ut_series_data as D
 from ut_visuals import (wavefront, Probe, SteelBlock, AScan, tag_line, wrap_two_lines, signal_bar,
-                        knob, wedge_probe, WeldSection)
+                        knob, wedge_probe, WeldSection, small_scan)
 from ut_review import run_review, fly, pk
 
 # Fully diacritized narration, approved by the owner on 2026-10-10 (with his three edits: ASME spelling, the slag sentence).
@@ -67,6 +67,7 @@ def chip(text, icon_name, color=INK, width=3.2):
     """A rounded note with an icon and a short text (parts: box, icon, txt)."""
     ic = icon(icon_name, color, 0.42)
     t = label(text, FS_TAG, INK, weight=BOLD)
+    width = max(width, t.width + 1.15)                       # the box always holds its text
     box = RoundedRectangle(width=width, height=0.7, corner_radius=0.18, color=color, stroke_width=3).set_fill(PANEL_FILL, 1)
     ic.move_to(box.get_left() + RIGHT * 0.42)
     t.next_to(ic, RIGHT, 0.18)
@@ -209,9 +210,9 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("تَاجِ") - 0.3)
         self.play(Create(leg2), run_time=0.5)
         self.play(Indicate(wd.cap, color=ACCENT_2, scale_factor=1.0), run_time=0.5)
-        fs = small_scan([5.0, 1.5], [(0, 1.1), (55, 0.95)], width=3.0, height=2.0, t_max=110.0, ticks=(0, 50, 100),
+        fs = small_scan([5.0, 2.5], [(0, 1.0), (55, 0.9)], width=3.0, height=1.7, t_max=110.0, ticks=(0, 50, 100),
                         x_caption="", y_caption="")
-        mis = tag_line("read as a root echo", "alert-triangle", ALERT_C, width=3.3).move_to([5.0, 0.15, 0])
+        mis = tag_line("read as a root echo", "alert-triangle", ALERT_C, width=3.3).move_to([5.0, 1.0, 0])
         self.sync(c("فَتُظَنُّ"))
         self.play(FadeIn(fs), FadeIn(fs.trace), run_time=0.5)
         self.sync(c("جَذْرٍ") - 0.2)
@@ -254,9 +255,9 @@ class UtSeriesEp04(SyncedScene):
         sq = right_angle_mark(F, -dface, -v60, size=0.24, color=ACCENT_1)
         self.sync(c("العَمُودِيِّ", 2) - 0.2)
         self.play(Create(sq), run_time=0.4)
-        fs2 = small_scan([5.0, 1.5], [(0, 1.1), (50, 1.5)], width=3.0, height=2.0, t_max=110.0, ticks=(0, 50, 100),
+        fs2 = small_scan([5.0, 2.5], [(0, 1.0), (50, 1.4)], width=3.0, height=1.7, t_max=110.0, ticks=(0, 50, 100),
                          x_caption="", y_caption="")
-        good = tag_line("clear echo", "check", OK_C, width=3.0).move_to([5.0, 0.15, 0])
+        good = tag_line("clear echo", "check", OK_C, width=3.0).move_to([5.0, 1.0, 0])
         self.sync(c("عَدَمُ"))
         travel(self, wf(ACCENT_2, -v60, amp=0.2), [F, apr.exit + np.array([0, 0.05, 0])], 0.7)
         self.play(FadeIn(fs2), FadeIn(fs2.trace), FadeIn(good, shift=UP * 0.1), run_time=0.5)
@@ -269,8 +270,8 @@ class UtSeriesEp04(SyncedScene):
         for sgn in (-1, 1):
             for dist, name in ((HALF, "½ skip"), (FULL, "full skip")):
                 x = sgn * dist
-                ticks.add(Line([x, TOP, 0], [x, TOP + 0.3, 0], color=INK, stroke_width=4))
-                tags.add(label(name, FS_TAG, INK, weight=BOLD).move_to([x, TOP + 0.62, 0]))
+                ticks.add(Line([x, TOP - T, 0], [x, TOP - T - 0.3, 0], color=INK, stroke_width=4))
+                tags.add(label(name, FS_TAG, INK, weight=BOLD).move_to([x, TOP - T - 0.62, 0]))
         pl_a, pr_a = wedge_probe(-HALF, TOP, facing=1, size=0.9), wedge_probe(HALF, TOP, facing=-1, size=0.9)
         beams_a = VGroup(DashedLine([-HALF, TOP, 0], [0, TOP - T, 0], color=ACCENT_1, stroke_width=4),
                          DashedLine([HALF, TOP, 0], [0, TOP - T, 0], color=ACCENT_1, stroke_width=4))
@@ -348,11 +349,258 @@ class UtSeriesEp04(SyncedScene):
         scr.trace.clear_updaters()
         self.clear()
 
+    # ---------------- Segment 2: the recording level on the DAC curve (§8.2) ----------------
     def seg2(self):
-        self.sync(self.end(2))
+        c = lambda phrase, nth=1: self.cue(2, phrase, nth)
+        S = self.start(2)
+        H = lambda s: 3.0 * np.exp(-s / 45.0)                    # the DAC curve: identical reflectors fall with the path
+        scan = AScan([(0, 1.8)], width=8.2, height=3.8, t_min=-6.0, t_max=110.0, ticks=(0, 25, 50, 75, 100), sigma=0.9,
+                     x_caption="Sound path (mm)", y_caption="Echo amplitude")
+        scan.shift(np.array([-1.7, 0.25, 0.0]) - scan.frame.get_center())
+        shown = {"echoes": [(14, 0.6), (27, 1.1), (41, 0.35), (57, 0.8), (72, 0.45), (90, 0.9)]}
+        scan.trace.add_updater(lambda m: (setattr(scan, "peaks", [(0, 1.8)] + shown["echoes"]), scan.update_trace(scan.t_max)))
+        CX = 4.8                                                 # centre of the right-hand column
 
+        def curve(f, color, dashed=False, s0=3.0, s1=100.0, width=6):
+            vm = VMobject(color=color, stroke_width=width)
+            vm.set_points_smoothly([[scan.x_of(s), scan.y_base() + f(s), 0] for s in np.linspace(s0, s1, 120)])
+            return DashedVMobject(vm, num_dashes=46, dashed_ratio=0.55) if dashed else vm
+
+        # ---- not every signal is recorded ----
+        self.play(FadeIn(scan), run_time=0.5)
+        self.add(scan.trace)
+        not_all = tag_line("not every signal is recorded", "x", ALERT_C, width=3.9).move_to([CX, 2.7, 0])
+        self.sync(c("كُلُّ"))
+        self.play(FadeIn(not_all, shift=UP * 0.1), run_time=0.4)
+        # ---- the DAC curve: peaks of identical reflectors at different depths, joined ----
+        self.sync(c("نَعْتَمِدُ") - 0.1)
+        shown["echoes"] = []
+        self.play(FadeOut(not_all), run_time=0.4)
+        cal = [14.0, 45.0, 80.0]
+        dots = VGroup()
+        for s_, cue_word in zip(cal, ("قِمَمَ", "عَاكِسَاتٍ", "أَعْمَاقٍ")):
+            self.sync(c(cue_word))
+            shown["echoes"].append((s_, H(s_)))
+            d_ = Dot([scan.x_of(s_), scan.y_base() + H(s_), 0], radius=0.09, color=ACCENT_3)
+            dots.add(d_)
+            self.play(GrowFromCenter(d_), run_time=0.3)
+        dac = curve(H, ACCENT_3)
+        self.sync(c("مُخْتَلِفَةٍ"))
+        self.play(Create(dac, run_time=1.2, rate_func=linear))
+        dac_lab = label("DAC curve", FS_NOTE, ACCENT_3, weight=BOLD).move_to([CX, 3.15, 0])
+        self.sync(c("دِي", 1))
+        self.play(FadeIn(dac_lab, shift=UP * 0.1), run_time=0.4)
+        why1 = tag_line("the beam spreads", "arrows-exchange", INK, width=3.7, size=FS_TAG).move_to([CX, 2.2, 0])
+        why2 = tag_line("the wave is attenuated", "wind", INK, width=3.9, size=FS_TAG).move_to([CX, 1.5, 0])
+        self.sync(c("الحُزْمَةَ"))
+        self.play(FadeIn(why1), run_time=0.4)
+        self.sync(c("وَالمَوْجَةَ"))
+        self.play(FadeIn(why2), run_time=0.4)
+        # ---- a recording level, relative to the curve ----
+        self.sync(c("وَيُحَدِّدُ", 1) - 0.1)
+        self.play(FadeOut(why1), FadeOut(why2), run_time=0.4)
+        rec = curve(lambda s: H(s) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100, ACCENT_2, dashed=True, width=5)
+        rec_lab = label("Recording level", FS_TAG + 2, ACCENT_2, weight=BOLD).move_to([CX, 2.35, 0])
+        note = VGroup(label("Illustrative levels", FS_TAG, ACCENT_1, weight=BOLD), label("(not code values)", FS_TAG - 4, GREY_INK))
+        note.arrange(DOWN, buff=0.05).move_to([CX, 1.15, 0])
+        self.sync(c("تَسْجِيلٍ"))
+        self.play(Create(rec, run_time=1.0, rate_func=linear), FadeIn(rec_lab, shift=UP * 0.1))
+        self.play(FadeIn(note), run_time=0.3)
+        # an echo under the line is ignored; an echo above it is investigated and recorded
+        s_lo, s_fl = 30.0, 60.0
+        lo_h = H(s_lo) * D.ILLUSTRATIVE_ECHO_LOW_PCT_DAC / 100
+        fl_h = H(s_fl) * D.AMP_PCT_DAC / 100
+        ign = chip("Ignored", "x", GREY_INK, 2.5).move_to([CX, 0.45, 0])
+        self.sync(c("صَدًى", 1) - 0.2)
+        shown["echoes"].append((s_lo, lo_h))
+        lo_dot = Dot([scan.x_of(s_lo), scan.y_base() + lo_h, 0], radius=0.08, color=GREY_INK)
+        self.play(GrowFromCenter(lo_dot), run_time=0.3)
+        self.sync(c("نُهْمِلُهُ") - 0.2)
+        self.play(FadeIn(ign, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("وَصَدًى") - 0.1)
+        shown["echoes"].append((s_fl, fl_h))
+        fl_dot = Dot([scan.x_of(s_fl), scan.y_base() + fl_h, 0], radius=0.1, color=ACCENT_4)
+        self.play(GrowFromCenter(fl_dot), run_time=0.3)
+        head = chip("Investigate & record", "search", ACCENT_3, 3.4).move_to([CX, -0.45, 0])
+        rows = VGroup(tag_line("location", "map-pin", INK, width=3.2, size=FS_TAG),
+                      tag_line("type", "search", INK, width=3.2, size=FS_TAG),
+                      tag_line("length", "ruler", INK, width=3.2, size=FS_TAG),
+                      tag_line("amplitude vs the curve", "chart-bar", INK, width=3.7, size=FS_TAG))
+        rows.arrange(DOWN, aligned_edge=LEFT, buff=0.2).move_to([CX, -2.15, 0]).align_to(head, LEFT)
+        self.sync(c("نَتَحَرَّى"))
+        self.play(FadeIn(head, shift=UP * 0.1), run_time=0.4)
+        for r_, w_ in zip(rows, ("مَوْقِعَهُ", "وَنَوْعَهُ", "وَطُولَهُ", "وَسَعَتَهُ")):
+            self.sync(c(w_))
+            self.play(FadeIn(r_, shift=RIGHT * 0.15), run_time=0.35)
+        # ---- a higher level for evaluation or rejection, set by the code ----
+        self.sync(c("وَيُحَدِّدُ", 2) - 0.1)
+        ev = curve(lambda s: H(s) * D.ILLUSTRATIVE_EVAL_PCT_DAC / 100, ACCENT_4, dashed=True, width=5)
+        ev_lab = label("Evaluation level", FS_TAG + 2, ACCENT_4, weight=BOLD).move_to([CX, 1.75, 0])
+        self.sync(c("مُسْتَوًى"))
+        self.play(Create(ev, run_time=1.0, rate_func=linear), FadeIn(ev_lab, shift=UP * 0.1))
+        self.sync(c("لِلتَّقْيِيمِ"))
+        self.play(Indicate(fl_dot, color=ACCENT_4, scale_factor=1.6), run_time=0.6)
+        per = tag_line("the percentages differ from code to code", "arrows-exchange", INK, width=7.2, size=FS_TAG)
+        per.move_to([-1.7, -2.9, 0])
+        self.sync(c("وَالنِّسَبُ"))
+        self.play(FadeIn(per, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("تَخْتَلِفُ"))
+        self.play(rec.animate(run_time=0.5).shift(UP * 0.18), ev.animate(run_time=0.5).shift(DOWN * 0.12))
+        self.play(rec.animate(run_time=0.5).shift(DOWN * 0.1), ev.animate(run_time=0.5).shift(UP * 0.1))
+        self.sync(self.end(2))
+        scan.trace.clear_updaters()
+        self.clear()
+
+    # ---------------- Segment 3: sizing the length by the 6 dB drop (§8.4.2.1) ----------------
     def seg3(self):
+        c = lambda phrase, nth=1: self.cue(3, phrase, nth)
+        S = self.start(3)
+        MM, BW = 0.17, 8.0                                       # units per mm on the ruler; the beam width on the weld, mm
+        FA, FB = D.POS_6DB_1, D.POS_6DB_2                        # the flaw's two ends as the 6 dB marks will find them
+        X = lambda mm: -5.9 + MM * (mm - 100.0)
+        BAND_Y = 1.7
+
+        def amp(pos):
+            ov = max(0.0, min(pos + BW / 2, FB) - max(pos - BW / 2, FA))
+            return ov / BW                                       # the share of the beam that is on the flaw
+
+        pos = ValueTracker(104.0)
+        vis = ValueTracker(0.0)
+        plate = Rectangle(width=10.0, height=3.0, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1).move_to([-1.6, 1.6, 0])
+        band = Rectangle(width=10.0, height=0.9, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([-1.6, BAND_Y, 0])
+        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([-5.9, 2.78, 0])
+        flaw = Rectangle(width=X(FB) - X(FA), height=0.35, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8)
+        flaw.move_to([(X(FA) + X(FB)) / 2, BAND_Y, 0])
+        ruler = Line([X(100), -0.5, 0], [X(150), -0.5, 0], color=INK, stroke_width=3)
+        rticks = VGroup(*[Line([X(m), -0.5, 0], [X(m), -0.65, 0], color=INK, stroke_width=3) for m in range(100, 151, 10)])
+        rlabs = VGroup(*[label(str(m), FS_TAG - 4, GREY_INK).move_to([X(m), -0.9, 0]) for m in range(100, 151, 10)])
+        runit = label("mm", FS_TAG - 4, GREY_INK).move_to([X(150) + 0.5, -0.9, 0])
+
+        probe = VGroup(RoundedRectangle(width=0.9, height=0.6, corner_radius=0.08, color=ACCENT_1, stroke_width=4).set_fill(BG, 1),
+                       Polygon([-0.2, 0.3, 0], [0.2, 0.3, 0], [0, 0.55, 0], color=ACCENT_1, stroke_width=3).set_fill(ACCENT_1, 0.5))
+        probe.add_updater(lambda m: m.move_to([X(pos.get_value()), 0.62, 0]))
+        cone = Polygon([0, 0, 0], [1, 0, 0], [1, 1, 0], color=ACCENT_1, stroke_width=0)
+
+        def cone_update(m):
+            x0 = X(pos.get_value())
+            half = BW * MM / 2
+            m.become(Polygon([x0 - 0.17, 1.17, 0], [x0 + 0.17, 1.17, 0], [x0 + half, BAND_Y, 0], [x0 - half, BAND_Y, 0],
+                             color=ACCENT_1, stroke_width=0).set_fill(ACCENT_1, 0.2 * vis.get_value()))
+        cone.add_updater(cone_update)
+        axis_line = DashedLine([0, 1.17, 0], [0, 2.35, 0], color=ACCENT_1, stroke_width=3)
+        axis_line.add_updater(lambda m: m.put_start_and_end_on([X(pos.get_value()), 1.17, 0], [X(pos.get_value()), 2.35, 0]))
+        axis_line.set_stroke(opacity=0)
+
+        MX, MY, MH = 5.7, 1.8, 3.0
+        meter = Rectangle(width=0.7, height=MH, color=INK, stroke_width=3).set_fill(PANEL_FILL, 1).move_to([MX, MY, 0])
+        fill = Rectangle(width=0.62, height=0.02, color=ACCENT_2, stroke_width=0).set_fill(ACCENT_2, 1)
+        fill.add_updater(lambda m: m.become(Rectangle(width=0.62, height=max(amp(pos.get_value()) * (MH - 0.1), 0.02),
+                                                      color=ACCENT_2, stroke_width=0).set_fill(ACCENT_2, 1)
+                                            .move_to([MX, MY - MH / 2 + 0.05 + max(amp(pos.get_value()) * (MH - 0.1), 0.02) / 2, 0])))
+        half_y = MY - MH / 2 + 0.05 + 0.5 * (MH - 0.1)
+        half_line = DashedLine([MX - 0.35, half_y, 0], [MX + 0.35, half_y, 0], color=ACCENT_4, stroke_width=4)
+        mcap = label("Echo height", FS_TAG - 2, INK, weight=BOLD).move_to([MX, 0.0, 0])
+        full_tag = label("set to full", FS_TAG - 2, ACCENT_2, weight=BOLD).move_to([MX, 3.6, 0])
+        drop_tag = label("6 dB drop", FS_TAG, ACCENT_4, weight=BOLD).move_to([MX - 1.45, half_y, 0])
+
+        # ---- the probe finds the maximum, then moves along the flaw until the echo has halved ----
+        self.play(FadeIn(plate), FadeIn(band), FadeIn(wlab), FadeIn(flaw), Create(ruler), FadeIn(rticks), FadeIn(rlabs),
+                  FadeIn(runit), FadeIn(meter), FadeIn(mcap), run_time=0.8)
+        self.add(fill)
+        self.sync(c("نُحَرِّكُ"))
+        self.add(probe, cone)
+        self.play(vis.animate(run_time=0.4).set_value(1.0))
+        self.play(pos.animate(run_time=1.9, rate_func=smooth).set_value(123.5))
+        self.sync(c("أَقْصَاهُ") + 0.2)
+        self.play(FadeIn(full_tag, shift=DOWN * 0.1), run_time=0.4)
+        self.sync(c("نُحَرِّكُهُ"))
+        self.play(FadeOut(full_tag), run_time=0.3)
+        self.play(pos.animate(run_time=3.2, rate_func=linear).set_value(float(FA)))
+        self.sync(c("سِتَّةَ"))
+        self.play(Create(half_line), FadeIn(drop_tag, shift=RIGHT * 0.1), run_time=0.5)
+        # why one half: the beam axis is on the edge, half the beam on the flaw
+        self.sync(c("مِحْوَرُ"))
+        self.add(axis_line)
+        self.play(axis_line.animate(run_time=0.4).set_stroke(opacity=1))
+        out_t = label("outside", FS_TAG, GREY_INK, weight=BOLD).move_to([X(FA) - 1.0, 2.75, 0])
+        in_t = label("on the flaw", FS_TAG, ACCENT_4, weight=BOLD).move_to([X(FA) + 1.1, 2.75, 0])
+        self.sync(c("نِصْفُهَا") - 0.1)
+        self.play(FadeIn(in_t, shift=DOWN * 0.1), run_time=0.4)
+        self.sync(c("وَنِصْفُهَا") - 0.1)
+        self.play(FadeIn(out_t, shift=DOWN * 0.1), run_time=0.4)
+        # mark the position, then repeat towards the other end
+        self.sync(c("نُعَلِّمُ") - 0.1)
+        self.play(FadeOut(out_t), FadeOut(in_t), FadeOut(axis_line), run_time=0.4)
+        self.remove(axis_line)
+
+        def mark(mm):
+            return Line([X(mm), -0.28, 0], [X(mm), -0.7, 0], color=ACCENT_3, stroke_width=7)
+        m1 = mark(FA)
+        self.sync(c("مَوْضِعَ"))
+        self.play(Create(m1), run_time=0.4)
+        self.sync(c("وَنُكَرِّرُ"))
+        self.play(pos.animate(run_time=2.0, rate_func=smooth).set_value(float(FB)))
+        m2 = mark(FB)
+        self.sync(c("وَالمَسَافَةُ") - 0.2)
+        self.play(Create(m2), run_time=0.4)
+        len_arrow = DoubleArrow([X(FA), -1.35, 0], [X(FB), -1.35, 0], buff=0, color=ACCENT_3, stroke_width=4, tip_length=0.16)
+        len_lab = label("length", FS_TAG, ACCENT_3, weight=BOLD).move_to([(X(FA) + X(FB)) / 2, -1.75, 0])
+        self.sync(c("العَلَامَتَيْنِ"))
+        self.play(GrowArrow(len_arrow), run_time=0.5)
+        self.sync(c("طُولُ"))
+        self.play(FadeIn(len_lab, shift=UP * 0.1), run_time=0.4)
+        # ---- the worked example (the only one of the episode) ----
+        l1 = label(f"{D.POS_6DB_1:.0f} mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([X(FA) - 0.95, -1.35, 0])
+        l2 = label(f"{D.POS_6DB_2:.0f} mm", FS_TAG, ACCENT_3, weight=BOLD).move_to([X(FB) + 0.95, -1.35, 0])
+        self.sync(c("عَشَرَ", 1) + 0.1)
+        self.play(FadeIn(l1, shift=RIGHT * 0.1), run_time=0.4)
+        self.sync(c("وَثَلَاثِينَ", 1) + 0.1)
+        self.play(FadeIn(l2, shift=LEFT * 0.1), run_time=0.4)
+        n135 = label(f"{D.POS_6DB_2:.0f}", FS_EQUATION, ACCENT_3, weight=BOLD)
+        minus = label("−", FS_EQUATION, INK, weight=BOLD)
+        n112 = label(f"{D.POS_6DB_1:.0f}", FS_EQUATION, ACCENT_3, weight=BOLD)
+        eq = label("=", FS_EQUATION, INK, weight=BOLD)
+        res = label(f"{D.FLAW_LENGTH:.0f} mm", FS_EQUATION, ACCENT_4, weight=BOLD)
+        calc = VGroup(n135, minus, n112, eq, res).arrange(RIGHT, buff=0.32).move_to([-1.65, -2.85, 0])
+        self.sync(c("مِئَةٌ", 1))
+        self.play(FadeIn(n135, shift=UP * 0.15), run_time=0.4)
+        self.sync(c("نَاقِصُ"))
+        self.play(FadeIn(minus), run_time=0.3)
+        self.sync(c("مِئَةٍ", 3))
+        self.play(FadeIn(n112, shift=UP * 0.15), run_time=0.4)
+        self.sync(c("ثَلَاثَةٌ"))
+        self.play(FadeIn(eq), FadeIn(res, shift=UP * 0.15), run_time=0.5)
+        # ---- what the method is for ----
+        self.sync(c("وَهٰذِهِ") - 0.1)
+        self.play(FadeOut(calc), run_time=0.4)
+        len_tag = tag_line("gives the length, not the height", "ruler", ACCENT_3, width=6.2).move_to([-1.65, -2.8, 0])
+        self.sync(c("لِلطُّولِ"))
+        self.play(FadeIn(len_tag, shift=UP * 0.1), run_time=0.4)
+        beam_b = DoubleArrow([X(123.5) - BW * MM / 2, 2.6, 0], [X(123.5) + BW * MM / 2, 2.6, 0], buff=0, color=ACCENT_1,
+                             stroke_width=3, tip_length=0.12)
+        beam_l = label("beam width", FS_TAG - 4, ACCENT_1, weight=BOLD).next_to(beam_b, UP, 0.06)
+        self.sync(c("وَتَصْلُحُ"))
+        self.play(FadeOut(VGroup(l1, l2, len_arrow, len_lab, m1, m2, half_line, drop_tag)), pos.animate(run_time=0.9).set_value(123.5), run_time=0.9)
+        self.sync(c("الأَكْبَرِ"))
+        self.play(GrowArrow(beam_b), FadeIn(beam_l), run_time=0.5)
+        ok_t = icon("check", OK_C, 0.5).move_to([X(FB) + 1.2, 2.55, 0])
+        self.play(FadeIn(ok_t, scale=0.6), run_time=0.3)
+        self.sync(c("وَالأَصْغَرُ") - 0.1)
+        small = Dot([X(123.5), BAND_Y, 0], radius=0.09, color=ACCENT_4)
+        self.play(FadeOut(len_tag), FadeOut(ok_t), ReplacementTransform(flaw, small), run_time=0.6)
+        sm_tag = tag_line("smaller than the beam: compare the echo with", "alert-triangle", ALERT_C, width=6.9).move_to([-1.65, -1.75, 0])
+        c_dac = chip("DAC curve", "chart-line", ACCENT_3, 2.9).move_to([-3.4, -2.75, 0])
+        c_dgs = chip("DGS diagram", "chart-bar", ACCENT_1, 3.3).move_to([0.2, -2.75, 0])
+        self.sync(c("نُقَدِّرُهُ"))
+        self.play(FadeIn(sm_tag, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("بِمُنْحَنَى"))
+        self.play(FadeIn(c_dac, shift=UP * 0.1), run_time=0.4)
+        self.sync(c("بِمُخَطَّطِ"))
+        self.play(FadeIn(c_dgs, shift=UP * 0.1), run_time=0.4)
         self.sync(self.end(3))
+        for m_ in (probe, cone, fill):
+            m_.clear_updaters()
+        self.clear()
 
     def seg4(self):
         self.sync(self.end(4))
