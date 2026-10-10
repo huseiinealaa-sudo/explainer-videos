@@ -955,13 +955,13 @@ class UtSeriesEp04(SyncedScene):
                         .move_to([x, TOPY + 0.55 + (0.12 + 0.1 * i) / 2, 0]) for i, x in enumerate(el_x)])
         t_delay = tag_line("computed time delays", "clock", ACCENT_2, width=4.6).move_to([-3.9, 1.9, 0])
         tw = ValueTracker(0.0)
-        arcs = VGroup(*[Arc(radius=0.05, start_angle=PI + 0.8, angle=PI - 1.3, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
+        arcs = VGroup(*[Arc(radius=0.05, start_angle=PI + 1.0, angle=PI - 1.5, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
                         for x in el_x])
 
         def arcs_update(m):
             for i, (x, a_) in enumerate(zip(el_x, m)):
                 r = min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.2)
-                new = Arc(radius=max(r, 0.05), start_angle=PI + 0.8, angle=PI - 1.3, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
+                new = Arc(radius=max(r, 0.05), start_angle=PI + 1.0, angle=PI - 1.5, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
                 new.set_stroke(opacity=1.0 if r > 0.04 else 0.0)
                 a_.become(new)
         arcs.add_updater(arcs_update)
@@ -986,10 +986,10 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("فَتُوَجَّهُ"))
         arcs.clear_updaters()
         front.clear_updaters()
-        beam = vpath(45)
+        beam = vpath(float(np.degrees(alpha_f)))
         t_steer = tag_line("beam steered electronically", "arrows-exchange", ACCENT_1, width=5.4).move_to([-3.9, 1.35, 0])
         self.play(FadeIn(beam), FadeIn(t_steer, shift=RIGHT * 0.1), run_time=0.5)
-        self.play(Transform(beam, vpath(60)), run_time=0.9)
+        self.play(Transform(beam, vpath(60)), run_time=0.8)
         self.sync(c("وَتُرَكَّزُ"))
         fx, fy = -3.7, TOPY - 0.95
         focus_lines = VGroup(*[Line([el_x[i], TOPY, 0], [fx, fy, 0], color=ACCENT_1, stroke_width=3) for i in (0, 3, 7)])
@@ -1100,7 +1100,7 @@ class UtSeriesEp04(SyncedScene):
         # the gap between the two diffraction signals gives the height
         gap = DoubleArrow([scr.x_of(PK["up"][0]) + 0.1, scr.y_base() + 0.14, 0], [scr.x_of(PK["low"][0]) - 0.1, scr.y_base() + 0.14, 0], buff=0,
                           color=INK, stroke_width=3, tip_length=0.1)
-        gap_lab = label("gap gives the height", FS_TAG - 4, INK, weight=BOLD).move_to([(scr.x_of(PK["up"][0]) + scr.x_of(PK["low"][0])) / 2, scr.y_base() + 1.3, 0])
+        gap_lab = label("gap gives the height", FS_TAG - 4, INK, weight=BOLD).move_to([(scr.x_of(PK["up"][0]) + scr.x_of(PK["low"][0])) / 2, scr.y_base() + 1.65, 0])
         gap_lead = DashedLine(gap_lab.get_bottom() + DOWN * 0.04, gap.get_center() + UP * 0.05, color=INK, stroke_width=2)
         hgt = DoubleArrow([0.5, TY - 0.45, 0], [0.5, TY - 1.1, 0], buff=0, color=INK, stroke_width=3, tip_length=0.1)
         self.sync(c("ارْتِفَاعَهُ") - 0.3)
@@ -1219,7 +1219,7 @@ class UtSeriesEp04(SyncedScene):
             lo = Dot([sc.x_of(30), sc.y_base() + H(30) * D.ILLUSTRATIVE_ECHO_LOW_PCT_DAC / 100, 0], radius=0.08, color=GREY_INK)
             hi = Dot([sc.x_of(60), sc.y_base() + H(60) * D.AMP_PCT_DAC / 100, 0], radius=0.1, color=ACCENT_4)
             no = icon("x", GREY_INK, 0.45).move_to([sc.x_of(30), sc.y_base() + 0.75, 0])
-            yes = icon("check", OK_C, 0.5).move_to([sc.x_of(60) + 0.45, sc.y_base() + 1.1, 0])
+            yes = icon("check", OK_C, 0.5).move_to([sc.x_of(60) + 0.45, sc.y_base() + 1.4, 0])
 
             def show():
                 self.play(FadeIn(sc), FadeIn(sc.trace), Create(dac), Create(rec), FadeIn(lab), FadeIn(dac_lab), Create(lab_lead), FadeIn(lo), FadeIn(hi), run_time=0.9)
@@ -1276,8 +1276,8 @@ class UtSeriesEp04(SyncedScene):
             rt = VGroup(*[Line([X(m_), 0.2, 0], [X(m_), 0.05, 0], color=INK, stroke_width=3) for m_ in range(100, 151, 10)])
             rl = VGroup(*[label(str(m_), FS_TAG - 4, GREY_INK).move_to([X(m_), -0.2, 0]) for m_ in range(100, 151, 10)])
             ru = label("mm", FS_TAG - 4, GREY_INK).next_to(rl[-1], RIGHT, 0.12)
-            m1 = Line([X(D.POS_6DB_1), 0.45, 0], [X(D.POS_6DB_1), -0.4, 0], color=ACCENT_3, stroke_width=7)
-            m2 = Line([X(D.POS_6DB_2), 0.45, 0], [X(D.POS_6DB_2), -0.4, 0], color=ACCENT_3, stroke_width=7)
+            m1 = Line([X(D.POS_6DB_1), 0.45, 0], [X(D.POS_6DB_1), 0.0, 0], color=ACCENT_3, stroke_width=7)
+            m2 = Line([X(D.POS_6DB_2), 0.45, 0], [X(D.POS_6DB_2), 0.0, 0], color=ACCENT_3, stroke_width=7)
             l1 = label(f"{D.POS_6DB_1:.0f} mm", FS_NOTE, ACCENT_3, weight=BOLD).move_to([X(D.POS_6DB_1) - 0.2, 1.1, 0])
             l2 = label(f"{D.POS_6DB_2:.0f} mm", FS_NOTE, ACCENT_3, weight=BOLD).move_to([X(D.POS_6DB_2) + 0.2, 1.1, 0])
             ask = label("length?", FS_HEADING, ACCENT_4, weight=BOLD).move_to([(X(D.POS_6DB_1) + X(D.POS_6DB_2)) / 2, -1.2, 0])
