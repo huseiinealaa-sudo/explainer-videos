@@ -983,7 +983,7 @@ class UtSeriesEp04(SyncedScene):
         self.play(FadeOut(VGroup(bars, t_delay, focus_lines, fdot, t_focus, t_still)), run_time=0.5)
         AX, AY, RIMG = 3.3, 3.2, 3.3
         pt = lambda ang, r: np.array([AX + r * np.sin(np.radians(ang)), AY - r * np.cos(np.radians(ang)), 0.0])
-        arc_out = ArcBetweenPoints(pt(35, RIMG), pt(70, RIMG), angle=-np.radians(35), color=GREY_INK, stroke_width=3)
+        arc_out = ArcBetweenPoints(pt(35, RIMG), pt(70, RIMG), angle=np.radians(35), color=GREY_INK, stroke_width=3)
         edge1 = Line(pt(35, 0.0), pt(35, RIMG), color=GREY_INK, stroke_width=3)
         edge2 = Line(pt(70, 0.0), pt(70, RIMG), color=GREY_INK, stroke_width=3)
         sector = VGroup(edge1, edge2, arc_out)
