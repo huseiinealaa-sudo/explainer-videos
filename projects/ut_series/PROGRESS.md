@@ -50,3 +50,16 @@ Started 2026-10-04 09:32:56 UTC (PR opened at the time stated in the pull reques
 | ep3 `ut_series_ep03_calibration` | 6:41.30 | 4:49.7 / 1:51.6 | 14.17 MiB (14,858,141 bytes) | ae0a9110d285 (no file before; checked by the manager) |
 
 Final renders: 1 per episode, 1920x1080, RENDER_OK.
+
+---
+
+# ut_series_ep04_weld_evaluation: Production Progress
+
+Started 2026-10-10 21:26:08 UTC (PR opened at the time stated in the pull request). Built entirely by the manager (the main session): no `scene-builder` and no `render-runner` call. Haiku agents (`general-purpose`, model haiku) ran only mechanical work: previews with `--qa`, digests of the overlap reports, contact sheets; the critic (`video-critic`) was called by the manager. Environment: Python 3.13, manim 0.22.0 in the virtual environment of the root `CLAUDE.md`.
+
+## Build Log
+
+| Segment | Built by | Calls | Automatic loop | Critic |
+|---------|----------|-------|----------------|--------|
+| (filled in at the end of production) | | | | |
+
