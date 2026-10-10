@@ -59,7 +59,16 @@ Started 2026-10-10 21:26:08 UTC (PR opened at the time stated in the pull reques
 
 ## Build Log
 
-| Segment | Built by | Calls | Automatic loop | Critic |
-|---------|----------|-------|----------------|--------|
-| (filled in at the end of production) | | | | |
+| Segment | Built by | Calls | Automatic loop (critical findings after each run) | Critic |
+|---------|----------|-------|--------------------------------------------------|--------|
+| seg 1 (§1 procedure) | manager | 0 agents | segment run 11 -> 0 (after the fixes) | round 1 FIX (5 critical issues across the episode, of which #1-#3, important #6); round 2 improvements only; round 3 PASS |
+| seg 2 (§2 recording level) | manager | 0 agents | 3 -> 1 -> 0; later whole-video runs 1 -> 0 | round 1-2 improvements fixed, round 3 PASS (one improvement left: the widening-cone sketch for «تَتَّسِعُ») |
+| seg 3 (§3 6 dB drop, the worked example) | manager | 0 agents | 3 -> 0; later 3 -> 0 | PASS; round-2 improvements fixed |
+| seg 4 (§4 flaw type) | manager | 0 agents | 3 -> 0 | PASS from round 1 on |
+| seg 5 (§5 code and report) | manager | 0 agents | 5 -> 0 | round 1 important #7 fixed; two-pan balance not built (improvement left open) |
+| seg 6 (§6 PAUT, TOFD, close) | manager | 0 agents | 14 -> 0 | round 2 critical (label "gap = crack height") and important (flat steered front) fixed, round 3 PASS |
+| seg 7-31 (review) | manager | 0 agents | 11 + 8 + 6 -> 0 | round 1 critical (Q3, Q7) and important (Q2, Q4) fixed, round 3 PASS |
 
+Whole-video automatic runs (all run by haiku agents, read by the manager from the counts and reports): 7. Critical findings after each: 32 -> 3 -> 0 (before the critic), 2 -> 0 (after round 1), 3 distinct -> 0 (after round 2; the changed entries 2-3 re-run once more), 0 (final run before the 1080p render, 0 improvements too).
+Critic (`video-critic`, 3 calls): round 1 FIX (5 critical, 3 important, 16 improvements); round 2 FIX (1 critical, 1 important, 14 improvements); round 3 PASS (0 critical, 0 important, 6 improvements, 4 applied after the round without a new review: Q3 check icon, Q5 marks, TOFD gap label row, PAUT front angle). Open (listed in the pull request): the widening-cone sketch of segment 2, the two-pan balance of segment 5.
+Agents of the whole production: 14 `general-purpose` agents on model haiku (13 previews/QA runs and 1 final render), 3 `video-critic` calls, 0 `scene-builder`, 0 `render-runner`, 0 `Explore`. Environment: Python 3.13, manim 0.22.0 in the virtual environment of the root `CLAUDE.md`; the preview/QA runs: 13 whole-video or segment runs.
