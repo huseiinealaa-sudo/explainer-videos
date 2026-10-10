@@ -117,8 +117,8 @@ class UtSeriesEp04(SyncedScene):
         c = lambda phrase, nth=1: self.cue(1, phrase, nth)
         S = self.start(1)
         title_card(self, "Ultrasonic Testing", "Weld examination and flaw evaluation",
-                   series="Ultrasonic Testing Series · Episode 4", run_time=1.6)
-        self.sync(S + 2.0)
+                   series="Ultrasonic Testing Series · Episode 4", run_time=1.2)
+        self.sync(S + 1.3)
         self.clear(run_time=0.4)
 
         TOP, T = 0.0, 1.4
@@ -182,7 +182,7 @@ class UtSeriesEp04(SyncedScene):
         lam_tag = label("lamination", FS_TAG, ACCENT_4, weight=BOLD).move_to([LX, TOP - T - 0.55, 0])
         lam_lead = Arrow(lam_tag.get_top() + UP * 0.04, [LX, Y_LAM - 0.1, 0], buff=0.05, color=ACCENT_4, stroke_width=3,
                          tip_length=0.12)
-        par = label("parent metal", FS_TAG, INK, weight=BOLD).move_to([-4.6, TOP - T - 0.55, 0])
+        par = label("parent metal", FS_TAG, INK, weight=BOLD).move_to([-5.4, TOP - T - 0.55, 0])
         self.sync(c("بِالمَعْدِنِ"))
         self.play(FadeOut(ok_t), FadeIn(par, shift=UP * 0.1), run_time=0.5)
         npr = Probe(color=ACCENT_1)
@@ -296,7 +296,7 @@ class UtSeriesEp04(SyncedScene):
         band = Rectangle(width=11.6, height=0.8, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([0, 0.1, 0])
         wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([-5.2, 0.1, 0])
         crack = Line([1.9, -0.2, 0], [1.9, 0.4, 0], color=ACCENT_4, stroke_width=7)
-        clab = label("transverse crack", FS_TAG, ACCENT_4, weight=BOLD).next_to(crack, UP, 0.2)
+        clab = label("transverse crack", FS_TAG, ACCENT_4, weight=BOLD).next_to(crack, UP, 0.35)
         plan_probe = RoundedRectangle(width=0.9, height=0.5, corner_radius=0.08, color=ACCENT_1, stroke_width=4).set_fill(BG, 1)
         nose = Polygon([0.45, -0.25, 0], [0.45, 0.25, 0], [0.7, 0, 0], color=ACCENT_1, stroke_width=3).set_fill(ACCENT_1, 0.5)
         pp = VGroup(plan_probe, nose).move_to([-3.6, 0.1, 0])
@@ -401,9 +401,9 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("وَيُحَدِّدُ", 1) - 0.1)
         self.play(FadeOut(why1), FadeOut(why2), run_time=0.4)
         rec = curve(lambda s: H(s) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100, ACCENT_2, dashed=True, width=5)
-        rec_lab = label("Recording level", FS_TAG + 2, ACCENT_2, weight=BOLD).move_to([CX, 2.35, 0])
-        note = VGroup(label("Illustrative levels", FS_TAG, ACCENT_1, weight=BOLD), label("(not code values)", FS_TAG - 4, GREY_INK))
-        note.arrange(DOWN, buff=0.05).move_to([CX, 1.15, 0])
+        rec_lab = label("Recording level", FS_TAG + 2, ACCENT_2, weight=BOLD).move_to([CX, 2.45, 0])
+        note = VGroup(label("Illustrative levels", FS_TAG, INK, weight=BOLD), label("(not code values)", FS_TAG - 4, GREY_INK))
+        note.arrange(DOWN, buff=0.05).move_to([CX, 1.1, 0])
         self.sync(c("تَسْجِيلٍ"))
         sw_rec = DashedLine(ORIGIN, RIGHT * 0.5, color=ACCENT_2, stroke_width=5, dash_length=0.1).next_to(rec_lab, LEFT, 0.15)
         self.play(Create(rec, run_time=1.0, rate_func=linear), FadeIn(rec_lab, shift=UP * 0.1), FadeIn(sw_rec))
@@ -437,7 +437,7 @@ class UtSeriesEp04(SyncedScene):
         # ---- a higher level for evaluation or rejection, set by the code ----
         self.sync(c("وَيُحَدِّدُ", 2) - 0.1)
         ev = curve(lambda s: H(s) * D.ILLUSTRATIVE_EVAL_PCT_DAC / 100, ACCENT_4, dashed=True, width=5)
-        ev_lab = label("Evaluation level", FS_TAG + 2, ACCENT_4, weight=BOLD).move_to([CX, 1.75, 0])
+        ev_lab = label("Evaluation level", FS_TAG + 2, ACCENT_4, weight=BOLD).move_to([CX, 1.9, 0])
         self.sync(c("مُسْتَوًى"))
         sw_ev = DashedLine(ORIGIN, RIGHT * 0.5, color=ACCENT_4, stroke_width=5, dash_length=0.1).next_to(ev_lab, LEFT, 0.15)
         self.play(Create(ev, run_time=1.0, rate_func=linear), FadeIn(ev_lab, shift=UP * 0.1), FadeIn(sw_ev))
@@ -475,13 +475,13 @@ class UtSeriesEp04(SyncedScene):
         vis = ValueTracker(0.0)
         plate = Rectangle(width=10.0, height=3.4, color=INK, stroke_width=4).set_fill(PANEL_FILL, 1).move_to([-1.6, 1.5, 0])
         band = Rectangle(width=10.0, height=1.0, color=GREY_INK, stroke_width=2).set_fill(ACCENT_2, 0.16).move_to([-1.6, BAND_Y, 0])
-        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([2.6, BAND_Y, 0])
+        wlab = label("weld", FS_TAG, INK, weight=BOLD).move_to([-6.1, BAND_Y, 0])
         flaw = Rectangle(width=X(FB) - X(FA), height=0.4, color=ACCENT_4, stroke_width=3).set_fill(ACCENT_4, 0.8)
         flaw.move_to([(X(FA) + X(FB)) / 2, BAND_Y, 0])
         ruler = Line([X(100), -0.75, 0], [X(150), -0.75, 0], color=INK, stroke_width=3)
         rticks = VGroup(*[Line([X(m), -0.75, 0], [X(m), -0.9, 0], color=INK, stroke_width=3) for m in range(100, 151, 10)])
         rlabs = VGroup(*[label(str(m), FS_TAG - 4, GREY_INK).move_to([X(m), -1.15, 0]) for m in range(100, 151, 10)])
-        runit = label("mm", FS_TAG - 4, GREY_INK).move_to([X(150) + 0.5, -1.15, 0])
+        runit = label("mm", FS_TAG - 4, GREY_INK).next_to(rlabs[-1], RIGHT, 0.12)
 
         probe = VGroup(RoundedRectangle(width=0.9, height=0.6, corner_radius=0.08, color=ACCENT_1, stroke_width=4).set_fill(BG, 1),
                        Polygon([-0.2, 0.3, 0], [0.2, 0.3, 0], [0, 0.55, 0], color=ACCENT_1, stroke_width=3).set_fill(ACCENT_1, 0.5))
@@ -822,8 +822,8 @@ class UtSeriesEp04(SyncedScene):
         insp = chip("Inspector: reports", "user", INK, 3.6).move_to([-4.3, 2.9, 0])
         dec_t = label("decides", FS_TAG, ALERT_C, weight=BOLD).next_to(insp, DOWN, 0.15)
         no = Line(dec_t.get_left() + LEFT * 0.05, dec_t.get_right() + RIGHT * 0.05, color=ALERT_C, stroke_width=5)
-        arrow1 = Arrow([-1.2, 2.9, 0], [0.1, 2.9, 0], buff=0, color=INK, stroke_width=4, tip_length=0.2)
         code = chip("The code decides", "scale", ACCENT_3, 3.6).move_to([2.4, 2.9, 0])
+        arrow1 = Arrow(insp.get_right() + RIGHT * 0.15, code.get_left() + LEFT * 0.15, buff=0, color=INK, stroke_width=4, tip_length=0.2)
         sub = label("named in the contract", FS_TAG, GREY_INK).next_to(code, DOWN, 0.12)
         names = VGroup(chip("ASME VIII", "book", ACCENT_1, 3.1), chip("AWS D1.1", "book", ACCENT_1, 3.1),
                        chip("API 1104", "book", ACCENT_1, 3.1)).arrange(RIGHT, buff=0.35).move_to([0, 1.2, 0])
@@ -868,13 +868,13 @@ class UtSeriesEp04(SyncedScene):
         self.clear(run_time=0.5)
         FSZ = FS_TAG - 2
         MONO_W = Text("M" * 20, font=MONO, font_size=FSZ).width / 20          # width of one character
-        kv = lambda k, v: f"{k:<18}: {v}"
+        kv = lambda k, v: f"{k:<20}: {v}"
         LINES = [("ULTRASONIC TEST REPORT   (illustrative)", BOLD),
                  (kv("Component / weld", f"butt weld, {D.PLATE_T:.0f} mm plate"), NORMAL),
                  (kv("Procedure / code", "as named in the contract"), NORMAL),
                  (kv("Instrument", "flaw detector"), NORMAL),
                  (kv("Probe", f"{D.PROBE_ANGLE:.0f} deg angle probe, {D.F_PROBE:.0f} MHz"), NORMAL),
-                 (kv("Calibration", "V1 block, DAC curve, couplant"), NORMAL),
+                 (kv("Calib. / sensitivity", "V1 block, DAC curve, couplant"), NORMAL),
                  (kv("Scan areas", "both sides, half and full skip"), NORMAL)]
         rows = VGroup(*[Text(t, font=MONO, font_size=FSZ, weight=w) for t, w in LINES])
         COLS = (0, 6, 13, 22, 30, 38)
@@ -960,7 +960,7 @@ class UtSeriesEp04(SyncedScene):
 
         def arcs_update(m):
             for i, (x, a_) in enumerate(zip(el_x, m)):
-                r = min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.3)
+                r = min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.2)
                 new = Arc(radius=max(r, 0.05), start_angle=PI + 0.8, angle=PI - 1.3, arc_center=[x, TOPY, 0], color=ACCENT_1, stroke_width=2)
                 new.set_stroke(opacity=1.0 if r > 0.04 else 0.0)
                 a_.become(new)
@@ -969,7 +969,7 @@ class UtSeriesEp04(SyncedScene):
         front = Line(ORIGIN, RIGHT * 0.01, color=ACCENT_1, stroke_width=4)
 
         def front_update(m):
-            rs = [min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.3) for i in range(N)]
+            rs = [min(max((tw.get_value() - i * DT) * 1.0, 0.0), 1.2) for i in range(N)]
             act = [i for i, r in enumerate(rs) if r > 0.04]
             if len(act) < 2:
                 m.set_stroke(opacity=0)
@@ -981,20 +981,20 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("بِتَأْخِيرَاتٍ"))
         self.play(LaggedStart(*[FadeIn(b_, shift=UP * 0.1) for b_ in bars], lag_ratio=0.1, run_time=0.9), FadeIn(t_delay, shift=RIGHT * 0.1))
         self.add(arcs, front)
-        self.play(tw.animate(run_time=2.1, rate_func=linear).set_value(2.6))
+        self.play(tw.animate(run_time=1.6, rate_func=linear).set_value(1.2))
         # steered, then focused, without moving the probe
         self.sync(c("فَتُوَجَّهُ"))
         arcs.clear_updaters()
         front.clear_updaters()
         beam = vpath(45)
         t_steer = tag_line("beam steered electronically", "arrows-exchange", ACCENT_1, width=5.4).move_to([-3.9, 1.35, 0])
-        self.play(FadeOut(arcs), FadeOut(front), FadeIn(beam), FadeIn(t_steer, shift=RIGHT * 0.1), run_time=0.5)
+        self.play(FadeIn(beam), FadeIn(t_steer, shift=RIGHT * 0.1), run_time=0.5)
         self.play(Transform(beam, vpath(60)), run_time=0.9)
         self.sync(c("وَتُرَكَّزُ"))
         fx, fy = -3.7, TOPY - 0.95
         focus_lines = VGroup(*[Line([el_x[i], TOPY, 0], [fx, fy, 0], color=ACCENT_1, stroke_width=3) for i in (0, 3, 7)])
         fdot = Dot([fx, fy, 0], radius=0.1, color=ACCENT_4)
-        self.play(FadeOut(beam), FadeOut(t_steer), Create(focus_lines), GrowFromCenter(fdot), run_time=0.7)
+        self.play(FadeOut(beam), FadeOut(t_steer), FadeOut(arcs), FadeOut(front), Create(focus_lines), GrowFromCenter(fdot), run_time=0.7)
         t_focus = tag_line("beam focused electronically", "eye", ACCENT_1, width=5.4).move_to([-3.9, 1.35, 0])
         self.play(FadeIn(t_focus, shift=RIGHT * 0.1), run_time=0.4)
         self.sync(c("دُونَ"))
@@ -1087,7 +1087,7 @@ class UtSeriesEp04(SyncedScene):
         self.play(FadeIn(l_bw, shift=UP * 0.1), run_time=0.3)
         # between: the diffraction from the two tips of a crack
         self.sync(c("وَبَيْنَهُمَا"))
-        self.play(GrowFromCenter(crack), run_time=0.5)
+        self.play(GrowFromCenter(crack), bw_path.animate.set_stroke(GREY_INK, opacity=0.35), run_time=0.5)
         self.sync(c("إِشَارَتَا"))
         self.add(ray_up, ray_low)
         self.wait(0.5)
@@ -1100,7 +1100,7 @@ class UtSeriesEp04(SyncedScene):
         # the gap between the two diffraction signals gives the height
         gap = DoubleArrow([scr.x_of(PK["up"][0]) + 0.1, scr.y_base() + 0.14, 0], [scr.x_of(PK["low"][0]) - 0.1, scr.y_base() + 0.14, 0], buff=0,
                           color=INK, stroke_width=3, tip_length=0.1)
-        gap_lab = label("gap = crack height", FS_TAG - 4, INK, weight=BOLD).move_to([(scr.x_of(PK["up"][0]) + scr.x_of(PK["low"][0])) / 2, scr.y_base() + 1.3, 0])
+        gap_lab = label("gap gives the height", FS_TAG - 4, INK, weight=BOLD).move_to([(scr.x_of(PK["up"][0]) + scr.x_of(PK["low"][0])) / 2, scr.y_base() + 1.3, 0])
         gap_lead = DashedLine(gap_lab.get_bottom() + DOWN * 0.04, gap.get_center() + UP * 0.05, color=INK, stroke_width=2)
         hgt = DoubleArrow([0.5, TY - 0.45, 0], [0.5, TY - 1.1, 0], buff=0, color=INK, stroke_width=3, tip_length=0.1)
         self.sync(c("ارْتِفَاعَهُ") - 0.3)
@@ -1213,6 +1213,7 @@ class UtSeriesEp04(SyncedScene):
             rec = curve(lambda s: H(s) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100, ACCENT_2, True)
             lab = VGroup(label("recording level", FS_TAG, ACCENT_2, weight=BOLD), label("(illustrative)", FS_TAG - 2, ACCENT_2)).arrange(DOWN, buff=0.04)
             lab.move_to([2.3, 0.7, 0])
+            dac_lab = label("DAC", FS_TAG - 2, ACCENT_3, weight=BOLD).move_to([sc.x_of(16) + 0.35, sc.y_base() + H(16) + 0.3, 0])
             lab_lead = DashedLine(lab.get_bottom() + DOWN * 0.04, [sc.x_of(80), sc.y_base() + H(80) * D.ILLUSTRATIVE_RECORD_PCT_DAC / 100 + 0.05, 0],
                                   color=ACCENT_2, stroke_width=2)
             lo = Dot([sc.x_of(30), sc.y_base() + H(30) * D.ILLUSTRATIVE_ECHO_LOW_PCT_DAC / 100, 0], radius=0.08, color=GREY_INK)
@@ -1221,7 +1222,7 @@ class UtSeriesEp04(SyncedScene):
             yes = icon("check", OK_C, 0.5).move_to([sc.x_of(60) + 0.45, sc.y_base() + 1.1, 0])
 
             def show():
-                self.play(FadeIn(sc), FadeIn(sc.trace), Create(dac), Create(rec), FadeIn(lab), Create(lab_lead), FadeIn(lo), FadeIn(hi), run_time=0.9)
+                self.play(FadeIn(sc), FadeIn(sc.trace), Create(dac), Create(rec), FadeIn(lab), FadeIn(dac_lab), Create(lab_lead), FadeIn(lo), FadeIn(hi), run_time=0.9)
 
             def finish(*extra):
                 self.play(FadeIn(no, scale=0.6), FadeIn(yes, scale=0.6), *extra, run_time=0.6)
@@ -1274,7 +1275,7 @@ class UtSeriesEp04(SyncedScene):
             ruler = Line([X(100), 0.2, 0], [X(150), 0.2, 0], color=INK, stroke_width=3)
             rt = VGroup(*[Line([X(m_), 0.2, 0], [X(m_), 0.05, 0], color=INK, stroke_width=3) for m_ in range(100, 151, 10)])
             rl = VGroup(*[label(str(m_), FS_TAG - 4, GREY_INK).move_to([X(m_), -0.2, 0]) for m_ in range(100, 151, 10)])
-            ru = label("mm", FS_TAG - 4, GREY_INK).move_to([X(150) + 0.5, -0.2, 0])
+            ru = label("mm", FS_TAG - 4, GREY_INK).next_to(rl[-1], RIGHT, 0.12)
             m1 = Line([X(D.POS_6DB_1), 0.45, 0], [X(D.POS_6DB_1), -0.4, 0], color=ACCENT_3, stroke_width=7)
             m2 = Line([X(D.POS_6DB_2), 0.45, 0], [X(D.POS_6DB_2), -0.4, 0], color=ACCENT_3, stroke_width=7)
             l1 = label(f"{D.POS_6DB_1:.0f} mm", FS_NOTE, ACCENT_3, weight=BOLD).move_to([X(D.POS_6DB_1) - 0.2, 1.1, 0])
