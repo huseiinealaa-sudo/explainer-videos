@@ -354,9 +354,9 @@ class UtSeriesEp04(SyncedScene):
         c = lambda phrase, nth=1: self.cue(2, phrase, nth)
         S = self.start(2)
         H = lambda s: 3.0 * np.exp(-s / 45.0)                    # the DAC curve: identical reflectors fall with the path
-        scan = AScan([(0, 1.8)], width=8.2, height=3.8, t_min=-6.0, t_max=110.0, ticks=(0, 25, 50, 75, 100), sigma=0.9,
+        scan = AScan([(0, 1.8)], width=7.4, height=3.8, t_min=-6.0, t_max=110.0, ticks=(0, 25, 50, 75, 100), sigma=0.9,
                      x_caption="Sound path (mm)", y_caption="Echo amplitude")
-        scan.shift(np.array([-2.0, 0.25, 0.0]) - scan.frame.get_center())
+        scan.shift(np.array([-2.4, 0.25, 0.0]) - scan.frame.get_center())
         shown = {"echoes": [(14, 0.6), (27, 1.1), (41, 0.35), (57, 0.8), (72, 0.45), (90, 0.9)]}
         scan.trace.add_updater(lambda m: (setattr(scan, "peaks", [(0, 1.8)] + shown["echoes"]), scan.update_trace(scan.t_max)))
         CX = 4.4                                                 # centre of the right-hand column
@@ -444,7 +444,7 @@ class UtSeriesEp04(SyncedScene):
         self.sync(c("لِلتَّقْيِيمِ"))
         self.play(Indicate(fl_dot, color=ACCENT_4, scale_factor=1.6), run_time=0.6)
         per = tag_line("the percentages differ from code to code", "arrows-exchange", INK, width=7.2, size=FS_TAG)
-        per.move_to([-2.0, -2.9, 0])
+        per.move_to([-2.4, -2.9, 0])
         self.sync(c("وَالنِّسَبُ"))
         self.play(FadeIn(per, shift=UP * 0.1), run_time=0.4)
         self.sync(c("تَخْتَلِفُ"))
@@ -1326,7 +1326,7 @@ class UtSeriesEp04(SyncedScene):
             q = label("?", FS_TITLE, ACCENT_2, weight=BOLD).next_to(dec, UP, 0.2)
             a1 = Arrow(insp.get_right() + RIGHT * 0.08, dec.get_left() + LEFT * 0.08, buff=0, color=GREY_INK, stroke_width=4, tip_length=0.18)
             a2 = Arrow(code.get_left() + LEFT * 0.08, dec.get_right() + RIGHT * 0.08, buff=0, color=ACCENT_3, stroke_width=5, tip_length=0.2)
-            rep = label("only reports findings", FS_TAG, GREY_INK, weight=BOLD).next_to(insp, DOWN, 0.3)
+            rep = label("reports findings", FS_TAG, GREY_INK, weight=BOLD).next_to(insp, DOWN, 0.3)
             no = icon("x", ALERT_C, 0.5).next_to(a1, UP, 0.15)
 
             def show():
