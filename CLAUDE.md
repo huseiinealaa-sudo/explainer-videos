@@ -15,6 +15,17 @@ SETUPTOOLS_USE_DISTUTILS=stdlib pip install -e .   # the explainer package (repo
 ```
 Then verify: `ffmpeg -version`, `manim --version`, `edge-tts --version`, `python -c "import explainer"`.
 
+**If the container has Python 3.13** (no `distutils`, so `SETUPTOOLS_USE_DISTUTILS=stdlib` fails with `ModuleNotFoundError: No module named 'distutils'`, and plain `pip install manim` fails building `srt` with `install_layout`): use a virtual environment, where `srt` builds. Copy-paste:
+```bash
+python3 -m venv --system-site-packages /tmp/venv
+/tmp/venv/bin/pip install srt                    # builds inside the venv; the system pip fails (install_layout)
+/tmp/venv/bin/pip install manim edge-tts         # manim 0.22.0 on Python 3.13
+/tmp/venv/bin/pip install -e .                   # the explainer package (repo root)
+source /tmp/venv/bin/activate                    # repeat in every new shell: shell state does not persist between tool calls
+manim --version && edge-tts --version && python -c "import explainer; print('ok')" && which python   # /tmp/venv/bin/python
+```
+Every later command (`python projects/<name>/<script>.py ...`, `python -m explainer...`, `python -m unittest ...`) must then run with `/tmp/venv/bin/python` (or after the `source` line above, in the same command). Agents given a command must be told the same. Check `python --version` first: on Python 3.12 or older the `SETUPTOOLS_USE_DISTUTILS=stdlib` lines above still work.
+
 ## Known environment issues
 1. **manim install fails** on building `srt` (AttributeError: install_layout) → always install with `SETUPTOOLS_USE_DISTUTILS=stdlib`.
 2. **edge-tts fails with CERTIFICATE_VERIFY_FAILED** because traffic goes through a proxy and edge-tts hardcodes certifi. Do NOT use the edge-tts CLI. Use Python and patch the SSL context at runtime (`synthesize()` in `scripts/style.py` already does this):

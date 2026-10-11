@@ -6,7 +6,8 @@ self_test() runs on import so a drift stops every script that uses the data.
 Sources: IAEA-TCS-67 (2017), Table 2.1 (p. 104), §2.2.4 (p. 102), §2.3.5 (p. 108),
 §2.4.1 (pp. 109-111); episode 2: §2.7.1.2 eq. 2.18 (p. 125), §2.7.2 eq. 2.19 and Tables 2.3-2.4
 (pp. 126-127); episode 3: §2.4.2.2 (pp. 113-114), Fig. 5.1 and Table 5.4 (pp. 178, 192),
-§8.4.1 (p. 279), eqs. 6.2-6.5 (p. 215). Every velocity and density below is the value of TCS-67 Table 2.1
+§8.4.1 (p. 279), eqs. 6.2-6.5 (p. 215); episode 4: §8.4.2.1 (pp. 279-280), §8.7.1 (pp. 295-296),
+§8.6.1 (p. 287). Every velocity and density below is the value of TCS-67 Table 2.1
 (steel = the row "steel (calibration block)", shear velocity 3250 m/s from the same table;
 air = 330 m/s, 1.3 kg/m3). Owner decision 2026-10-02: TCS-67 values replace the first draft's
 3240 m/s, 343 m/s and 1.2 kg/m3.
@@ -50,6 +51,18 @@ V1_BIG_HOLE_D = 50.0       # mm    large hole with its plastic insert
 PLATE_T = 30.0             # mm    plate of the skip example
 PROBE_ANGLE = 60.0         # deg   shear-wave angle in steel written on the probe
 PATH_S = 50.0              # mm    sound path read on the calibrated screen (the worked example)
+
+# ---- Episode 4: flaw evaluation and the report (illustrative; no code acceptance limit is used) ----
+POS_6DB_1 = 112.0          # mm    probe position where the echo has dropped 6 dB (from the weld reference)
+POS_6DB_2 = 135.0          # mm    the same, in the other direction (the worked example, TCS-67 §8.4.2.1)
+AMP_RATIO_6DB = 0.5        # the echo height at the flaw edge relative to the maximum (one half)
+AMP_PCT_DAC = 80           # % of the DAC curve: the flaw echo of the report (illustrative)
+# Two lines drawn on the DAC curve of segment 2, as a percentage of the curve. They are NOT code values.
+ILLUSTRATIVE_RECORD_PCT_DAC = 30   # recording level (echoes under it are ignored)
+ILLUSTRATIVE_EVAL_PCT_DAC = 60     # evaluation / rejection level (the code decides what happens above it)
+ILLUSTRATIVE_ECHO_LOW_PCT_DAC = 15 # an echo under the recording level (ignored)
+REPORT_TYPE = "planar?"            # flaw type written in the illustrative report
+REPORT_RESULT = "Evaluate per code"
 
 # Ranges quoted from TCS-67 (audible range §2.1 p. 99; UT range §1.1.2.6 p. 9; penetration p. 9)
 AUDIBLE_MIN_HZ = 20        # Hz
@@ -100,6 +113,9 @@ def derive():
     d["FULL_SKIP"] = 2 * PLATE_T * math.tan(th)                                        # mm, eq. 6.3
     d["HALF_SKIP_PATH"] = PLATE_T / math.cos(th)                                       # mm, eq. 6.4
     d["V1_ECHOES"] = [V1_THICKNESS * k for k in range(1, int(V1_RANGE // V1_THICKNESS) + 1)]   # mm on the screen
+    # ---- episode 4 ----
+    d["FLAW_LENGTH"] = POS_6DB_2 - POS_6DB_1                                           # mm, distance between the two marks
+    d["DROP_6DB_DB"] = 20 * math.log10(AMP_RATIO_6DB)                                  # dB, check only (not spoken)
     return d
 
 
@@ -137,6 +153,13 @@ HALF_SKIP = _D["HALF_SKIP"]                       # 51.962 mm
 FULL_SKIP = _D["FULL_SKIP"]                       # 103.923 mm
 HALF_SKIP_PATH = _D["HALF_SKIP_PATH"]             # 60.000 mm
 V1_ECHOES = _D["V1_ECHOES"]                       # [25, 50, 75, 100] mm
+# episode 4
+FLAW_LENGTH = _D["FLAW_LENGTH"]                   # 23.0 mm
+DROP_6DB_DB = _D["DROP_6DB_DB"]                   # -6.02 dB (check only)
+# the flaw of the report is the flaw of episode 3, segment 5 (probe 60 deg, S = 50 mm, plate 30 mm)
+REPORT_DEPTH = DEPTH                              # 25.0 mm
+REPORT_SURFACE_DIST = SURFACE_DIST                # 43.3 mm
+REPORT_LENGTH = FLAW_LENGTH                       # 23.0 mm
 
 
 def self_test():
@@ -203,6 +226,19 @@ def self_test():
     assert V1_ECHOES == [25.0, 50.0, 75.0, 100.0] and V1_ECHOES[-1] == V1_RANGE
     assert f"{DEPTH:.1f}" == "25.0" and f"{SURFACE_DIST:.1f}" == "43.3"
     assert f"{HALF_SKIP:.1f}" == "52.0" and f"{FULL_SKIP:.1f}" == "103.9"
+    # ---- episode 4 ----
+    assert POS_6DB_1 == 112.0 and POS_6DB_2 == 135.0 and POS_6DB_2 > POS_6DB_1
+    assert FLAW_LENGTH == 23.0 and f"{FLAW_LENGTH:.0f}" == "23", FLAW_LENGTH          # 135 - 112
+    assert AMP_RATIO_6DB == 0.5
+    assert abs(DROP_6DB_DB - (-6.02)) < 5e-3, DROP_6DB_DB                              # 20 log10(0.5), check only
+    assert f"{DROP_6DB_DB:.2f}" == "-6.02"
+    # the report: the flaw of episode 3 (depth 25.0 mm, surface distance 43.3 mm) with its length and amplitude
+    assert f"{REPORT_DEPTH:.1f}" == "25.0" and f"{REPORT_SURFACE_DIST:.1f}" == "43.3"
+    assert REPORT_DEPTH == DEPTH and REPORT_SURFACE_DIST == SURFACE_DIST and REPORT_LENGTH == FLAW_LENGTH
+    assert int(PROBE_ANGLE) == 60 and int(PATH_S) == 50 and int(PLATE_T) == 30         # the inputs of that flaw
+    assert AMP_PCT_DAC == 80
+    # the two illustrative lines: echo under the record line < record < evaluation < the report flaw
+    assert 0 < ILLUSTRATIVE_ECHO_LOW_PCT_DAC < ILLUSTRATIVE_RECORD_PCT_DAC < ILLUSTRATIVE_EVAL_PCT_DAC < AMP_PCT_DAC <= 100
 
 
 self_test()
@@ -229,7 +265,12 @@ def print_table():
             ("ep3 critical angles", f"{CRIT_1:.2f} / {CRIT_2:.2f}", "deg"),
             ("ep3 depth, surface distance", f"{DEPTH:.3f} / {SURFACE_DIST:.3f}", "mm"),
             ("ep3 half / full skip", f"{HALF_SKIP:.3f} / {FULL_SKIP:.3f}", "mm"),
-            ("ep3 half-skip path", f"{HALF_SKIP_PATH:.3f}", "mm")]
+            ("ep3 half-skip path", f"{HALF_SKIP_PATH:.3f}", "mm"),
+            ("ep4 6 dB marks", f"{POS_6DB_1:.0f} / {POS_6DB_2:.0f}", "mm"),
+            ("ep4 flaw length", f"{FLAW_LENGTH:.1f}", "mm"),
+            ("ep4 20 log10(0.5)", f"{DROP_6DB_DB:.2f}", "dB"),
+            ("ep4 report amplitude", f"{AMP_PCT_DAC}", "% DAC"),
+            ("ep4 record / eval lines", f"{ILLUSTRATIVE_RECORD_PCT_DAC} / {ILLUSTRATIVE_EVAL_PCT_DAC}", "% DAC (illustrative)")]
     for name, value, unit in rows:
         print(f"  {name:<26} {value:>16} {unit}")
 
