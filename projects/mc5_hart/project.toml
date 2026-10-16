@@ -1,0 +1,12 @@
+# Narration settings for this project (read by explainer.pipeline.project_settings).
+[narration]
+language = "ar"
+voice = "ar-SA-HamedNeural"
+rate = "+0%"
+
+[render]
+resolution = "1080p"
+
+# The white board (owner decision): theme light, on-screen text English, narration Arabic.
+[style]
+theme = "light"
