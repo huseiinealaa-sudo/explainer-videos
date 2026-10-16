@@ -331,7 +331,7 @@ class MC5Ep01(SyncedScene):
         vl = DashedLine(x5, ax.c2p(5 * tau, 1 - np.exp(-5)), color=ACCENT_1, stroke_width=3)
         dot = Dot(ax.c2p(5 * tau, 1 - np.exp(-5)), color=ACCENT_1, radius=0.07)
         tl = fit(label("wait about 5 × damping", FS_AXIS, ACCENT_1), 4.1).next_to(ax, DOWN, buff=1.0)
-        sl = label(f"{5 * tau:.1f} s", FS_TAG, ACCENT_1, weight=BOLD).next_to(ax.c2p(5 * tau, 0), DOWN, buff=0.3)
+        sl = label(f"{5 * tau:.1f} s", FS_TAG, ACCENT_1, weight=BOLD).next_to(dot, UP, buff=0.15)
         self.play(Create(vl), FadeIn(dot), FadeIn(tl), FadeIn(sl), run_time=0.6)
         self.sync(self.end(9))
         self.play(FadeOut(VGroup(ax, curve, yl, xl, vl, dot, tl, sl)), run_time=0.4)
@@ -348,7 +348,7 @@ class MC5Ep01(SyncedScene):
             return VGroup(a, cv, tt)
         lin = mini("Linear", lambda x: x, RX - 1.25)
         sq = mini("Square Root", lambda x: np.sqrt(x), RX + 1.25)
-        sq[2].align_to(lin[2], DOWN)
+        sq[2].align_to(lin[2], UP)
         self.play(FadeIn(lin), run_time=0.6)
         at(10, "الجَذْرُ", lead=0.2)
         self.play(FadeIn(sq), run_time=0.6)
@@ -409,10 +409,9 @@ class MC5Ep01(SyncedScene):
         no2 = icon("x", ACCENT_4, 0.55).move_to([px(0) + 0.2, 1.15, 0])
         nol2 = label("or below the minimum span", 22, ACCENT_4).move_to([RX, -2.4, 0])
         self.play(Transform(rng, thin), FadeIn(no2, scale=0.8), FadeIn(nol2), run_time=0.6)
-        self.play(Transform(rng, back), FadeOut(no2), run_time=0.5)
         nol = VGroup(nol1, nol2)
         self.sync(self.end(11))
-        self.play(FadeOut(VGroup(nl, ticks, lbl0, lbl1, rng, rl, ms, mst, nol)), run_time=0.4)
+        self.play(FadeOut(VGroup(nl, ticks, lbl0, lbl1, rng, rl, ms, mst, nol, no2)), run_time=0.4)
 
         # ---------------- 12: editing ----------------
         at(12, "الزِّرَّ سِي", lead=0.3)
@@ -439,10 +438,12 @@ class MC5Ep01(SyncedScene):
         self.play(FadeIn(steps[1], shift=LEFT * 0.2), run_time=0.4)
         at(12, "نَفْتَحُ", lead=0.2)
         reopen = mc.form_page("DEVICE SETTINGS", SETTINGS[:5] + [("urv", "Upper Range", D.fmt(D.URV_NEW, 2))] + SETTINGS[6:9],
-                              editable=SETTINGS_EDIT, selected="urv", softkeys=("Close", "", "Edit", ""))
+                              editable=SETTINGS_EDIT, softkeys=("Close", "", "Edit", ""))
         reopen.add(mono("▼", 14, GREY_INK).move_to([mc.area()[1] - 0.15, mc.area()[3] + 0.18, 0]))
         mc.press(self, "A")
         mc.show(self, reopen)
+        for key in ("tag", "unit", "urv"):
+            mc.move_form_cursor(self, reopen, key, run_time=0.25)
         ok = note_line(f"URV {D.fmt(D.URV_NEW, 2)} (written)", "check", ACCENT_3, width=4.0).move_to([RX - 0.2, -1.4, 0])
         self.play(FadeIn(steps[2], shift=LEFT * 0.2), FadeIn(ok, shift=LEFT * 0.2), run_time=0.5)
         self.sync(self.end(12))
