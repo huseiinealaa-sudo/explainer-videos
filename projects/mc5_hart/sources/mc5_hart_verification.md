@@ -54,3 +54,6 @@ Sources: [1] User Guide for MC5 HART Option (Main Firmware 1.90), printed page =
 | 3.6 | calibrating the AO needs no HART communication | [1] pp. 137, 147 | ✔ |
 | 3.7 | error types, decision tree, TUR ≥ 4 preferred | general metrology practice | ○ |
 | 3.7 | View Calibration Results shows the saved tables and graphs | [2] p. 133 | ✔ |
+
+## Numbers typed in the data module for episode 1
+- `HART_MAX_DEVICES = 16`: [1] p. 141 («Up to 16 instruments may be connected to the same current loop»). `POLL_MAX = 15`: polling addresses 0–15 of HART revision 5 (MC5 supports revision 5, [1] p. 137). `I_LOW, I_HIGH = 4, 20` mA: the loop range.

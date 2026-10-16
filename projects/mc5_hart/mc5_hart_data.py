@@ -18,6 +18,8 @@ MANUFACTURER, DEVICE_TYPE, SW_REV, HW_REV = "Maker X", "Pressure TX", "1.0", "1.
 DATE, DESCRIPTOR, MESSAGE = "15.03.2026", "DEMO", "ILLUSTRATIVE"
 REF_MODULE_MAX = 60.0                 # the reference pressure module covers 0…60 (not exceeded)
 
+HART_MAX_DEVICES, POLL_MAX = 16, 15      # devices on one loop [1 p. 141]; polling addresses 0…15 (HART revision 5, [1 p. 137])
+I_LOW, I_HIGH = 4.0, 20.0              # the loop current range, mA
 REF_ZERO_DRIFT = 0.012                # kgf/cm², the reference reading before the zeroing (episode 1)
 
 # Rerange example (episode 1, the only worked example there)
@@ -116,6 +118,7 @@ def self_test():
     assert URV_NEW - LRV >= MIN_SPAN and URV_NEW <= URL and URV < REF_MODULE_MAX
     assert abs(I_BEFORE - 10.000) < 1e-12 and abs(I_AFTER - 12.000) < 1e-12
     assert abs(I_of(LRV) - 4) < 1e-12 and abs(I_of(URV) - 20) < 1e-12
+    assert HART_MAX_DEVICES == POLL_MAX + 1 and I_HIGH - I_LOW == 16.0
     assert abs(P_MISREAD - 20.0) < 1e-9 and P_MISREAD != P_EX
     assert abs(I_STORY_ZERO - 3.9363) < 1e-9, I_STORY_ZERO
     assert abs(ERR_STORY_ZERO - (-0.398125)) < 1e-9, ERR_STORY_ZERO
