@@ -15,7 +15,7 @@ DAMPING = 0.40                        # s
 TRANSFER_FUNCTION, BURST_MODE, POLLING_ADDRESS = "Linear", "Off", 0
 # Device Information fields that are not numbers (placeholders, no real maker or date)
 MANUFACTURER, DEVICE_TYPE, SW_REV, HW_REV = "Maker X", "Pressure TX", "1.0", "1.0"
-DATE, DESCRIPTOR, MESSAGE = "01.01.2000", "DEMO", "ILLUSTRATIVE"
+DATE, DESCRIPTOR, MESSAGE = "15.03.2026", "DEMO", "ILLUSTRATIVE"
 REF_MODULE_MAX = 60.0                 # the reference pressure module covers 0…60 (not exceeded)
 
 # Rerange example (episode 1, the only worked example there)

@@ -9,9 +9,9 @@ The videos are about the **options inside the calibrator and its screens only**.
 Three episodes, 5–6 minutes each, about 17 minutes in total, produced in this order. Episode 1 is produced first and waits for the owner's approval of its level before episodes 2–3.
 | # | Episode | Source sections | Status |
 |---|---|---|---|
-| 1 | MC5 + HART: Connect & Configure | 1.1–1.6 | narration for approval |
-| 2 | Trim Instrument: AO vs PV | 2.1–2.6 | narration for approval |
-| 3 | Calibration Mode: As Found / As Left | 3.1–3.7 | narration for approval |
+| 1 | MC5 + HART: Connect & Configure | 1.1–1.6 | narration approved |
+| 2 | Trim Instrument: AO vs PV | 2.1–2.6 | narration approved |
+| 3 | Calibration Mode: As Found / As Left | 3.1–3.7 | narration approved |
 
 ## Theme
 - `project.toml` → `[style] theme = "light"` (the white board, owner decision), 1080p. Colours in scripts are the theme names (`INK`, `ACCENT_1` …), never literals.
@@ -24,6 +24,7 @@ Three episodes, 5–6 minutes each, about 17 minutes in total, produced in this 
 
 ## Narration
 - Language / voice / speed: see `project.toml` (Arabic, ar-SA-HamedNeural, normal speed). Fully diacritized.
+- Terms (owner decision 2026-10-16): «الدَّخْل» for input (never «الدخول» in that sense), «الوَسْم» for Tag, no number chains in the voice (numbers stay on the screen, the voice says the meaning).
 - Decimals are spoken digit by digit after «فَاصِلَةٌ»; rounded figures are spoken in words («نَحْوُ سَالِبِ أَرْبَعَةِ أَعْشَارٍ بِالمِئَةِ»).
 - On-screen text is English (menu names exactly as the MC5 shows them); the narration names the menu items in Arabic and spells foreign terms in Arabic letters.
 - Foreign terms written in the narration's letters:
@@ -45,16 +46,16 @@ Three episodes, 5–6 minutes each, about 17 minutes in total, produced in this 
   | End HART Adjustment | إِنْد هارْت أَدْجَسْتْمِنْت |
   | NAMUR NE 43 | نَامُور إِنْ إِي ثَلَاثَةٍ وَأَرْبَعِينَ |
   | mA | مِلِّي أَمْبِيرٍ |
-  | kgf/cm² | كِيلُوغْرَامٍ لِلسَّنْتِيمِتْرِ المُرَبَّعِ |
+  | kgf/cm² | كِيلُوغْرَامًا لِكُلِّ سَنْتِيمِتْرٍ مُرَبَّعٍ |
   | keys A B C D | إِيه، بِي، سِي، دِي |
   | Port E | المَنْفَذُ إِي |
 
 ## Videos
 | # | Script / output | Topic | Status |
 |---|---|---|---|
-| 1 | `mc5_hart_ep01_connect` | Connect and configure | narration for approval |
-| 2 | `mc5_hart_ep02_trim` | Trim Instrument, AO vs PV | narration for approval |
-| 3 | `mc5_hart_ep03_calibration` | Calibration Mode, As Found / As Left | narration for approval |
+| 1 | `mc5_hart_ep01_connect` | Connect and configure | narration approved |
+| 2 | `mc5_hart_ep02_trim` | Trim Instrument, AO vs PV | narration approved |
+| 3 | `mc5_hart_ep03_calibration` | Calibration Mode, As Found / As Left | narration approved |
 | — | `mc5_hart_full_series` | the three episodes joined with title cards | `output/mc5_hart_full.mp4` |
 
 ## The MC5 screen (`mc5_visuals.py`)
@@ -70,11 +71,12 @@ Three episodes, 5–6 minutes each, about 17 minutes in total, produced in this 
 ## Data
 - All numbers come from `projects/mc5_hart/mc5_hart_data.py`, which runs `self_test()` on import (`python projects/mc5_hart/mc5_hart_data.py` prints the tables).
 - Inputs (all illustrative): unit kgf/cm²; LRV 0, URV 40, span 40; URL 50.00, LRL 0.00, minimum span 0.50; Tag PT-101, Device ID 12345678, serial 1234567; damping 0.40 s, Linear, Burst Off, polling address 0; rerange URV 40 → 30 at 15 kgf/cm² (10.000 → 12.000 mA); AO check 3.8→3.8002, 4→4.0003, 12→12.0010, 20→20.0016, 20.5→20.5017 mA; sensor offset −0.160 (3.9363 mA, −0.398 %; after the trim PV 0.000 and 4.0003 mA); Reject if > 0.25 % of span, setpoint delay 5.0 s, 5 points up and down (0, 10, 20, 30, 40), hysteresis +0.004 kgf/cm² on the descending points.
-- Values added by the manager and shown to the owner for approval: Adjust if 0.15, Do not Adjust if 0.05, Adjust to 0.05 (% of span), maximum point deviation 0.10 %, calibration period 365 days, reference module 0…60 kgf/cm², the Device Information placeholders (Maker X, Pressure TX, 01.01.2000 …).
+- Values added by the manager and shown to the owner for approval: Adjust if 0.15, Do not Adjust if 0.05, Adjust to 0.05 (% of span), maximum point deviation 0.10 %, calibration period 365 days, reference module 0…60 kgf/cm², the Device Information placeholders (Maker X, Pressure TX, 15.03.2026 …).
 
 ## Environment notes
 - On Python 3.13 use the virtual environment of the root `CLAUDE.md`. In this container `edge-tts` 7.2.8 was refused with 403 by the speech service; `pip install -U edge-tts` (7.3.1) fixed it.
 
 ## Owner decisions
 - 2026-10-16: new project `mc5_hart`, three episodes of 5–6 minutes, theme light; only the calibrator's options and screens (no transmitter explanation, no ports, no wiring, no separate safety section); this session produces episodes 1–3; no review questions.
+- 2026-10-16: narration approved with six wording edits (no number chains, الدَّخْل, الوَسْم, the AO link in episode 2 segment 5, the C/Adjust sentence, the pressure unit), the Device Information date 15.03.2026, and Device Settings shown as two scrolled pages.
 - 2026-10-16: cost rules: the manager writes, builds and fixes by itself; haiku agents only for rendering, QA runs, contact sheets and joining, with a report of at most 15 lines; the critic by its definition (first round on the whole episode, later rounds on the changed segments); commit and push before every render and every critic round.
