@@ -73,6 +73,8 @@ class Menu(VGroup):
         if selected is not None:
             self._style(selected)
             self._cursor_to(selected)
+        else:
+            self.cursor.set_opacity(0)
 
     # -- helpers --
     def k(self, n):
@@ -99,7 +101,9 @@ class Menu(VGroup):
     def select(self, scene, n, run_time=0.45):
         """Animate the cursor to the row numbered n."""
         k = self.k(n)
-        anims = [self.cursor.animate.stretch_to_fit_height(self.row_h[k] - 0.04)
+        if self.cursor.fill_opacity == 0:          # first selection: appear in place
+            self.cursor.stretch_to_fit_height(self.row_h[k] - 0.04).move_to(self._target(k))
+        anims = [self.cursor.animate.set_opacity(1).stretch_to_fit_height(self.row_h[k] - 0.04)
                  .move_to(self._target(k))]
         for j, (_, t) in enumerate(self.items):
             sel = j == k and t is not None
@@ -182,7 +186,7 @@ class MC5(VGroup):
     def area(self):
         """(left, right, top, bottom) of the page area, inside the status bar and the soft keys."""
         return (self.screen.get_left()[0] + PAD, self.screen.get_right()[0] - PAD,
-                self.screen.get_top()[1] - BAR_H - 0.1, self.top_y + 0.1)
+                self.screen.get_top()[1] - BAR_H - 0.1, self.screen.get_bottom()[1] + SOFT_H + 0.1)
 
     def _origin_shift(self):
         return self.screen.get_center()
@@ -194,23 +198,23 @@ class MC5(VGroup):
             if not s:
                 out.append(VGroup())
                 continue
-            t = _txt(s, FS, INK).move_to([self.soft_cells[i], self.soft_y, 0])
+            t = _txt(s, FS, INK).move_to([self.screen.get_left()[0] + self.cell_w * (i + 0.5),
+                                          self.screen.get_bottom()[1] + SOFT_H / 2, 0])
             if t.width > self.cell_w - 0.2:
                 t.scale_to_fit_width(self.cell_w - 0.2)
             out.append(t)
         return out
 
     # ------------- pages -------------
-    def windows_page(self, w1, w2, menu=None, selected=None, softkeys=("Window 1\nSetup", "Window 2\nSetup",
-                                                                        "Others", "Close\nMENU"),
-                     menu_title=None):
-        """Two measurement windows (left) and an optional numbered menu (right).
-        w = {"title": "1 Pressure", "port": "P1: REF", "value": "0.012", "unit": "kgf/cm²"}."""
+    def windows_page(self, w1, w2, menu=None, selected=None, softkeys=("Calibration\nMode", "", "", "MENU"),
+                     menu_w=3.05):
+        """Two measurement windows and, optionally, a numbered menu on the right (opened here or later
+        with `open_menu`). w = {"title": "1 Pressure", "port": "P1: REF", "value": "0.012", "unit": "kgf/cm²"}."""
         L, R, T, B = self.area()
-        menu_w = 3.05 if menu else 0
-        lw = (R - L) - menu_w - (0.12 if menu else 0)
+        lw = R - L
         mobs, parts = [], {}
         h = (T - B) / 2
+        shift = []
         for idx, w in enumerate((w1, w2)):
             top = T - idx * h
             title = _txt(w["title"], FS).move_to([L + 0.05, top - 0.22, 0], aligned_edge=LEFT)
@@ -222,17 +226,60 @@ class MC5(VGroup):
             parts.update({f"title{idx + 1}": title, f"port{idx + 1}": port,
                           f"value{idx + 1}": value, f"unit{idx + 1}": unit})
             mobs += [title, port, value, unit]
+            shift += [value, unit]
             if idx == 0:
-                mobs.append(Line([L, T - h, 0], [L + lw, T - h, 0], color=GREY_INK, stroke_width=2))
-        m = None
+                hline = Line([L, T - h, 0], [L + lw, T - h, 0], color=GREY_INK, stroke_width=2)
+                parts["hline"] = hline
+                mobs.append(hline)
+        parts["_shift"] = shift
+        page = Page(*mobs, softkeys=softkeys, parts=parts, menu=None)
         if menu:
-            sep = Line([L + lw + 0.06, T, 0], [L + lw + 0.06, B, 0], color=GREY_INK, stroke_width=2)
-            mobs.append(sep)
-            m = Menu(menu, menu_w - 0.06, selected)
-            m.move_to([L + lw + 0.12 + (menu_w - 0.06) / 2, T - m.ref.height / 2, 0])
-            m._cursor_to(selected) if selected is not None else None
-            mobs.append(m)
-        return Page(*mobs, softkeys=softkeys, parts=parts, menu=m)
+            dx = menu_w + 0.12
+            for m_ in shift:
+                m_.shift(LEFT * dx)
+            hline = parts["hline"]
+            hline.put_start_and_end_on(hline.get_start(), hline.get_end() + LEFT * dx)
+            sep, m = self._menu_parts(menu, selected, menu_w)
+            page.add(sep, m)
+            page.menu, page.parts["_sep"] = m, sep
+        return page
+
+    def _menu_parts(self, items, selected, menu_w):
+        L, R, T, B = self.area()
+        sep = Line([R - menu_w - 0.06, T, 0], [R - menu_w - 0.06, B, 0], color=GREY_INK, stroke_width=2)
+        m = Menu(items, menu_w - 0.06, selected)
+        m.move_to([R - (menu_w - 0.06) / 2, T - m.ref.height / 2, 0])
+        if selected is not None:
+            m._cursor_to(selected)
+        return sep, m
+
+    def open_menu(self, scene, page, items, selected=None, menu_w=3.05, run_time=0.7):
+        """The windows slide left and a numbered menu opens on the right."""
+        dx = menu_w + 0.12
+        hline = page.parts["hline"]
+        anims = [m_.animate.shift(LEFT * dx) for m_ in page.parts["_shift"]]
+        anims.append(hline.animate.put_start_and_end_on(hline.get_start(), hline.get_end() + LEFT * dx))
+        sep, m = self._menu_parts(items, selected, menu_w)
+        page.add(sep, m)
+        page.menu, page.parts["_sep"] = m, sep
+        scene.play(*anims, FadeIn(sep), FadeIn(m), run_time=run_time)
+        return m
+
+    def close_menu(self, scene, page, menu_w=3.05, run_time=0.6):
+        dx = menu_w + 0.12
+        hline = page.parts["hline"]
+        anims = [m_.animate.shift(RIGHT * dx) for m_ in page.parts["_shift"]]
+        anims.append(hline.animate.put_start_and_end_on(hline.get_start(), hline.get_end() + RIGHT * dx))
+        scene.play(*anims, FadeOut(page.menu), FadeOut(page.parts["_sep"]), run_time=run_time)
+        page.remove(page.menu, page.parts["_sep"])
+        page.menu = None
+
+    def set_softkeys(self, scene, labels, run_time=0.3):
+        new = VGroup(*self._soft_labels(labels))
+        scene.play(FadeOut(self.soft), FadeIn(new), run_time=run_time)
+        self.remove(self.soft)
+        self.soft = new
+        self.add(new)
 
     def calibration_page(self, inp, out, menu=None, selected=None, field=None, err=None,
                          softkeys=("", "", "", ""), points=None, menu_w=3.05):
@@ -300,16 +347,16 @@ class MC5(VGroup):
         return Page(*mobs, softkeys=softkeys, parts=parts, menu=m)
 
     def form_page(self, title, rows, editable=(), selected=None, softkeys=("Close", "", "Edit", ""),
-                  row_h=0.27, label_w=3.2):
+                  row_h=0.32, label_w=3.2):
         """A settings page. rows = [(key, label, value)] or ("#", "Section") for a section header.
         Editable rows (by key) show their value in ACCENT_1; `selected` is a key (inverted row)."""
         L, R, T, B = self.area()
-        ttl = _txt(title, FS, INK, "BOLD").move_to([(L + R) / 2, T - 0.14, 0])
-        rule = Line([L, T - 0.3, 0], [R, T - 0.3, 0], color=GREY_INK, stroke_width=2)
+        ttl = _txt(title, FS, INK, "BOLD").move_to([(L + R) / 2, T - 0.13, 0])
+        rule = Line([L, T - 0.28, 0], [R, T - 0.28, 0], color=GREY_INK, stroke_width=2)
         mobs, parts = [ttl, rule], {"title": ttl}
-        cursor = Rectangle(width=R - L, height=row_h - 0.03, stroke_width=0).set_fill(INK, 1)
+        cursor = Rectangle(width=R - L, height=row_h - 0.01, stroke_width=0).set_fill(INK, 1)
         mobs.insert(0, cursor)
-        y = T - 0.3 - 0.06
+        y = T - 0.3
         ycur = None
         keys_y = {}
         for r in rows:
@@ -319,16 +366,18 @@ class MC5(VGroup):
                 mobs.append(sec)
             else:
                 key, lab, val = r
-                lt = _txt(lab, FS).move_to([L + 0.05, y, 0], aligned_edge=LEFT)
-                vt = _txt(val, FS, ACCENT_1 if key in editable else INK)
+                lt = _txt(lab, FS_SMALL).move_to([L + 0.05, y, 0], aligned_edge=LEFT)
+                vt = _txt(val, FS_SMALL, ACCENT_1 if key in editable else INK)
                 vt.move_to([R - 0.05 - vt.width / 2, y, 0])
                 parts[key], parts[key + "_label"] = vt, lt
                 mobs += [lt, vt]
                 keys_y[key] = y
             y -= row_h / 2
         assert y >= B - 0.02, f"form page {title!r} has too many rows ({len(rows)}): split it in two pages"
+        first = selected or next(iter(keys_y), None)
+        if first:
+            cursor.move_to([(L + R) / 2, keys_y[first], 0])
         if selected:
-            cursor.move_to([(L + R) / 2, keys_y[selected], 0])
             parts[selected].set_color(BG)
             parts[selected + "_label"].set_color(BG)
         else:
@@ -371,8 +420,10 @@ class MC5(VGroup):
                 parts[key] = t
                 keys_y[key] = y
             y -= 0.14
+        first = selected if selected is not None else next(iter(keys_y), None)
+        if first is not None:
+            cursor.move_to([(L + R) / 2, keys_y[first], 0])
         if selected is not None:
-            cursor.move_to([(L + R) / 2, keys_y[selected], 0])
             parts[selected].set_color(BG)
         else:
             cursor.set_opacity(0)
@@ -392,23 +443,19 @@ class MC5(VGroup):
         return g
 
     # ------------- animations -------------
-    def show(self, scene, page, run_time=0.6, keep_softkeys=False):
-        """Show `page` on the screen; the previous page and its soft keys fade out."""
-        labels = self._soft_labels(page.softkeys)
-        new_soft = VGroup(*labels)
+    def show(self, scene, page, run_time=0.6, shift=ORIGIN):
+        """Show `page` on the screen; the previous page and its soft keys fade out (`shift`: a slide)."""
+        new_soft = VGroup(*self._soft_labels(page.softkeys))
         outs = []
         if self.page is not None:
-            outs.append(FadeOut(self.page))
-        if len(self.soft.submobjects) and any(len(s.submobjects) or isinstance(s, Text) for s in self.soft):
-            outs.append(FadeOut(self.soft))
-        scene.play(*outs, FadeIn(page), FadeIn(new_soft), run_time=run_time)
+            outs.append(FadeOut(self.page, shift=shift))
+        outs.append(FadeOut(self.soft))
+        scene.play(*outs, FadeIn(page, shift=shift), FadeIn(new_soft), run_time=run_time)
         self.remove(self.soft)
-        self.soft = new_soft
-        self.add(self.soft)
         if self.page is not None:
             self.remove(self.page)
-        self.page = page
-        self.add(page)
+        self.soft, self.page = new_soft, page
+        self.add(page, new_soft)
         return page
 
     def set_text(self, scene, mob, new, run_time=0.5, color=None, align=None):
@@ -432,23 +479,127 @@ class MC5(VGroup):
         scene.play(key.animate.shift(UP * 0.07), rect.animate.set_fill(PANEL_FILL, 1),
                    key[1].animate.set_color(INK), run_time=run_time * 0.55)
 
-    def digit_chip(self, n):
-        r = RoundedRectangle(width=0.55, height=0.55, corner_radius=0.12, color=INK,
+    def key_chip(self, text):
+        """A keypad chip (a number or a word such as "Enter") drawn under the screen, right of the keys."""
+        w = 0.55 if len(str(text)) == 1 else 1.25
+        r = RoundedRectangle(width=w, height=0.55, corner_radius=0.12, color=INK,
                              stroke_width=3).set_fill(PANEL_FILL, 1)
-        t = _txt(str(n), 22, INK, "BOLD").move_to(r)
-        return VGroup(r, t)
+        t = _txt(str(text), 22 if len(str(text)) == 1 else FS, INK, "BOLD").move_to(r)
+        g = VGroup(r, t)
+        g.move_to([self.body.get_right()[0] + 0.45 + w / 2, self.keys["D"].get_y(), 0])
+        return g
 
     def press_digit(self, scene, n, menu=None, run_time=0.7):
-        """A numeric key chip lights up under the screen; if `menu` is given, its cursor jumps to n."""
-        chip = self.digit_chip(n).next_to(self.body.get_corner(DR), LEFT, buff=0.25).shift(UP * 0.55 + RIGHT * 0.0)
-        chip.move_to([self.body.get_right()[0] + 0.7, self.keys["D"].get_y(), 0])
+        """A numeric key chip lights up beside the keys; if `menu` is given, its cursor jumps to n."""
+        self.press_chip(scene, n, then=(lambda: menu.select(scene, n, run_time=run_time * 0.6)) if menu else None)
+
+    def press_chip(self, scene, text, then=None):
+        chip = self.key_chip(text)
         scene.play(FadeIn(chip, scale=0.8), run_time=0.2)
-        scene.play(chip[0].animate.set_fill(ACCENT_1, 1), run_time=0.15)
-        if menu is not None:
-            menu.select(scene, n, run_time=run_time * 0.6)
+        scene.play(chip[0].animate.set_fill(ACCENT_1, 1), chip[1].animate.set_color(BG), run_time=0.15)
+        if then is not None:
+            then()
         scene.play(FadeOut(chip), run_time=0.2)
+
+    def set_mode(self, scene, text, run_time=0.3):
+        """The status bar's mode text changes (BASIC → EDIT …)."""
+        new = _txt(text, FS, INK, "BOLD")
+        new.move_to(self.mode_text.get_left() + RIGHT * new.width / 2)
+        scene.play(FadeOut(self.mode_text), FadeIn(new), run_time=run_time)
+        self.bar.remove(self.mode_text)
+        self.bar.add(new)
+        self.mode_text = new
+
+    def swap_many(self, scene, page, changes, run_time=0.5):
+        """Texts of different length change: cross-fade (no morphing). changes = [(key, new_text, edge)];
+        page.parts[key] is replaced by the new text."""
+        outs, ins = [], []
+        for key, new, edge in changes:
+            mob = page.parts[key]
+            new_t = _txt(new, mob.font_size, mob.color, "BOLD" if getattr(mob, "weight", None) == "BOLD" else None)
+            new_t.move_to(mob.get_center()).align_to(mob, edge)
+            outs.append(FadeOut(mob))
+            ins.append(FadeIn(new_t))
+            page.remove(mob)
+            page.add(new_t)
+            page.parts[key] = new_t
+            if "_shift" in page.parts and mob in page.parts["_shift"]:
+                page.parts["_shift"][page.parts["_shift"].index(mob)] = new_t
+        scene.play(*outs, *ins, run_time=run_time)
+
+    def set_many(self, scene, changes, run_time=0.6):
+        """Several texts change together. changes = [(mob, new_text, align_edge)]; the edge stays put."""
+        anims = []
+        for mob, new, edge in changes:
+            new_t = _txt(new, mob.font_size, mob.color, "BOLD" if getattr(mob, "weight", None) == "BOLD" else None)
+            new_t.move_to(mob.get_center()).align_to(mob, edge)
+            anims.append(Transform(mob, new_t))
+        scene.play(*anims, run_time=run_time)
 
 
 # ---------------- the one-frame proof used to approve the look ----------------
 if __name__ == "__main__":
     pass
+
+
+# ---------------- drawing helpers shared by the episodes ----------------
+def ma_gauge(title, width=4.2, color=ACCENT_1, lo=4.0, hi=20.0, ticks=(4, 12, 20)):
+    """A horizontal 4–20 mA bar with ticks and a marker (a triangle above the bar).
+    `.x_of(v)` is the x of a value, `.marker` the marker, `.readout` the text; `.to(scene, v, text)`."""
+    bar = Line(LEFT * width / 2, RIGHT * width / 2, color=INK, stroke_width=4)
+    tk = VGroup()
+    for v in ticks:
+        x = -width / 2 + width * (v - lo) / (hi - lo)
+        tk.add(Line([x, -0.09, 0], [x, 0.09, 0], color=INK, stroke_width=3))
+        tk.add(_txt(f"{v:g}", FS_SMALL, INK).move_to([x, -0.3, 0]))
+    ttl = _txt(title, FS, INK, "BOLD").next_to(bar, UP, buff=0.75)
+    marker = Triangle(color=color, stroke_width=0).set_fill(color, 1).scale(0.13).rotate(PI)
+    marker.move_to([-width / 2, 0.2, 0])
+    readout = _txt("fixed near 4 mA", FS, color, "BOLD").next_to(bar, DOWN, buff=0.6)
+    readout.set_opacity(0)
+    g = VGroup(ttl, bar, tk, marker, readout)
+    g.bar, g.marker, g.ttl, g.width_, g.lo, g.hi, g.readout, g.color_ = bar, marker, ttl, width, lo, hi, readout, color
+    return g
+
+
+def gauge_x(g, v):
+    return g.bar.get_left()[0] + g.width_ * (v - g.lo) / (g.hi - g.lo)
+
+
+def gauge_to(scene, g, v, text=None, run_time=1.0, rate=smooth):
+    """Move the gauge marker to value v (and swap the readout text)."""
+    x = gauge_x(g, v)
+    new = _txt(text if text is not None else f"{v:.1f} mA", FS, g.color_, "BOLD")
+    new.next_to(g.bar, DOWN, buff=0.6)
+    old = g.readout
+    g.remove(old)
+    g.readout = new
+    scene.play(g.marker.animate.move_to([x, g.marker.get_y(), 0]), FadeOut(old), FadeIn(new),
+               run_time=run_time, rate_func=rate)
+
+
+def panel(width, height, color=GREY_INK, fill=None, corner=0.15):
+    r = RoundedRectangle(width=width, height=height, corner_radius=corner, color=color, stroke_width=3)
+    if fill is not None:
+        r.set_fill(fill, 1)
+    return r
+
+
+def note_line(text, icon_name=None, color=INK, size=FS_AXIS, width=4.4):
+    """A short note: an optional Tabler icon and the text (wrapped in two lines when needed)."""
+    parts = []
+    if icon_name:
+        parts.append(icon(icon_name, color, 0.42))
+    t = label(text, size, color)
+    if t.width > width - (0.6 if icon_name else 0):
+        words = text.split()
+        best = None
+        for i in range(1, len(words)):
+            a, b = " ".join(words[:i]), " ".join(words[i:])
+            ta, tb = label(a, size, color), label(b, size, color)
+            w = max(ta.width, tb.width)
+            if best is None or w < best[0]:
+                best = (w, VGroup(ta, tb).arrange(DOWN, aligned_edge=LEFT, buff=0.08))
+        t = best[1]
+    parts.append(t)
+    return VGroup(*parts).arrange(RIGHT, buff=0.18)
